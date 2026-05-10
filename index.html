@@ -218,7 +218,11 @@
   </div>
   <div class="sb-body" id="sbBody"><p class="hint">👆 Raum antippen für Details</p></div>
 </div>
-<div class="tc" id="tc" role="alert" aria-live="polite"></div>
+<div class="mo" id="rm"><div class="mb">
+  <h3>✏️ Raum umbenennen</h3>
+  <label>Name</label><input type="text" id="rn" placeholder="Raum name..." onkeydown="if(event.key==='Enter')confirmRename()">
+  <div class="ma"><button onclick="closeRenameModal()">Abbrechen</button><button class="p" onclick="confirmRename()">Speichern</button></div>
+</div></div>
 <div class="io" id="io"><div class="ib">
   <div style="font-size:48px;margin-bottom:8px">🏗️</div>
   <h2>Willkommen!</h2>
