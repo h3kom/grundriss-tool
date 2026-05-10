@@ -28,25 +28,25 @@ const DEFAULT_ROOMS = {
 // Global State
 // =====================================================================
 const state = {
-  rooms: {},                   // R – room data keyed by id
-  selectedRoom: null,          // se
-  editMode: false,             // em
-  overview: false,             // ov
-  sidebarOpen: false,          // sbOpen
-  sidebarWasManuallyOpened: false, // sbWasManuallyOpened
-  dragState: null,             // ds
-  resizeState: null,           // rs
-  isPlacing: false,            // isPlacing
-  placeFloor: null,            // plFloor
-  debounceTimer: null,         // debTimer
-  lastSaveTs: Date.now(),      // lastTs
-  undoStack: [],               // undo
-  syncStatus: 'idle',          // ss
-  serverStamp: 0,              // stamp
-  pollInterval: null,          // pi
-  isSyncing: false,            // syncing
-  saveTimeout: null,           // stout
-  activeFloor: 'eg',           // af
+  rooms: {},
+  selectedRoom: null,
+  editMode: false,
+  overview: false,
+  sidebarOpen: false,
+  sidebarWasManuallyOpened: false,
+  dragState: null,
+  resizeState: null,
+  isPlacing: false,
+  placeFloor: null,
+  debounceTimer: null,
+  lastSaveTs: Date.now(),
+  undoStack: [],
+  syncStatus: 'idle',
+  serverStamp: 0,
+  pollInterval: null,
+  isSyncing: false,
+  saveTimeout: null,
+  activeFloor: 'eg',
 };
 
 // =====================================================================
@@ -194,8 +194,14 @@ function startPolling() {
       if (result && result.data && Object.keys(result.data).length > 0) {
         const serverTime = result.updatedAt || 0;
         if (serverTime > state.serverStamp) {
-          applyCloudData(result.data, serverTime);
-          toast('Daten synchronisiert', 'info', 3000);
+          // Conflict resolution: only overwrite if local data hasn't been changed more recently
+          if (state.lastSaveTs <= serverTime) {
+            applyCloudData(result.data, serverTime);
+            toast('Daten synchronisiert', 'info', 3000);
+          } else {
+            // Local changes are newer, push them to server
+            saveData();
+          }
         } else {
           setSyncStatus('synced');
         }
@@ -248,15 +254,19 @@ async function supabaseFetch() {
 // =====================================================================
 // UI Helpers
 // =====================================================================
-function getFloorId(id) {
-  return id && (id.includes('og') || id === 'og') ? 'og' : 'eg';
+function detectFloorId(id) {
+  if (!id) return 'eg';
+  const lower = id.toLowerCase();
+  // Check for OG floor patterns: id contains "og" as a word boundary or is exactly "og"
+  if (lower === 'og' || lower.startsWith('og') || lower.includes('-og') || lower.includes('_og')) return 'og';
+  return 'eg';
 }
 
 function getScale(wrapper) {
   if (!wrapper) return 1;
   const img = wrapper.querySelector('img');
   if (!img) return 1;
-  const nativeWidth = NATIVE_WIDTHS[getFloorId(wrapper.id)] || 1000;
+  const nativeWidth = NATIVE_WIDTHS[detectFloorId(wrapper.id)] || 1000;
   const displayWidth = img.getBoundingClientRect().width;
   return displayWidth > 0 && nativeWidth > 0 ? displayWidth / nativeWidth : 1;
 }
@@ -316,7 +326,7 @@ function toast(message, type = 'success', duration = 3000, undoCallback) {
   if (undoCallback) {
     html += '<button class="tu" onclick="executeUndo()">↩ Rückgängig</button>';
   }
-  html += '<button class="td" onclick="dismissToast(this)">✕</button>';
+  html += '<button class="td" onclick="dismissToast(this.parentElement)">✕</button>';
   el.innerHTML = html;
 
   if (undoCallback) {
@@ -327,21 +337,19 @@ function toast(message, type = 'success', duration = 3000, undoCallback) {
 
   container.appendChild(el);
   if (duration > 0) {
-    setTimeout(() => dismissToast(el.querySelector('.td')), duration);
+    setTimeout(() => dismissToast(el), duration);
   }
   while (container.children.length > 3) {
     const first = container.firstChild;
-    if (first) dismissToast(first.querySelector('.td') || first);
+    if (first) dismissToast(first);
   }
 }
 
-function dismissToast(btn) {
-  if (!btn) return;
-  const el = btn.closest('.t');
-  if (!el) return;
-  el.classList.add('to');
+function dismissToast(toastElement) {
+  if (!toastElement || !toastElement.classList) return;
+  toastElement.classList.add('to');
   setTimeout(() => {
-    if (el.parentNode) el.parentNode.removeChild(el);
+    if (toastElement.parentNode) toastElement.parentNode.removeChild(toastElement);
   }, 300);
 }
 
@@ -362,7 +370,7 @@ function executeUndo() {
     state.undoStack[key] = null;
     toast('Rückgängig', 'info', 2000);
   }
-  dismissToast(target.querySelector('.td'));
+  dismissToast(target);
 }
 
 function showIntro() {
@@ -457,33 +465,34 @@ function onDragMoveTouch(e) {
 }
 
 function onDragEndCleanup() {
-  if (!state.dragState) return;
+  const ds = state.dragState;
+  if (!ds) return;
   document.removeEventListener('mousemove', onDragMove);
   document.removeEventListener('mouseup', onDragEnd);
   document.removeEventListener('touchmove', onDragMoveTouch);
   document.removeEventListener('touchend', onDragEndTouch);
 
-  if (state.dragState.element) state.dragState.element.classList.remove('dg');
+  if (ds.element) ds.element.classList.remove('dg');
 
-  if (!state.dragState.isDragging || state.dragState.saved) {
+  if (!ds.isDragging || ds.saved) {
     state.dragState = null;
     return;
   }
 
-  const el = document.querySelector(`.ro[data-key="${state.dragState.key}"]`);
+  const el = document.querySelector(`.ro[data-key="${ds.key}"]`);
   if (!el) {
     state.dragState = null;
     return;
   }
 
-  const scale = getScale(state.dragState.wrapper);
+  const scale = getScale(ds.wrapper);
   const newLeft = Math.round(parseInt(el.style.left) / scale);
   const newTop = Math.round(parseInt(el.style.top) / scale);
 
-  if (newLeft !== state.dragState.origLeft || newTop !== state.dragState.origTop) {
-    state.rooms[state.dragState.key].left = newLeft;
-    state.rooms[state.dragState.key].top = newTop;
-    state.dragState.saved = true;
+  if (newLeft !== ds.origLeft || newTop !== ds.origTop) {
+    state.rooms[ds.key].left = newLeft;
+    state.rooms[ds.key].top = newTop;
+    ds.saved = true;
     saveData();
     render();
     if (state.selectedRoom && state.rooms[state.selectedRoom]) {
