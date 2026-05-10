@@ -742,9 +742,14 @@ function renderDetail(key) {
 }
 
 function buildDetailHeader(key, room) {
+  let renameBtn = '';
+  if (state.editMode) {
+    renameBtn = `<button class="rb" onclick="openRenameModal('${key}')" title="Umbenennen">✏️</button>`;
+  }
   return `<div class="rdh">
     <button class="bb" onclick="showOverview()">←</button>
     <h3>${escHtml(room.title)}</h3>
+    ${renameBtn}
     <span class="rk">${escHtml(key)}</span>
   </div>`;
 }
@@ -1029,7 +1034,7 @@ function enablePlaceNewRoom(floor) {
   state.isPlacing = true;
   state.placeFloor = floor;
   document.querySelectorAll('.pw').forEach(w => { w.style.cursor = 'crosshair'; });
-  openSidebar();
+  closeSidebar(); // Sidebar schließen damit der ganze Grundriss sichtbar ist
   const sbBody = document.getElementById('sbBody');
   if (sbBody) {
     sbBody.innerHTML = `<p class="hint"><strong>Neuen Raum platzieren</strong><br/>
