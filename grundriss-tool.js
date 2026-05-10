@@ -23,6 +23,7 @@ const state = {
   resizeState: null,
   isPlacing: false,
   placeFloor: null,
+  placeState: null,
   debounceTimer: null,
   lastSaveTs: Date.now(),
   undoStack: [],
@@ -1021,15 +1022,8 @@ function debouncedSearch() {
 }
 
 // =====================================================================
-// Place Room
+// Place New Room – Interactive Draw on Plan
 // =====================================================================
-function handlePlanClick(e) {
-  if (!state.isPlacing) return;
-  cancelPlaceNewRoom();
-  document.getElementById('nn').value = '';
-  document.getElementById('am').classList.add('open');
-}
-
 function enablePlaceNewRoom(floor) {
   if (!state.editMode) return;
   state.isPlacing = true;
@@ -1038,67 +1032,185 @@ function enablePlaceNewRoom(floor) {
   openSidebar();
   const sbBody = document.getElementById('sbBody');
   if (sbBody) {
-    sbBody.innerHTML = `<p class="hint"><strong>Neuen Raum setzen</strong><br/>Auf den Grundriss tippen.<br/>
+    sbBody.innerHTML = `<p class="hint"><strong>Neuen Raum platzieren</strong><br/>
+      👆 Auf den Grundriss tippen & ziehen um die Größe festzulegen.<br/>
       <button onclick="cancelPlaceNewRoom()" style="margin-top:8px;background:#ef4444;color:#fff;border:none;padding:8px 16px;border-radius:var(--rs);cursor:pointer;font-size:14px;">Abbrechen</button>
     </p>`;
   }
 }
 
 function cancelPlaceNewRoom() {
+  removePlacePreview();
   state.isPlacing = false;
   state.placeFloor = null;
+  state.placeState = null;
   document.querySelectorAll('.pw').forEach(w => { w.style.cursor = ''; });
   const sbBody = document.getElementById('sbBody');
   if (sbBody) sbBody.innerHTML = '<p class="hint">👆 Raum antippen</p>';
 }
 
-function closeAddModal() {
-  document.getElementById('am').classList.remove('open');
+function removePlacePreview() {
+  const prev = document.getElementById('place-preview');
+  if (prev) prev.remove();
 }
 
-function addRoom() {
-  const title = document.getElementById('nn').value.trim();
-  if (!title) { toast('Name erforderlich', 'error', 3000); return; }
+function startPlaceDraw(e) {
+  if (!state.isPlacing) return;
+  e.preventDefault();
 
-  let key = title.toLowerCase().replace(/[^a-z0-9]/g, '');
-  if (!key) key = 'r';
+  const raw = getPointerPos(e);
+  const wrapper = e.currentTarget.closest('.pw');
+  if (!wrapper) return;
 
+  const pi = wrapper.querySelector('.pi');
+  const rect = pi.getBoundingClientRect();
+
+  state.placeState = {
+    startX: raw.x,
+    startY: raw.y,
+    relStartX: raw.x - rect.left,
+    relStartY: raw.y - rect.top,
+    wrapper,
+    pi,
+    floor: detectFloorId(wrapper.id),
+    endX: null,
+    endY: null,
+    relEndX: null,
+    relEndY: null
+  };
+
+  // Create a visual preview rectangle
+  removePlacePreview();
+  const preview = document.createElement('div');
+  preview.id = 'place-preview';
+  preview.style.cssText = 'position:absolute;border:2px dashed var(--blue);background:rgba(59,130,246,0.12);z-index:100;pointer-events:none;border-radius:4px;';
+  preview.style.left = `${state.placeState.relStartX}px`;
+  preview.style.top = `${state.placeState.relStartY}px`;
+  preview.style.width = '0px';
+  preview.style.height = '0px';
+  pi.appendChild(preview);
+
+  document.addEventListener('mousemove', onPlaceDrawMove);
+  document.addEventListener('mouseup', onPlaceDrawEnd);
+  document.addEventListener('touchmove', onPlaceDrawMoveTouch, { passive: false });
+  document.addEventListener('touchend', onPlaceDrawEndTouch, { passive: false });
+}
+
+function onPlaceDrawMove(e) {
+  if (!state.placeState) return;
+  e.preventDefault();
+
+  const raw = getPointerPos(e);
+  const piRect = state.placeState.pi.getBoundingClientRect();
+  const relX = raw.x - piRect.left;
+  const relY = raw.y - piRect.top;
+
+  // Store end positions
+  state.placeState.endX = raw.x;
+  state.placeState.endY = raw.y;
+  state.placeState.relEndX = relX;
+  state.placeState.relEndY = relY;
+
+  const preview = document.getElementById('place-preview');
+  if (!preview) return;
+
+  const sx = state.placeState.relStartX;
+  const sy = state.placeState.relStartY;
+
+  const left = Math.min(sx, relX);
+  const top = Math.min(sy, relY);
+  const width = Math.abs(relX - sx);
+  const height = Math.abs(relY - sy);
+
+  preview.style.left = `${left}px`;
+  preview.style.top = `${top}px`;
+  preview.style.width = `${width}px`;
+  preview.style.height = `${height}px`;
+}
+
+function onPlaceDrawMoveTouch(e) {
+  onPlaceDrawMove(e);
+}
+
+function onPlaceDrawEndCleanup() {
+  if (!state.placeState) return;
+  document.removeEventListener('mousemove', onPlaceDrawMove);
+  document.removeEventListener('mouseup', onPlaceDrawEnd);
+  document.removeEventListener('touchmove', onPlaceDrawMoveTouch);
+  document.removeEventListener('touchend', onPlaceDrawEndTouch);
+}
+
+function onPlaceDrawEnd() { onPlaceDrawEndCleanup(); finishPlaceDraw(); }
+function onPlaceDrawEndTouch() { onPlaceDrawEndCleanup(); finishPlaceDraw(); }
+
+function finishPlaceDraw() {
+  if (!state.placeState) return;
+
+  const ps = state.placeState;
+
+  // Read the preview position before removing it
+  const preview = document.getElementById('place-preview');
+  let finalLeft = ps.relStartX;
+  let finalTop = ps.relStartY;
+  let finalWidth = 1;
+  let finalHeight = 1;
+
+  if (preview) {
+    finalLeft = parseFloat(preview.style.left) || ps.relStartX;
+    finalTop = parseFloat(preview.style.top) || ps.relStartY;
+    finalWidth = Math.max(20, parseFloat(preview.style.width) || 1);
+    finalHeight = Math.max(20, parseFloat(preview.style.height) || 1);
+    preview.remove();
+  } else if (ps.relEndX !== null) {
+    // Fallback: compute from stored end positions
+    const sx = ps.relStartX;
+    const sy = ps.relStartY;
+    const ex = ps.relEndX;
+    const ey = ps.relEndY;
+    finalLeft = Math.min(sx, ex);
+    finalTop = Math.min(sy, ey);
+    finalWidth = Math.max(20, Math.abs(ex - sx));
+    finalHeight = Math.max(20, Math.abs(ey - sy));
+  }
+
+  // Convert display pixels to native coordinates
+  const scale = getScale(ps.wrapper);
+  const nativeLeft = Math.round(finalLeft / scale);
+  const nativeTop = Math.round(finalTop / scale);
+  const nativeWidth = Math.round(finalWidth / scale);
+  const nativeHeight = Math.round(finalHeight / scale);
+
+  // Build a unique key
+  const baseKey = 'raum';
+  let key = baseKey;
   let i = 1;
-  const baseKey = key;
   while (state.rooms[key]) {
     key = baseKey + i;
     i++;
   }
 
-  const floor = state.activeFloor;
-  const nativeWidth = NATIVE_WIDTHS[floor] || 1000;
-  let nativeHeight = Math.round(nativeWidth * 0.75);
-
-  const wrapper = document.getElementById(`${floor}-w`);
-  const img = wrapper?.querySelector('img');
-  if (img && img.naturalWidth > 0) {
-    nativeHeight = Math.round(nativeWidth * img.naturalHeight / img.naturalWidth);
-  }
-
+  // Create the room with a default name the user can edit
   state.rooms[key] = {
-    title,
-    floor,
+    title: 'Neuer Raum',
+    floor: ps.floor,
     tasks: [],
     done: {},
     note: '',
     comments: [],
-    left: Math.round((nativeWidth - 200) / 2),
-    top: Math.round((nativeHeight - 140) / 2),
-    width: 200,
-    height: 140
+    left: Math.max(0, nativeLeft),
+    top: Math.max(0, nativeTop),
+    width: Math.max(20, nativeWidth),
+    height: Math.max(20, nativeHeight)
   };
 
   saveData();
-  closeAddModal();
-  document.getElementById('nn').value = '';
+  state.isPlacing = false;
+  state.placeState = null;
+  state.placeFloor = null;
+  document.querySelectorAll('.pw').forEach(w => { w.style.cursor = ''; });
   render();
   showRoom(key);
-  toast(`➕ "${title}"`, 'success', 3000);
+  toast(`➕ Raum platziert – Name bearbeitbar`, 'success', 3000);
 }
 
 // =====================================================================
@@ -1106,7 +1218,10 @@ function addRoom() {
 // =====================================================================
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
-    closeAddModal();
+    if (state.isPlacing) {
+      cancelPlaceNewRoom();
+      return;
+    }
     if (state.overview) {
       state.overview = false;
       document.getElementById('btnOv')?.classList.remove('active');
@@ -1131,16 +1246,14 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// Close modal on outside click
-document.getElementById('am')?.addEventListener('click', (e) => {
-  if (e.target === e.currentTarget) closeAddModal();
-});
-
 // =====================================================================
 // Init
 // =====================================================================
+// Set up plan interaction: drawing new rooms via mousedown/touchstart
 document.querySelectorAll('.pw').forEach(w => {
-  w.addEventListener('click', handlePlanClick);
+  w.addEventListener('mousedown', startPlaceDraw);
+  w.addEventListener('touchstart', startPlaceDraw, { passive: false });
+  // The old click-based placement (handlePlanClick) has been removed
 });
 
 loadData().then(() => {
