@@ -9,21 +9,6 @@ const FLOORS = ['eg', 'og'];
 const MAX_UNDO = 20;
 const SYNC_INTERVAL = 3000;
 
-const DEFAULT_ROOMS = {
-  z1:  { title: 'Zimmer 1', floor: 'eg', tasks: ['Wände spachteln','Boden entfernen','Steckdosen'], done: {}, note: 'Fenster prüfen.', comments: [], left: 55, top: 145, width: 230, height: 300 },
-  z2:  { title: 'Zimmer 2', floor: 'eg', tasks: ['Laminat verlegen','Heizung tauschen'], done: {}, note: 'Material bestellt.', comments: [], left: 285, top: 450, width: 200, height: 140 },
-  z3:  { title: 'Zimmer 3', floor: 'eg', tasks: ['Decke streichen','Licht vorbereiten'], done: {}, note: 'Elektriker.', comments: [], left: 500, top: 450, width: 200, height: 140 },
-  kue: { title: 'Küche EG', floor: 'eg', tasks: ['Wasser versetzen','Fliesen','Dunstabzug'], done: {}, note: 'Küchenplan.', comments: [], left: 505, top: 760, width: 220, height: 230 },
-  b1:  { title: 'Bad 1', floor: 'eg', tasks: ['Dusche','Abfluss','LED-Spiegel'], done: {}, note: 'Sanitär.', comments: [], left: 190, top: 430, width: 70, height: 90 },
-  di:  { title: 'Diele', floor: 'eg', tasks: ['Maler'], done: {}, note: 'OK.', comments: [], left: 720, top: 410, width: 180, height: 360 },
-  ga:  { title: 'Garage', floor: 'eg', tasks: ['Tor','Licht','Boden'], done: {}, note: 'Steckdose.', comments: [], left: 900, top: 50, width: 180, height: 700 },
-  wo:  { title: 'Wohnzimmer', floor: 'og', tasks: ['Parkett schleifen','Wände'], done: {}, note: 'Möbel ausräumen.', comments: [], left: 120, top: 70, width: 360, height: 180 },
-  z6:  { title: 'Zimmer 6', floor: 'og', tasks: ['Heizkörper','Fensterbank'], done: {}, note: 'Homeoffice.', comments: [], left: 500, top: 60, width: 220, height: 330 },
-  sz:  { title: 'Schlafzimmer', floor: 'og', tasks: ['Boden','Lichtschalter'], done: {}, note: 'Dämmung.', comments: [], left: 300, top: 390, width: 260, height: 220 },
-  kog: { title: 'Küche OG', floor: 'og', tasks: ['Montage'], done: {}, note: 'Abnahme.', comments: [], left: 80, top: 380, width: 170, height: 160 },
-  b3:  { title: 'Bad 3', floor: 'og', tasks: ['Armaturen','Fliesen'], done: {}, note: 'Wasser OK.', comments: [], left: 360, top: 210, width: 140, height: 90 }
-};
-
 // =====================================================================
 // Global State
 // =====================================================================
@@ -80,25 +65,6 @@ function deepClone(obj) {
 }
 
 // =====================================================================
-// Default Room Merge – fügt neue DEFAULT_ROOMS in bestehende Daten ein,
-// ohne vorhandene Räume zu überschreiben. So landen neue Räume aus
-// Code-Updates immer im aktuellen Projekt.
-// =====================================================================
-function mergeDefaultRooms() {
-  let changed = false;
-  for (const [key, defaultRoom] of Object.entries(DEFAULT_ROOMS)) {
-    if (!state.rooms[key]) {
-      state.rooms[key] = deepClone(defaultRoom);
-      changed = true;
-    }
-  }
-  if (changed) {
-    localStorage.setItem('gR', JSON.stringify(state.rooms));
-    render();
-  }
-}
-
-// =====================================================================
 // Sync
 // =====================================================================
 async function loadData() {
@@ -112,7 +78,6 @@ async function loadData() {
 
   const cloudLoaded = await loadFromCloud();
   if (cloudLoaded) {
-    mergeDefaultRooms();
     return;
   }
 
@@ -121,14 +86,14 @@ async function loadData() {
     try {
       state.rooms = JSON.parse(local);
       ensureAllRooms();
-      mergeDefaultRooms();
       return;
     } catch (e) {
-      // fall through to defaults
+      // corrupted local data – start empty
     }
   }
 
-  state.rooms = deepClone(DEFAULT_ROOMS);
+  // Keine Vorgabe-Räume: starte mit leerem Objekt
+  state.rooms = {};
   saveData();
 }
 
