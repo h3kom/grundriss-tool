@@ -742,14 +742,10 @@ function renderDetail(key) {
 }
 
 function buildDetailHeader(key, room) {
-  let renameBtn = '';
-  if (state.editMode) {
-    renameBtn = `<button class="rb" onclick="openRenameModal('${key}')" title="Umbenennen">✏️</button>`;
-  }
   return `<div class="rdh">
     <button class="bb" onclick="showOverview()">←</button>
     <h3>${escHtml(room.title)}</h3>
-    ${renameBtn}
+    <button class="rb" onclick="openRenameModal('${key}')" title="Umbenennen">✏️</button>
     <span class="rk">${escHtml(key)}</span>
   </div>`;
 }
