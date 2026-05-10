@@ -1,0 +1,1174 @@
+// Grundriss Tool – Interaktiver Bauplan
+// =====================================================================
+// Constants
+// =====================================================================
+const SUPABASE_URL = 'https://civkerrcyqgsqqjpccqe.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpdmtlcnJjeXFnc3FxanBjY3FlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzMzkxNzAsImV4cCI6MjA5MzkxNTE3MH0.Q01QUWnwYm-aDAhbwi-Rb_kBU28s8Rx27J0RUkILY1U';
+const NATIVE_WIDTHS = { eg: 1000, og: 800 };
+const FLOORS = ['eg', 'og'];
+const MAX_UNDO = 20;
+const SYNC_INTERVAL = 3000;
+
+const DEFAULT_ROOMS = {
+  z1:  { title: 'Zimmer 1', floor: 'eg', tasks: ['Wände spachteln','Boden entfernen','Steckdosen'], done: {}, note: 'Fenster prüfen.', comments: [], left: 55, top: 145, width: 230, height: 300 },
+  z2:  { title: 'Zimmer 2', floor: 'eg', tasks: ['Laminat verlegen','Heizung tauschen'], done: {}, note: 'Material bestellt.', comments: [], left: 285, top: 450, width: 200, height: 140 },
+  z3:  { title: 'Zimmer 3', floor: 'eg', tasks: ['Decke streichen','Licht vorbereiten'], done: {}, note: 'Elektriker.', comments: [], left: 500, top: 450, width: 200, height: 140 },
+  kue: { title: 'Küche EG', floor: 'eg', tasks: ['Wasser versetzen','Fliesen','Dunstabzug'], done: {}, note: 'Küchenplan.', comments: [], left: 505, top: 760, width: 220, height: 230 },
+  b1:  { title: 'Bad 1', floor: 'eg', tasks: ['Dusche','Abfluss','LED-Spiegel'], done: {}, note: 'Sanitär.', comments: [], left: 190, top: 430, width: 70, height: 90 },
+  di:  { title: 'Diele', floor: 'eg', tasks: ['Maler'], done: {}, note: 'OK.', comments: [], left: 720, top: 410, width: 180, height: 360 },
+  ga:  { title: 'Garage', floor: 'eg', tasks: ['Tor','Licht','Boden'], done: {}, note: 'Steckdose.', comments: [], left: 900, top: 50, width: 180, height: 700 },
+  wo:  { title: 'Wohnzimmer', floor: 'og', tasks: ['Parkett schleifen','Wände'], done: {}, note: 'Möbel ausräumen.', comments: [], left: 120, top: 70, width: 360, height: 180 },
+  z6:  { title: 'Zimmer 6', floor: 'og', tasks: ['Heizkörper','Fensterbank'], done: {}, note: 'Homeoffice.', comments: [], left: 500, top: 60, width: 220, height: 330 },
+  sz:  { title: 'Schlafzimmer', floor: 'og', tasks: ['Boden','Lichtschalter'], done: {}, note: 'Dämmung.', comments: [], left: 300, top: 390, width: 260, height: 220 },
+  kog: { title: 'Küche OG', floor: 'og', tasks: ['Montage'], done: {}, note: 'Abnahme.', comments: [], left: 80, top: 380, width: 170, height: 160 },
+  b3:  { title: 'Bad 3', floor: 'og', tasks: ['Armaturen','Fliesen'], done: {}, note: 'Wasser OK.', comments: [], left: 360, top: 210, width: 140, height: 90 }
+};
+
+// =====================================================================
+// Global State
+// =====================================================================
+const state = {
+  rooms: {},                   // R – room data keyed by id
+  selectedRoom: null,          // se
+  editMode: false,             // em
+  overview: false,             // ov
+  sidebarOpen: false,          // sbOpen
+  sidebarWasManuallyOpened: false, // sbWasManuallyOpened
+  dragState: null,             // ds
+  resizeState: null,           // rs
+  isPlacing: false,            // isPlacing
+  placeFloor: null,            // plFloor
+  debounceTimer: null,         // debTimer
+  lastSaveTs: Date.now(),      // lastTs
+  undoStack: [],               // undo
+  syncStatus: 'idle',          // ss
+  serverStamp: 0,              // stamp
+  pollInterval: null,          // pi
+  isSyncing: false,            // syncing
+  saveTimeout: null,           // stout
+  activeFloor: 'eg',           // af
+};
+
+// =====================================================================
+// Room Helpers
+// =====================================================================
+function ensureRoomFields(room) {
+  if (!room.comments) room.comments = [];
+  if (!room.done) room.done = {};
+  return room;
+}
+
+function ensureAllRooms() {
+  for (const key of Object.keys(state.rooms)) {
+    ensureRoomFields(state.rooms[key]);
+  }
+}
+
+function completedTaskCount(room) {
+  if (!room.done) return 0;
+  return Object.values(room.done).filter(Boolean).length;
+}
+
+function taskProgress(room) {
+  const done = completedTaskCount(room);
+  const total = room.tasks ? room.tasks.length : 0;
+  return { done, total, percent: total > 0 ? Math.round(done / total * 100) : 0 };
+}
+
+function deepClone(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+// =====================================================================
+// Sync
+// =====================================================================
+async function loadData() {
+  let el = document.getElementById('syncI');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'syncI';
+    document.body.appendChild(el);
+  }
+  setSyncStatus('idle');
+
+  const cloudLoaded = await loadFromCloud();
+  if (cloudLoaded) return;
+
+  const local = localStorage.getItem('gR');
+  if (local) {
+    try {
+      state.rooms = JSON.parse(local);
+      ensureAllRooms();
+      return;
+    } catch (e) {
+      // fall through to defaults
+    }
+  }
+
+  state.rooms = deepClone(DEFAULT_ROOMS);
+  saveData();
+}
+
+function saveData() {
+  if (state.saveTimeout) clearTimeout(state.saveTimeout);
+  state.serverStamp = Date.now();
+  state.lastSaveTs = Date.now();
+  localStorage.setItem('gR', JSON.stringify(state.rooms));
+  updateTabBadges();
+
+  state.saveTimeout = setTimeout(async () => {
+    if (state.isSyncing) return;
+    state.isSyncing = true;
+    setSyncStatus('syncing');
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/rooms`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Prefer': 'resolution=merge-duplicates,return=representation'
+        },
+        body: JSON.stringify({ id: 1, data: state.rooms })
+      });
+      if (res.ok) {
+        const rows = await res.json();
+        if (rows && rows.length > 0 && rows[0].updated_at) {
+          state.serverStamp = new Date(rows[0].updated_at).getTime();
+        }
+        setSyncStatus('synced');
+      } else {
+        setSyncStatus('error');
+      }
+    } catch (e) {
+      setSyncStatus('error');
+    }
+    state.isSyncing = false;
+  }, 500);
+}
+
+async function loadFromCloud() {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rooms?id=eq.1&select=data,updated_at`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+      }
+    });
+    if (res.ok) {
+      const rows = await res.json();
+      if (rows && rows.length > 0 && rows[0].data) {
+        state.rooms = rows[0].data;
+        ensureAllRooms();
+        state.serverStamp = new Date(rows[0].updated_at).getTime() || Date.now();
+        localStorage.setItem('gR', JSON.stringify(state.rooms));
+        return true;
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+  return false;
+}
+
+function setSyncStatus(status) {
+  state.syncStatus = status;
+  const el = document.getElementById('syncI');
+  if (!el) return;
+  const icons = { idle: '🔄', syncing: '⏳', synced: '✅', error: '⚠️' };
+  const colors = { idle: '#aaa', syncing: '#fbbf24', synced: '#4ade80', error: '#f87171' };
+  let html = '';
+  if (status === 'syncing') html = '<span class="ssp"></span> ';
+  html += `<span>${icons[status] || '🔄'}</span>`;
+  el.innerHTML = html;
+  el.style.borderBottom = `2px solid ${colors[status] || '#aaa'}`;
+}
+
+function startPolling() {
+  if (state.pollInterval) clearInterval(state.pollInterval);
+  state.pollInterval = setInterval(async () => {
+    if (state.isSyncing) return;
+    try {
+      const result = await supabaseFetch();
+      if (result && result.data && Object.keys(result.data).length > 0) {
+        const serverTime = result.updatedAt || 0;
+        if (serverTime > state.serverStamp) {
+          applyCloudData(result.data, serverTime);
+          toast('Daten synchronisiert', 'info', 3000);
+        } else {
+          setSyncStatus('synced');
+        }
+      }
+    } catch (e) {
+      if (state.syncStatus !== 'error') setSyncStatus('error');
+    }
+  }, SYNC_INTERVAL);
+}
+
+function applyCloudData(data, timestamp) {
+  state.rooms = data;
+  ensureAllRooms();
+  state.serverStamp = timestamp || Date.now();
+  state.lastSaveTs = timestamp || Date.now();
+  localStorage.setItem('gR', JSON.stringify(state.rooms));
+  updateTabBadges();
+  render();
+  if (state.selectedRoom && state.rooms[state.selectedRoom]) {
+    renderDetail(state.selectedRoom);
+  } else if (state.overview) {
+    state.overview = false;
+    showOverview();
+  }
+}
+
+async function supabaseFetch() {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rooms?id=eq.1&select=data,updated_at`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+      }
+    });
+    if (!res.ok) return null;
+    const rows = await res.json();
+    if (rows && rows.length > 0 && rows[0].data) {
+      return {
+        data: rows[0].data,
+        updatedAt: new Date(rows[0].updated_at).getTime() || 0
+      };
+    }
+    return null;
+  } catch (e) {
+    return null;
+  }
+}
+
+// =====================================================================
+// UI Helpers
+// =====================================================================
+function getFloorId(id) {
+  return id && (id.includes('og') || id === 'og') ? 'og' : 'eg';
+}
+
+function getScale(wrapper) {
+  if (!wrapper) return 1;
+  const img = wrapper.querySelector('img');
+  if (!img) return 1;
+  const nativeWidth = NATIVE_WIDTHS[getFloorId(wrapper.id)] || 1000;
+  const displayWidth = img.getBoundingClientRect().width;
+  return displayWidth > 0 && nativeWidth > 0 ? displayWidth / nativeWidth : 1;
+}
+
+function getPointerPos(e) {
+  const touch = e.touches;
+  return touch && touch.length > 0
+    ? { x: touch[0].clientX, y: touch[0].clientY }
+    : { x: e.clientX, y: e.clientY };
+}
+
+function switchFloor(floor) {
+  state.activeFloor = floor;
+  document.querySelectorAll('.floor').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.floor-tabs button').forEach(el => el.classList.remove('active'));
+
+  const floorId = `floor${floor.charAt(0).toUpperCase()}${floor.slice(1)}`;
+  const tabId = `tab${floor.charAt(0).toUpperCase()}${floor.slice(1)}`;
+
+  document.getElementById(floorId)?.classList.add('active');
+  document.getElementById(tabId)?.classList.add('active');
+
+  updateTabBadges();
+
+  if (state.selectedRoom && state.rooms[state.selectedRoom] && state.rooms[state.selectedRoom].floor !== floor) {
+    state.selectedRoom = null;
+    render();
+    const sbBody = document.getElementById('sbBody');
+    if (sbBody) sbBody.innerHTML = '<p class="hint">👆 Raum antippen</p>';
+  }
+}
+
+function updateTabBadges() {
+  for (const floor of FLOORS) {
+    const count = Object.values(state.rooms).filter(r => r.floor === floor).length;
+    const badge = document.getElementById(`badge${floor.charAt(0).toUpperCase()}${floor.slice(1)}`);
+    if (badge) badge.textContent = count;
+    const cnt = document.getElementById(`cnt${floor.charAt(0).toUpperCase()}${floor.slice(1)}`);
+    if (cnt) cnt.textContent = `(${count})`;
+  }
+}
+
+function escHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function toast(message, type = 'success', duration = 3000, undoCallback) {
+  const container = document.getElementById('tc');
+  if (!container) return;
+
+  const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+  const el = document.createElement('div');
+  el.className = `t t${type[0]}`;
+  let html = `<span>${icons[type] || 'ℹ️'}</span><span>${escHtml(message)}</span>`;
+  if (undoCallback) {
+    html += '<button class="tu" onclick="executeUndo()">↩ Rückgängig</button>';
+  }
+  html += '<button class="td" onclick="dismissToast(this)">✕</button>';
+  el.innerHTML = html;
+
+  if (undoCallback) {
+    el.dataset.undoKey = state.undoStack.length;
+    state.undoStack.push(undoCallback);
+    if (state.undoStack.length > MAX_UNDO) state.undoStack.shift();
+  }
+
+  container.appendChild(el);
+  if (duration > 0) {
+    setTimeout(() => dismissToast(el.querySelector('.td')), duration);
+  }
+  while (container.children.length > 3) {
+    const first = container.firstChild;
+    if (first) dismissToast(first.querySelector('.td') || first);
+  }
+}
+
+function dismissToast(btn) {
+  if (!btn) return;
+  const el = btn.closest('.t');
+  if (!el) return;
+  el.classList.add('to');
+  setTimeout(() => {
+    if (el.parentNode) el.parentNode.removeChild(el);
+  }, 300);
+}
+
+function executeUndo() {
+  const container = document.getElementById('tc');
+  let target = null;
+  for (const el of container.querySelectorAll('.t')) {
+    if (el.dataset.undoKey !== undefined) {
+      target = el;
+      break;
+    }
+  }
+  if (!target) return;
+  const key = parseInt(target.dataset.undoKey);
+  const callback = state.undoStack[key];
+  if (callback) {
+    callback();
+    state.undoStack[key] = null;
+    toast('Rückgängig', 'info', 2000);
+  }
+  dismissToast(target.querySelector('.td'));
+}
+
+function showIntro() {
+  const el = document.getElementById('io');
+  if (el) el.classList.add('open');
+}
+
+function closeIntro() {
+  const el = document.getElementById('io');
+  if (el) el.classList.remove('open');
+  localStorage.setItem('gd', '1');
+}
+
+function toggleSidebar() {
+  state.sidebarOpen = !state.sidebarOpen;
+  document.getElementById('sb')?.classList.toggle('open', state.sidebarOpen);
+  if (state.sidebarOpen) state.sidebarWasManuallyOpened = true;
+}
+
+function openSidebar() {
+  if (!state.sidebarOpen) {
+    state.sidebarOpen = true;
+    document.getElementById('sb')?.classList.add('open');
+  }
+}
+
+function closeSidebar() {
+  if (state.sidebarOpen) {
+    state.sidebarOpen = false;
+    document.getElementById('sb')?.classList.remove('open');
+  }
+}
+
+// =====================================================================
+// Drag
+// =====================================================================
+function startDrag(e, key) {
+  if (!state.editMode) return;
+  const raw = getPointerPos(e);
+  const wrapper = e.currentTarget.closest('.pw');
+  const scale = getScale(wrapper);
+
+  state.dragState = {
+    key,
+    wrapper,
+    startX: raw.x,
+    startY: raw.y,
+    origLeft: state.rooms[key].left,
+    origTop: state.rooms[key].top,
+    element: e.currentTarget,
+    isDragging: false,
+    saved: false
+  };
+
+  e.currentTarget._wasDragged = false;
+
+  document.addEventListener('mousemove', onDragMove);
+  document.addEventListener('mouseup', onDragEnd);
+  document.addEventListener('touchmove', onDragMoveTouch, { passive: false });
+  document.addEventListener('touchend', onDragEndTouch, { passive: false });
+}
+
+function onDragMove(e) {
+  if (!state.dragState) return;
+  const raw = getPointerPos(e);
+  const dx = raw.x - state.dragState.startX;
+  const dy = raw.y - state.dragState.startY;
+
+  if (!state.dragState.isDragging) {
+    if (Math.sqrt(dx * dx + dy * dy) < 3) return;
+    state.dragState.isDragging = true;
+    e.preventDefault();
+    if (state.dragState.element) {
+      state.dragState.element.classList.add('dg');
+      state.dragState.element._wasDragged = true;
+    }
+  } else {
+    if (state.dragState.isDragging) e.preventDefault();
+  }
+
+  const el = document.querySelector(`.ro[data-key="${state.dragState.key}"]`);
+  if (el) {
+    const scale = getScale(state.dragState.wrapper);
+    el.style.left = `${Math.round(state.dragState.origLeft * scale + dx)}px`;
+    el.style.top = `${Math.round(state.dragState.origTop * scale + dy)}px`;
+  }
+}
+
+function onDragMoveTouch(e) {
+  onDragMove(e);
+  if (state.dragState && state.dragState.isDragging) e.preventDefault();
+}
+
+function onDragEndCleanup() {
+  if (!state.dragState) return;
+  document.removeEventListener('mousemove', onDragMove);
+  document.removeEventListener('mouseup', onDragEnd);
+  document.removeEventListener('touchmove', onDragMoveTouch);
+  document.removeEventListener('touchend', onDragEndTouch);
+
+  if (state.dragState.element) state.dragState.element.classList.remove('dg');
+
+  if (!state.dragState.isDragging || state.dragState.saved) {
+    state.dragState = null;
+    return;
+  }
+
+  const el = document.querySelector(`.ro[data-key="${state.dragState.key}"]`);
+  if (!el) {
+    state.dragState = null;
+    return;
+  }
+
+  const scale = getScale(state.dragState.wrapper);
+  const newLeft = Math.round(parseInt(el.style.left) / scale);
+  const newTop = Math.round(parseInt(el.style.top) / scale);
+
+  if (newLeft !== state.dragState.origLeft || newTop !== state.dragState.origTop) {
+    state.rooms[state.dragState.key].left = newLeft;
+    state.rooms[state.dragState.key].top = newTop;
+    state.dragState.saved = true;
+    saveData();
+    render();
+    if (state.selectedRoom && state.rooms[state.selectedRoom]) {
+      renderDetail(state.selectedRoom);
+    }
+  }
+  state.dragState = null;
+}
+
+function onDragEnd() { onDragEndCleanup(); }
+function onDragEndTouch() { onDragEndCleanup(); }
+
+// =====================================================================
+// Resize
+// =====================================================================
+function startResize(e, key, handle) {
+  if (!state.editMode) return;
+  e.preventDefault();
+  e.stopPropagation();
+
+  const raw = getPointerPos(e);
+  const wrapper = e.currentTarget.closest('.pw');
+  const scale = getScale(wrapper);
+  const room = state.rooms[key];
+
+  state.resizeState = {
+    key,
+    handle,
+    wrapper,
+    startX: raw.x,
+    startY: raw.y,
+    origLeft: room.left,
+    origTop: room.top,
+    origWidth: room.width,
+    origHeight: room.height,
+    scale,
+    saved: false
+  };
+
+  const el = e.currentTarget.closest('.ro');
+  if (el) el.classList.add('rs');
+
+  document.addEventListener('mousemove', onResizeMove);
+  document.addEventListener('mouseup', onResizeEnd);
+  document.addEventListener('touchmove', onResizeMoveTouch, { passive: false });
+  document.addEventListener('touchend', onResizeEndTouch, { passive: false });
+}
+
+function onResizeMove(e) {
+  if (!state.resizeState) return;
+  const raw = getPointerPos(e);
+  const scale = getScale(state.resizeState.wrapper);
+  const dx = raw.x - state.resizeState.startX;
+  const dy = raw.y - state.resizeState.startY;
+  const dl = dx / scale;
+  const dt = dy / scale;
+
+  const handle = state.resizeState.handle;
+  let nl = state.resizeState.origLeft;
+  let nt = state.resizeState.origTop;
+  let nw = state.resizeState.origWidth;
+  let nh = state.resizeState.origHeight;
+
+  if (handle.indexOf('e') >= 0) nw = Math.max(20, state.resizeState.origWidth + dl);
+  if (handle.indexOf('w') >= 0) {
+    nw = Math.max(20, state.resizeState.origWidth - dl);
+    nl = state.resizeState.origLeft + state.resizeState.origWidth - nw;
+  }
+  if (handle.indexOf('s') >= 0) nh = Math.max(20, state.resizeState.origHeight + dt);
+  if (handle.indexOf('n') >= 0) {
+    nh = Math.max(20, state.resizeState.origHeight - dt);
+    nt = state.resizeState.origTop + state.resizeState.origHeight - nh;
+  }
+
+  const el = document.querySelector(`.ro[data-key="${state.resizeState.key}"]`);
+  if (el) {
+    el.style.left = `${Math.round(nl * scale)}px`;
+    el.style.top = `${Math.round(nt * scale)}px`;
+    el.style.width = `${Math.round(nw * scale)}px`;
+    el.style.height = `${Math.round(nh * scale)}px`;
+  }
+}
+
+function onResizeMoveTouch(e) {
+  e.preventDefault();
+  onResizeMove(e);
+}
+
+function onResizeEndCleanup() {
+  if (!state.resizeState) return;
+
+  document.removeEventListener('mousemove', onResizeMove);
+  document.removeEventListener('mouseup', onResizeEnd);
+  document.removeEventListener('touchmove', onResizeMoveTouch);
+  document.removeEventListener('touchend', onResizeEndTouch);
+
+  const el = document.querySelector(`.ro[data-key="${state.resizeState.key}"]`);
+  if (el) el.classList.remove('rs');
+
+  const room = state.rooms[state.resizeState.key];
+  if (!el || !room || state.resizeState.saved) {
+    state.resizeState = null;
+    return;
+  }
+
+  const scale = getScale(state.resizeState.wrapper);
+  const nl = Math.round(parseInt(el.style.left) / scale);
+  const nt = Math.round(parseInt(el.style.top) / scale);
+  const nw = Math.round(parseInt(el.style.width) / scale);
+  const nh = Math.round(parseInt(el.style.height) / scale);
+
+  if (!isNaN(nl)) room.left = nl;
+  if (!isNaN(nt)) room.top = nt;
+  if (!isNaN(nw)) room.width = Math.max(20, nw);
+  if (!isNaN(nh)) room.height = Math.max(20, nh);
+
+  state.resizeState.saved = true;
+  saveData();
+  render();
+  if (state.selectedRoom && state.rooms[state.selectedRoom]) {
+    renderDetail(state.selectedRoom);
+  }
+  state.resizeState = null;
+}
+
+function onResizeEnd() { onResizeEndCleanup(); }
+function onResizeEndTouch() { onResizeEndCleanup(); }
+
+// =====================================================================
+// Render
+// =====================================================================
+function render() {
+  updateTabBadges();
+  renderFloor('eg');
+  renderFloor('og');
+}
+
+function renderFloor(floor) {
+  const container = document.getElementById(`${floor}-r`);
+  if (!container) return;
+  container.innerHTML = '';
+
+  const wrapper = document.getElementById(`${floor}-w`);
+  const scale = getScale(wrapper);
+
+  for (const key of Object.keys(state.rooms)) {
+    const room = state.rooms[key];
+    if (room.floor !== floor) continue;
+    container.appendChild(createRoomElement(key, room, scale));
+  }
+}
+
+function createRoomElement(key, room, scale) {
+  const div = document.createElement('div');
+  div.className = `ro${state.selectedRoom === key ? ' sel' : ''}${state.editMode ? ' em' : ''}`;
+  div.style.left = `${Math.round(room.left * scale)}px`;
+  div.style.top = `${Math.round(room.top * scale)}px`;
+  div.style.width = `${Math.round(room.width * scale)}px`;
+  div.style.height = `${Math.round(room.height * scale)}px`;
+  div.setAttribute('data-key', key);
+
+  div.addEventListener('click', (e) => {
+    if (e.currentTarget._wasDragged) return;
+    if (state.editMode) {
+      selectRoomEdit(key);
+      return;
+    }
+    showRoom(key);
+    if (window.innerWidth < 768) openSidebar();
+  });
+
+  div.addEventListener('mousedown', (e) => startDrag(e, key));
+  div.addEventListener('touchstart', (e) => startDrag(e, key), { passive: true });
+
+  // Label
+  const label = document.createElement('div');
+  label.className = 'rl';
+  const progress = taskProgress(room);
+  label.innerHTML = progress.total > 0
+    ? `${escHtml(room.title)}<span class="pm">${progress.percent}%</span>`
+    : escHtml(room.title);
+  div.appendChild(label);
+
+  // Selection dot
+  const sdot = document.createElement('div');
+  sdot.className = 'sd';
+  div.appendChild(sdot);
+
+  // Resize handles
+  createResizeHandles(div, key);
+
+  return div;
+}
+
+function createResizeHandles(element, key) {
+  const handleNames = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
+  for (const handle of handleNames) {
+    const hdl = document.createElement('div');
+    hdl.className = `rh ${handle}`;
+    hdl.addEventListener('mousedown', (ev) => startResize(ev, key, handle));
+    hdl.addEventListener('touchstart', (ev) => startResize(ev, key, handle), { passive: false });
+    hdl.addEventListener('click', (ev) => ev.stopPropagation());
+    element.appendChild(hdl);
+  }
+}
+
+function showRoom(key) {
+  const room = state.rooms[key];
+  if (!room) return;
+  if (room.floor !== state.activeFloor) switchFloor(room.floor);
+  state.selectedRoom = key;
+  state.overview = false;
+  document.getElementById('btnOv')?.classList.remove('active');
+  render();
+  renderDetail(key);
+  scrollToRoom(key);
+  if (window.innerWidth < 768) openSidebar();
+}
+
+function scrollToRoom(key) {
+  const el = document.querySelector(`.ro[data-key="${key}"]`);
+  if (!el) return;
+  setTimeout(() => {
+    const wrapper = el.closest('.pw');
+    if (wrapper) {
+      const mc = document.getElementById('mc');
+      if (mc) {
+        const wr = wrapper.getBoundingClientRect();
+        const cr = mc.getBoundingClientRect();
+        if (wr.bottom > cr.bottom + 20 || wr.top < cr.top - 20) {
+          wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    }
+  }, 100);
+}
+
+// =====================================================================
+// Detail Panel
+// =====================================================================
+function renderDetail(key) {
+  const room = state.rooms[key];
+  if (!room) return;
+
+  const progress = taskProgress(room);
+  const sbBody = document.getElementById('sbBody');
+  if (!sbBody) return;
+
+  let html = buildDetailHeader(key, room);
+  html += buildProgressBar(progress);
+  html += buildTaskSection(key, room, progress);
+  html += buildNoteSection(key, room);
+  html += buildCommentSection(key, room);
+  if (state.editMode) html += buildDeleteSection(key);
+  html += buildLastEditInfo();
+
+  sbBody.innerHTML = html;
+}
+
+function buildDetailHeader(key, room) {
+  return `<div class="rdh">
+    <button class="bb" onclick="showOverview()">←</button>
+    <h3>${escHtml(room.title)}</h3>
+    <span class="rk">${escHtml(key)}</span>
+  </div>`;
+}
+
+function buildProgressBar(progress) {
+  if (progress.total === 0) return '';
+  return `<div style="font-size:13px;color:var(--muted);margin-bottom:2px;">
+    ${progress.done}/${progress.total} Aufgaben (${progress.percent}%)
+  </div>
+  <div class="pbw"><div class="pbf" style="width:${progress.percent}%"></div></div>`;
+}
+
+function buildTaskSection(key, room, progress) {
+  let html = `<div class="is">
+    <h4>Aufgaben${progress.total > 0 ? ` <span class="cnt">${progress.done}/${progress.total}</span>` : ''}</h4>`;
+
+  if (!room.tasks || room.tasks.length === 0) {
+    html += '<p style="font-size:13px;color:var(--muted);margin:0;">Keine Aufgaben.</p>';
+  } else {
+    html += '<div>';
+    for (let i = 0; i < room.tasks.length; i++) {
+      const checked = (room.done || {})[i] || false;
+      html += `<div class="ti${checked ? ' done' : ''}">
+        <input type="checkbox"${checked ? ' checked' : ''} onchange="toggleTask('${key}',${i},this.checked)">
+        <label>${escHtml(room.tasks[i])}</label>
+        ${state.editMode ? `<button class="td" onclick="deleteTask('${key}',${i})">×</button>` : ''}
+      </div>`;
+    }
+    html += '</div>';
+  }
+
+  if (state.editMode) {
+    html += `<div class="atr">
+      <input type="text" id="nti-${key}" placeholder="Neue Aufgabe…" onkeydown="if(event.key==='Enter')addTask('${key}')">
+      <button onclick="addTask('${key}')">+</button>
+    </div>`;
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function buildNoteSection(key, room) {
+  let html = `<div class="is"><h4>Notiz</h4>`;
+  if (state.editMode) {
+    html += `<textarea class="rne" onchange="saveNote('${key}',this.value)">${escHtml(room.note || '')}</textarea>`;
+  } else {
+    html += `<p style="margin:0;font-size:14px;">${escHtml(room.note || 'Keine Notiz.')}</p>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+function buildCommentSection(key, room) {
+  const commentCount = room.comments ? room.comments.length : 0;
+  let html = `<div class="is">
+    <h4>Kommentare${commentCount > 0 ? ` <span class="cnt">${commentCount}</span>` : ''}</h4>
+    <div class="cl">`;
+
+  if (room.comments && room.comments.length > 0) {
+    for (let i = 0; i < room.comments.length; i++) {
+      const timeStr = room.comments[i].time
+        ? new Date(room.comments[i].time).toLocaleString('de-DE')
+        : '';
+      html += `<div class="ci">
+        ${state.editMode ? `<button class="cd" onclick="deleteComment('${key}',${i})">×</button>` : ''}
+        <div class="cm">${timeStr}</div>
+        ${escHtml(room.comments[i].text)}
+      </div>`;
+    }
+  } else {
+    html += '<p style="font-size:13px;color:var(--muted);margin:0;">Keine Kommentare.</p>';
+  }
+
+  html += `</div>
+    <div class="acr">
+      <input type="text" id="nci-${key}" placeholder="Kommentar…" onkeydown="if(event.key==='Enter')addComment('${key}')">
+      <button onclick="addComment('${key}')">Senden</button>
+    </div>
+  </div>`;
+
+  return html;
+}
+
+function buildDeleteSection(key) {
+  return `<div class="is"><button class="drb" onclick="deleteRoom('${key}')">🗑 Löschen</button></div>`;
+}
+
+function buildLastEditInfo() {
+  const delta = Date.now() - state.lastSaveTs;
+  let text;
+  if (delta < 60000) text = 'Gerade eben';
+  else if (delta < 3600000) text = `Vor ${Math.round(delta / 60000)} Min.`;
+  else if (delta < 86400000) text = `Vor ${Math.round(delta / 3600000)} Std.`;
+  else text = new Date(state.lastSaveTs).toLocaleDateString('de-DE');
+
+  return text
+    ? `<div style="margin-top:10px;font-size:11px;color:var(--muted);text-align:center;">${text}</div>`
+    : '';
+}
+
+// =====================================================================
+// Task / Comment Actions
+// =====================================================================
+function toggleTask(key, idx, checked) {
+  const room = state.rooms[key];
+  if (!room) return;
+  if (!room.done) room.done = {};
+  room.done[idx] = checked;
+  saveData();
+  render();
+  renderDetail(key);
+  if (checked) toast('✅ Erledigt!', 'success', 2000);
+}
+
+function addTask(key) {
+  const input = document.getElementById(`nti-${key}`);
+  const text = input?.value?.trim();
+  if (!text) return;
+  if (!state.rooms[key].tasks) state.rooms[key].tasks = [];
+  state.rooms[key].tasks.push(text);
+  saveData();
+  renderDetail(key);
+  input.value = '';
+  input.focus();
+  toast('Aufgabe hinzugefügt', 'success', 1500);
+}
+
+function deleteTask(key, idx) {
+  const room = state.rooms[key];
+  if (!room) return;
+  if (!room.tasks) room.tasks = [];
+  room.tasks.splice(idx, 1);
+  const newDone = {};
+  for (const k of Object.keys(room.done)) {
+    if (!room.done.hasOwnProperty(k)) continue;
+    const ki = parseInt(k);
+    if (ki < idx) newDone[k] = room.done[k];
+    else if (ki > idx) newDone[(ki - 1).toString()] = room.done[k];
+  }
+  room.done = newDone;
+  saveData();
+  renderDetail(key);
+}
+
+function saveNote(key, value) {
+  state.rooms[key].note = value;
+  saveData();
+}
+
+function addComment(key) {
+  const input = document.getElementById(`nci-${key}`);
+  const text = input?.value?.trim();
+  if (!text) return;
+  if (!state.rooms[key].comments) state.rooms[key].comments = [];
+  state.rooms[key].comments.push({ text, time: new Date().toISOString() });
+  saveData();
+  input.value = '';
+  input.focus();
+  renderDetail(key);
+  toast('Kommentar', 'success', 1500);
+}
+
+function deleteComment(key, idx) {
+  if (!state.rooms[key].comments) state.rooms[key].comments = [];
+  state.rooms[key].comments.splice(idx, 1);
+  saveData();
+  renderDetail(key);
+}
+
+function deleteRoom(key) {
+  if (!confirm(`"${state.rooms[key].title}" löschen?`)) return;
+  const backupRoom = deepClone(state.rooms[key]);
+  const backupKey = key;
+  delete state.rooms[key];
+  state.selectedRoom = null;
+  saveData();
+  render();
+  const sbBody = document.getElementById('sbBody');
+  if (sbBody) sbBody.innerHTML = '<p class="hint">👆 Raum antippen</p>';
+  toast(`"${backupRoom.title}" gelöscht`, 'warning', 6000, () => {
+    state.rooms[backupKey] = backupRoom;
+    saveData();
+    render();
+    showRoom(backupKey);
+  });
+}
+
+// =====================================================================
+// Edit Mode
+// =====================================================================
+function setEditMode(enabled) {
+  if (state.editMode === enabled) return;
+  state.editMode = enabled;
+
+  document.getElementById('btnEm')?.classList.toggle('active', enabled);
+  document.getElementById('eb')?.classList.toggle('show', enabled);
+  document.getElementById('mc')?.classList.toggle('ea', enabled);
+  document.querySelectorAll('.ro').forEach(el => el.classList.toggle('em', enabled));
+  document.querySelectorAll('.fa button').forEach(btn => { btn.style.display = enabled ? '' : 'none'; });
+
+  if (enabled) {
+    closeSidebar();
+  } else {
+    if (state.sidebarWasManuallyOpened || state.selectedRoom) openSidebar();
+  }
+
+  if (!enabled && state.selectedRoom && !state.overview) {
+    renderDetail(state.selectedRoom);
+  }
+}
+
+function toggleEditMode() {
+  setEditMode(!state.editMode);
+}
+
+function selectRoomEdit(key) {
+  state.selectedRoom = key;
+  render();
+  if (state.rooms[key]) {
+    renderDetail(key);
+    if (window.innerWidth < 768) openSidebar();
+  }
+}
+
+// =====================================================================
+// Overview
+// =====================================================================
+function showOverview() {
+  if (state.overview) return;
+  state.overview = true;
+  state.selectedRoom = null;
+  document.getElementById('btnOv')?.classList.add('active');
+  render();
+  openSidebar();
+
+  const searchValue = (document.querySelector('.os')?.value || '').toLowerCase();
+
+  let html = '<h3 style="margin:0 0 4px;font-size:16px;">📊 Übersicht</h3>';
+  html += '<div class="osw"><span class="si">🔍</span>';
+  html += `<input type="text" class="os" id="os" placeholder="Räume suchen…" value="${escHtml(searchValue)}" oninput="debouncedSearch()">`;
+  html += '</div><div class="orl">';
+
+  const roomEntries = Object.entries(state.rooms);
+  const filtered = searchValue
+    ? roomEntries.filter(([key, room]) =>
+        room.title.toLowerCase().includes(searchValue) ||
+        key.toLowerCase().includes(searchValue)
+      )
+    : roomEntries;
+
+  if (filtered.length === 0) {
+    html += '<p style="font-size:13px;color:var(--muted);text-align:center;padding:16px 0;">🔍 Keine Räume.</p>';
+  } else {
+    for (const [key, room] of filtered) {
+      const progress = taskProgress(room);
+      const floorLabel = room.floor === 'eg' ? 'EG' : 'OG';
+      html += `<div class="ori" onclick="showRoom('${key}')">
+        <div class="nm">${escHtml(room.title)}<span style="font-size:11px;color:var(--muted);margin-left:4px;">(${floorLabel})</span></div>
+        <div class="pt">${progress.done}/${progress.total} (${progress.percent}%)</div>
+      </div>`;
+    }
+  }
+
+  html += '</div>';
+  const lastEdit = buildLastEditInfo();
+  if (lastEdit) html += lastEdit;
+
+  document.getElementById('sbBody').innerHTML = html;
+}
+
+function debouncedSearch() {
+  if (state.debounceTimer) clearTimeout(state.debounceTimer);
+  state.debounceTimer = setTimeout(() => showOverview(), 200);
+}
+
+// =====================================================================
+// Place Room
+// =====================================================================
+function handlePlanClick(e) {
+  if (!state.isPlacing) return;
+  cancelPlaceNewRoom();
+  document.getElementById('nn').value = '';
+  document.getElementById('am').classList.add('open');
+}
+
+function enablePlaceNewRoom(floor) {
+  if (!state.editMode) return;
+  state.isPlacing = true;
+  state.placeFloor = floor;
+  document.querySelectorAll('.pw').forEach(w => { w.style.cursor = 'crosshair'; });
+  openSidebar();
+  const sbBody = document.getElementById('sbBody');
+  if (sbBody) {
+    sbBody.innerHTML = `<p class="hint"><strong>Neuen Raum setzen</strong><br/>Auf den Grundriss tippen.<br/>
+      <button onclick="cancelPlaceNewRoom()" style="margin-top:8px;background:#ef4444;color:#fff;border:none;padding:8px 16px;border-radius:var(--rs);cursor:pointer;font-size:14px;">Abbrechen</button>
+    </p>`;
+  }
+}
+
+function cancelPlaceNewRoom() {
+  state.isPlacing = false;
+  state.placeFloor = null;
+  document.querySelectorAll('.pw').forEach(w => { w.style.cursor = ''; });
+  const sbBody = document.getElementById('sbBody');
+  if (sbBody) sbBody.innerHTML = '<p class="hint">👆 Raum antippen</p>';
+}
+
+function closeAddModal() {
+  document.getElementById('am').classList.remove('open');
+}
+
+function addRoom() {
+  const title = document.getElementById('nn').value.trim();
+  if (!title) { toast('Name erforderlich', 'error', 3000); return; }
+
+  let key = title.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (!key) key = 'r';
+
+  let i = 1;
+  const baseKey = key;
+  while (state.rooms[key]) {
+    key = baseKey + i;
+    i++;
+  }
+
+  const floor = state.activeFloor;
+  const nativeWidth = NATIVE_WIDTHS[floor] || 1000;
+  let nativeHeight = Math.round(nativeWidth * 0.75);
+
+  const wrapper = document.getElementById(`${floor}-w`);
+  const img = wrapper?.querySelector('img');
+  if (img && img.naturalWidth > 0) {
+    nativeHeight = Math.round(nativeWidth * img.naturalHeight / img.naturalWidth);
+  }
+
+  state.rooms[key] = {
+    title,
+    floor,
+    tasks: [],
+    done: {},
+    note: '',
+    comments: [],
+    left: Math.round((nativeWidth - 200) / 2),
+    top: Math.round((nativeHeight - 140) / 2),
+    width: 200,
+    height: 140
+  };
+
+  saveData();
+  closeAddModal();
+  document.getElementById('nn').value = '';
+  render();
+  showRoom(key);
+  toast(`➕ "${title}"`, 'success', 3000);
+}
+
+// =====================================================================
+// Keyboard Shortcuts
+// =====================================================================
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeAddModal();
+    if (state.overview) {
+      state.overview = false;
+      document.getElementById('btnOv')?.classList.remove('active');
+      const sbBody = document.getElementById('sbBody');
+      if (sbBody) sbBody.innerHTML = '<p class="hint">👆 Raum antippen</p>';
+      render();
+    }
+    if (state.editMode) setEditMode(false);
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+    e.preventDefault();
+    toggleEditMode();
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'o') {
+    e.preventDefault();
+    showOverview();
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    e.preventDefault();
+    saveData();
+    toast('💾 Gespeichert', 'success', 1500);
+  }
+});
+
+// Close modal on outside click
+document.getElementById('am')?.addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeAddModal();
+});
+
+// =====================================================================
+// Init
+// =====================================================================
+document.querySelectorAll('.pw').forEach(w => {
+  w.addEventListener('click', handlePlanClick);
+});
+
+loadData().then(() => {
+  render();
+  const el = document.createElement('div');
+  el.id = 'syncI';
+  document.body.appendChild(el);
+  setSyncStatus('idle');
+  startPolling();
+  if (!localStorage.getItem('gd')) setTimeout(showIntro, 500);
+});
+
+state.sidebarOpen = false;
+document.getElementById('sb')?.classList.toggle('open', state.sidebarOpen);
+
+window.addEventListener('resize', () => { render(); });
+
+document.querySelectorAll('.pw img').forEach(img => {
+  if (img.complete) {
+    render();
+    updateTabBadges();
+  } else {
+    img.addEventListener('load', () => {
+      render();
+      updateTabBadges();
+    });
+  }
+});
