@@ -1189,7 +1189,7 @@ function finishPlaceDraw() {
     i++;
   }
 
-  // Create the room with a default name the user can edit
+  // Create the room with a default name
   state.rooms[key] = {
     title: 'Neuer Raum',
     floor: ps.floor,
@@ -1210,7 +1210,50 @@ function finishPlaceDraw() {
   document.querySelectorAll('.pw').forEach(w => { w.style.cursor = ''; });
   render();
   showRoom(key);
-  toast(`➕ Raum platziert – Name bearbeitbar`, 'success', 3000);
+  // Open rename popup so the user can name the room right away
+  openRenameModal(key);
+}
+
+// =====================================================================
+// Rename Room Modal
+// =====================================================================
+let _renameKey = null;
+
+function openRenameModal(key) {
+  const room = state.rooms[key];
+  if (!room) return;
+  _renameKey = key;
+  const el = document.getElementById('rm');
+  const input = document.getElementById('rn');
+  if (input) {
+    input.value = room.title;
+    input.setAttribute('data-key', key);
+  }
+  if (el) el.classList.add('open');
+  setTimeout(() => {
+    if (input) { input.focus(); input.select(); }
+  }, 100);
+}
+
+function closeRenameModal() {
+  const el = document.getElementById('rm');
+  if (el) el.classList.remove('open');
+  _renameKey = null;
+}
+
+function confirmRename() {
+  const input = document.getElementById('rn');
+  const key = input?.getAttribute('data-key');
+  if (!key || !state.rooms[key]) { closeRenameModal(); return; }
+  const title = input.value.trim();
+  if (!title) { toast('Name darf nicht leer sein', 'error', 2000); return; }
+  const oldTitle = state.rooms[key].title;
+  state.rooms[key].title = title;
+  saveData();
+  closeRenameModal();
+  render();
+  if (state.selectedRoom === key) renderDetail(key);
+  toast(`✏️ "${oldTitle}" → "${title}"`, 'success', 2000);
 }
 
 // =====================================================================
