@@ -80,6 +80,25 @@ function deepClone(obj) {
 }
 
 // =====================================================================
+// Default Room Merge – fügt neue DEFAULT_ROOMS in bestehende Daten ein,
+// ohne vorhandene Räume zu überschreiben. So landen neue Räume aus
+// Code-Updates immer im aktuellen Projekt.
+// =====================================================================
+function mergeDefaultRooms() {
+  let changed = false;
+  for (const [key, defaultRoom] of Object.entries(DEFAULT_ROOMS)) {
+    if (!state.rooms[key]) {
+      state.rooms[key] = deepClone(defaultRoom);
+      changed = true;
+    }
+  }
+  if (changed) {
+    localStorage.setItem('gR', JSON.stringify(state.rooms));
+    render();
+  }
+}
+
+// =====================================================================
 // Sync
 // =====================================================================
 async function loadData() {
@@ -92,13 +111,17 @@ async function loadData() {
   setSyncStatus('idle');
 
   const cloudLoaded = await loadFromCloud();
-  if (cloudLoaded) return;
+  if (cloudLoaded) {
+    mergeDefaultRooms();
+    return;
+  }
 
   const local = localStorage.getItem('gR');
   if (local) {
     try {
       state.rooms = JSON.parse(local);
       ensureAllRooms();
+      mergeDefaultRooms();
       return;
     } catch (e) {
       // fall through to defaults
