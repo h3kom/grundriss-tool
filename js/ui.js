@@ -1,16 +1,31 @@
-// Grundriss Tool – UI-Komponenten (Toast, Sidebar, Modals, Floor-Tabs, Edit-Mode)
-// =====================================================================
+/**
+ * Grundriss Tool – UI-Komponenten
+ * =====================================================================
+ * @module ui
+ * @description Toast, Sidebar, Floor-Switching, Edit-Mode, Modals, Intro.
+ * Reagiert auf State-Events für lose Kopplung.
+ */
 window.GR = window.GR || {};
 
 (function(UI) {
+  'use strict';
+
   const C = window.GR.constants;
   const S = window.GR.state;
   const St = window.GR.storage;
-  const Rdr = window.GR.renderer;
+  const Sync = window.GR.sync;
 
   // ===================================================================
   // Toast
   // ===================================================================
+
+  /**
+   * Zeigt einen Toast-Notification an.
+   * @param {string} message - Nachricht
+   * @param {string} type - 'success' | 'error' | 'warning' | 'info'
+   * @param {number} duration - Anzeigedauer in ms (0 = manuell schließen)
+   * @param {Function} [undoCallback] - Optionale Undo-Funktion
+   */
   function toast(message, type, duration, undoCallback) {
     const container = document.getElementById('tc');
     if (!container) return;
@@ -18,7 +33,7 @@ window.GR = window.GR || {};
     const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
     const el = document.createElement('div');
     el.className = `t t${type[0]}`;
-    let html = `<span>${icons[type] || 'ℹ️'}</span><span>${St.escHtml(message)}</span>`;
+    let html = `<span>${icons[type] || 'ℹ️'}</span><span>${escHtml(message)}</span>`;
     if (undoCallback) {
       html += '<button class="tu" onclick="window.GR.ui.executeUndo()">↩ Rückgängig</button>';
     }
@@ -40,6 +55,10 @@ window.GR = window.GR || {};
     }
   }
 
+  /**
+   * Schließt einen Toast mit Animation.
+   * @param {HTMLElement} toastElement
+   */
   function dismissToast(toastElement) {
     if (!toastElement || !toastElement.classList) return;
     toastElement.classList.add('to');
@@ -48,6 +67,9 @@ window.GR = window.GR || {};
     }, 300);
   }
 
+  /**
+   * Führt eine Undo-Operation aus.
+   */
   function executeUndo() {
     const container = document.getElementById('tc');
     let target = null;
@@ -68,7 +90,7 @@ window.GR = window.GR || {};
     dismissToast(target);
   }
 
-  // Expose toast functions both on UI and on Storage (for storage.js calls)
+  // Expose toast functions
   UI.toast = toast;
   UI.dismissToast = dismissToast;
   UI.executeUndo = executeUndo;
@@ -78,12 +100,19 @@ window.GR = window.GR || {};
   // ===================================================================
   // Sidebar
   // ===================================================================
+
+  /**
+   * Öffnet/schließt die Sidebar.
+   */
   UI.toggleSidebar = function() {
     S.set('sidebarOpen', !S.get('sidebarOpen'));
     document.getElementById('sb')?.classList.toggle('open', S.get('sidebarOpen'));
     if (S.get('sidebarOpen')) S.set('sidebarWasManuallyOpened', true);
   };
 
+  /**
+   * Öffnet die Sidebar, falls geschlossen.
+   */
   UI.openSidebar = function() {
     if (!S.get('sidebarOpen')) {
       S.set('sidebarOpen', true);
@@ -91,6 +120,9 @@ window.GR = window.GR || {};
     }
   };
 
+  /**
+   * Schließt die Sidebar, falls offen.
+   */
   UI.closeSidebar = function() {
     if (S.get('sidebarOpen')) {
       S.set('sidebarOpen', false);
@@ -101,6 +133,11 @@ window.GR = window.GR || {};
   // ===================================================================
   // Floor Switching
   // ===================================================================
+
+  /**
+   * Wechselt zwischen EG und OG.
+   * @param {string} floor - 'eg' | 'og'
+   */
   UI.switchFloor = function(floor) {
     S.set('activeFloor', floor);
     document.querySelectorAll('.floor').forEach(el => el.classList.remove('active'));
@@ -112,12 +149,11 @@ window.GR = window.GR || {};
     document.getElementById(floorId)?.classList.add('active');
     document.getElementById(tabId)?.classList.add('active');
 
-    St.updateTabBadges();
+    Sync.updateTabBadges();
 
     const rooms = S.get('rooms');
     if (S.get('selectedRoom') && rooms[S.get('selectedRoom')] && rooms[S.get('selectedRoom')].floor !== floor) {
       S.set('selectedRoom', null);
-      Rdr.render();
       const sbBody = document.getElementById('sbBody');
       if (sbBody) sbBody.innerHTML = '<p class="hint">👆 Raum antippen</p>';
     }
@@ -126,6 +162,11 @@ window.GR = window.GR || {};
   // ===================================================================
   // Edit Mode
   // ===================================================================
+
+  /**
+   * Setzt den Edit-Mode.
+   * @param {boolean} enabled
+   */
   UI.setEditMode = function(enabled) {
     if (S.get('editMode') === enabled) return;
     S.set('editMode', enabled);
@@ -143,10 +184,14 @@ window.GR = window.GR || {};
     }
 
     if (!enabled && S.get('selectedRoom') && !S.get('overview')) {
-      Rdr.renderDetail(S.get('selectedRoom'));
+      const DetailRdr = window.GR.detailRenderer;
+      if (DetailRdr) DetailRdr.renderDetail(S.get('selectedRoom'));
     }
   };
 
+  /**
+   * Schaltet den Edit-Mode um.
+   */
   UI.toggleEditMode = function() {
     UI.setEditMode(!S.get('editMode'));
   };
@@ -154,8 +199,13 @@ window.GR = window.GR || {};
   // ===================================================================
   // Rename Modal
   // ===================================================================
+
   let _renameKey = null;
 
+  /**
+   * Öffnet den Umbenennen-Dialog.
+   * @param {string} key - Raumschlüssel
+   */
   UI.openRenameModal = function(key) {
     const room = S.get('rooms')[key];
     if (!room) return;
@@ -172,12 +222,18 @@ window.GR = window.GR || {};
     }, 100);
   };
 
+  /**
+   * Schließt den Umbenennen-Dialog.
+   */
   UI.closeRenameModal = function() {
     const el = document.getElementById('rm');
     if (el) el.classList.remove('open');
     _renameKey = null;
   };
 
+  /**
+   * Bestätigt die Umbenennung.
+   */
   UI.confirmRename = function() {
     const input = document.getElementById('rn');
     const key = input?.getAttribute('data-key');
@@ -188,22 +244,50 @@ window.GR = window.GR || {};
     S.get('rooms')[key].title = title;
     St.saveData();
     UI.closeRenameModal();
-    Rdr.render();
-    if (S.get('selectedRoom') === key) Rdr.renderDetail(key);
     toast(`✏️ "${oldTitle}" → "${title}"`, 'success', 2000);
   };
 
   // ===================================================================
   // Intro
   // ===================================================================
+
+  /**
+   * Zeigt den Intro-Dialog.
+   */
   UI.showIntro = function() {
     const el = document.getElementById('io');
     if (el) el.classList.add('open');
   };
 
+  /**
+   * Schließt den Intro-Dialog.
+   */
   UI.closeIntro = function() {
     const el = document.getElementById('io');
     if (el) el.classList.remove('open');
-    localStorage.setItem('gd', '1');
+    localStorage.setItem(C.INTRO_SEEN_KEY, '1');
   };
+
+  // ===================================================================
+  // Event-Abonnement für Edit-Mode
+  // ===================================================================
+  S.subscribe(C.EVT_EDIT_MODE_CHANGED, function(enabled) {
+    // Re-render detail if needed
+    if (!enabled && S.get('selectedRoom') && !S.get('overview')) {
+      const DetailRdr = window.GR.detailRenderer;
+      if (DetailRdr) DetailRdr.renderDetail(S.get('selectedRoom'));
+    }
+  });
+
+  /**
+   * Lokale HTML-Escaping-Hilfe (damit toast keine Abhängigkeit von utils braucht).
+   * @param {string} str
+   * @returns {string}
+   */
+  function escHtml(str) {
+    if (str == null) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
 })(window.GR.ui = window.GR.ui || {});
