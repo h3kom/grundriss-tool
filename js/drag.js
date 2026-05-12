@@ -23,12 +23,11 @@ window.GR = window.GR || {};
     if (!S.get('editMode')) return;
     const raw = D.getPointerPos(e);
     const wrapper = e.currentTarget.closest('.pw');
-    const scale = U.getScale(wrapper);
     const rooms = S.get('rooms');
 
     S.set('dragState', {
-      key,
-      wrapper,
+      key: key,
+      wrapper: wrapper,
       startX: raw.x,
       startY: raw.y,
       origLeft: rooms[key].left,
@@ -58,7 +57,7 @@ window.GR = window.GR || {};
     const dy = raw.y - ds.startY;
 
     if (!ds.isDragging) {
-      if (Math.sqrt(dx * dx + dy * dy) < 3) return;
+      if (Math.sqrt(dx * dx + dy * dy) < C.DRAG_DEAD_ZONE) return;
       ds.isDragging = true;
       e.preventDefault();
       if (ds.element) {
@@ -66,14 +65,15 @@ window.GR = window.GR || {};
         ds.element._wasDragged = true;
       }
     } else {
-      if (ds.isDragging) e.preventDefault();
+      e.preventDefault();
     }
 
-    const el = document.querySelector(`.ro[data-key="${ds.key}"]`);
+    var safeKey = U.escAttr(ds.key);
+    var el = document.querySelector('.ro[data-key="' + safeKey + '"]');
     if (el) {
       const scale = U.getScale(ds.wrapper);
-      el.style.left = `${Math.round(ds.origLeft * scale + dx)}px`;
-      el.style.top = `${Math.round(ds.origTop * scale + dy)}px`;
+      el.style.left = Math.round(ds.origLeft * scale + dx) + 'px';
+      el.style.top = Math.round(ds.origTop * scale + dy) + 'px';
     }
   };
 
@@ -105,15 +105,16 @@ window.GR = window.GR || {};
       return;
     }
 
-    const el = document.querySelector(`.ro[data-key="${ds.key}"]`);
+    var safeKey = U.escAttr(ds.key);
+    var el = document.querySelector('.ro[data-key="' + safeKey + '"]');
     if (!el) {
       S.set('dragState', null);
       return;
     }
 
     const scale = U.getScale(ds.wrapper);
-    const newLeft = Math.round(parseInt(el.style.left) / scale);
-    const newTop = Math.round(parseInt(el.style.top) / scale);
+    const newLeft = Math.round(parseInt(el.style.left, 10) / scale);
+    const newTop = Math.round(parseInt(el.style.top, 10) / scale);
 
     const rooms = S.get('rooms');
     if (newLeft !== ds.origLeft || newTop !== ds.origTop) {

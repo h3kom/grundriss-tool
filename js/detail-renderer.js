@@ -3,6 +3,7 @@
  * =====================================================================
  * @module detailRenderer
  * @description Rendert das Detail-Panel in der Sidebar für einen selektierten Raum.
+ * Verwendet data-action/data-actionEnter/data-actionChange für Event Delegation.
  */
 window.GR = window.GR || {};
 
@@ -18,14 +19,14 @@ window.GR = window.GR || {};
    * @param {string} key - Raumschlüssel
    */
   DR.renderDetail = function(key) {
-    const room = S.get('rooms')[key];
+    var room = S.get('rooms')[key];
     if (!room) return;
 
-    const progress = U.taskProgress(room);
-    const sbBody = document.getElementById('sbBody');
+    var progress = U.taskProgress(room);
+    var sbBody = document.getElementById('sbBody');
     if (!sbBody) return;
 
-    let html = DR.buildDetailHeader(key, room);
+    var html = DR.buildDetailHeader(key, room);
     html += DR.buildProgressBar(progress);
     html += DR.buildTaskSection(key, room, progress);
     html += DR.buildNoteSection(key, room);
@@ -43,12 +44,12 @@ window.GR = window.GR || {};
    * @returns {string} HTML
    */
   DR.buildDetailHeader = function(key, room) {
-    return `<div class="rdh">
-      <button class="bb" onclick="window.GR.overviewRenderer.showOverview()">←</button>
-      <h3>${U.escHtml(room.title)}</h3>
-      <button class="rb" onclick="window.GR.ui.openRenameModal('${key}')" title="Umbenennen">✏️</button>
-      <span class="rk">${U.escHtml(key)}</span>
-    </div>`;
+    return '<div class="rdh">' +
+      '<button class="bb" data-action="show-overview">\u2190</button>' +
+      '<h3>' + U.escHtml(room.title) + '</h3>' +
+      '<button class="rb" data-action="open-rename" data-key="' + U.escAttr(key) + '" title="Umbenennen">\u270F\uFE0F</button>' +
+      '<span class="rk">' + U.escHtml(key) + '</span>' +
+    '</div>';
   };
 
   /**
@@ -58,10 +59,10 @@ window.GR = window.GR || {};
    */
   DR.buildProgressBar = function(progress) {
     if (progress.total === 0) return '';
-    return `<div style="font-size:13px;color:var(--muted);margin-bottom:2px;">
-      ${progress.done}/${progress.total} Aufgaben (${progress.percent}%)
-    </div>
-    <div class="pbw"><div class="pbf" style="width:${progress.percent}%"></div></div>`;
+    return '<div style="font-size:13px;color:var(--muted);margin-bottom:2px;">' +
+      progress.done + '/' + progress.total + ' Aufgaben (' + progress.percent + '%)' +
+    '</div>' +
+    '<div class="pbw"><div class="pbf" style="width:' + progress.percent + '%"></div></div>';
   };
 
   /**
@@ -72,29 +73,31 @@ window.GR = window.GR || {};
    * @returns {string} HTML
    */
   DR.buildTaskSection = function(key, room, progress) {
-    let html = `<div class="is">
-      <h4>Aufgaben${progress.total > 0 ? ` <span class="cnt">${progress.done}/${progress.total}</span>` : ''}</h4>`;
+    var safeKey = U.escAttr(key);
+    var html = '<div class="is">' +
+      '<h4>Aufgaben' + (progress.total > 0 ? ' <span class="cnt">' + progress.done + '/' + progress.total + '</span>' : '') + '</h4>';
 
     if (!room.tasks || room.tasks.length === 0) {
       html += '<p style="font-size:13px;color:var(--muted);margin:0;">Keine Aufgaben.</p>';
     } else {
       html += '<div>';
-      for (let i = 0; i < room.tasks.length; i++) {
-        const checked = (room.done || {})[i] || false;
-        html += `<div class="ti${checked ? ' done' : ''}">
-          <input type="checkbox"${checked ? ' checked' : ''} onchange="window.GR.rooms.toggleTask('${key}',${i},this.checked)">
-          <label>${U.escHtml(room.tasks[i])}</label>
-          ${S.get('editMode') ? `<button class="td" onclick="window.GR.rooms.deleteTask('${key}',${i})">×</button>` : ''}
-        </div>`;
+      for (var i = 0; i < room.tasks.length; i++) {
+        var checked = (room.done || {})[i] || false;
+        html += '<div class="ti' + (checked ? ' done' : '') + '">' +
+          '<input type="checkbox"' + (checked ? ' checked' : '') +
+          ' data-action-change="toggle-task" data-key="' + safeKey + '" data-idx="' + i + '">' +
+          '<label>' + U.escHtml(room.tasks[i]) + '</label>' +
+          (S.get('editMode') ? '<button class="td" data-action="delete-task" data-key="' + safeKey + '" data-idx="' + i + '">\u00D7</button>' : '') +
+        '</div>';
       }
       html += '</div>';
     }
 
     if (S.get('editMode')) {
-      html += `<div class="atr">
-        <input type="text" id="nti-${key}" placeholder="Neue Aufgabe…" onkeydown="if(event.key==='Enter')window.GR.rooms.addTask('${key}')">
-        <button onclick="window.GR.rooms.addTask('${key}')">+</button>
-      </div>`;
+      html += '<div class="atr">' +
+        '<input type="text" id="nti-' + safeKey + '" placeholder="Neue Aufgabe\u2026" data-action-enter="add-task" data-key="' + safeKey + '">' +
+        '<button data-action="add-task" data-key="' + safeKey + '">+</button>' +
+      '</div>';
     }
 
     html += '</div>';
@@ -108,11 +111,12 @@ window.GR = window.GR || {};
    * @returns {string} HTML
    */
   DR.buildNoteSection = function(key, room) {
-    let html = `<div class="is"><h4>Notiz</h4>`;
+    var safeKey = U.escAttr(key);
+    var html = '<div class="is"><h4>Notiz</h4>';
     if (S.get('editMode')) {
-      html += `<textarea class="rne" onchange="window.GR.rooms.saveNote('${key}',this.value)">${U.escHtml(room.note || '')}</textarea>`;
+      html += '<textarea class="rne" data-action-change="save-note" data-key="' + safeKey + '">' + U.escHtml(room.note || '') + '</textarea>';
     } else {
-      html += `<p style="margin:0;font-size:14px;">${U.escHtml(room.note || 'Keine Notiz.')}</p>`;
+      html += '<p style="margin:0;font-size:14px;">' + U.escHtml(room.note || 'Keine Notiz.') + '</p>';
     }
     html += '</div>';
     return html;
@@ -125,32 +129,33 @@ window.GR = window.GR || {};
    * @returns {string} HTML
    */
   DR.buildCommentSection = function(key, room) {
-    const commentCount = room.comments ? room.comments.length : 0;
-    let html = `<div class="is">
-      <h4>Kommentare${commentCount > 0 ? ` <span class="cnt">${commentCount}</span>` : ''}</h4>
-      <div class="cl">`;
+    var safeKey = U.escAttr(key);
+    var commentCount = room.comments ? room.comments.length : 0;
+    var html = '<div class="is">' +
+      '<h4>Kommentare' + (commentCount > 0 ? ' <span class="cnt">' + commentCount + '</span>' : '') + '</h4>' +
+      '<div class="cl">';
 
     if (room.comments && room.comments.length > 0) {
-      for (let i = 0; i < room.comments.length; i++) {
-        const timeStr = room.comments[i].time
+      for (var i = 0; i < room.comments.length; i++) {
+        var timeStr = room.comments[i].time
           ? new Date(room.comments[i].time).toLocaleString('de-DE')
           : '';
-        html += `<div class="ci">
-          ${S.get('editMode') ? `<button class="cd" onclick="window.GR.rooms.deleteComment('${key}',${i})">×</button>` : ''}
-          <div class="cm">${timeStr}</div>
-          ${U.escHtml(room.comments[i].text)}
-        </div>`;
+        html += '<div class="ci">' +
+          (S.get('editMode') ? '<button class="cd" data-action="delete-comment" data-key="' + safeKey + '" data-idx="' + i + '">\u00D7</button>' : '') +
+          '<div class="cm">' + U.escHtml(timeStr) + '</div>' +
+          U.escHtml(room.comments[i].text) +
+        '</div>';
       }
     } else {
       html += '<p style="font-size:13px;color:var(--muted);margin:0;">Keine Kommentare.</p>';
     }
 
-    html += `</div>
-      <div class="acr">
-        <input type="text" id="nci-${key}" placeholder="Kommentar…" onkeydown="if(event.key==='Enter')window.GR.rooms.addComment('${key}')">
-        <button onclick="window.GR.rooms.addComment('${key}')">Senden</button>
-      </div>
-    </div>`;
+    html += '</div>' +
+      '<div class="acr">' +
+        '<input type="text" id="nci-' + safeKey + '" placeholder="Kommentar\u2026" data-action-enter="add-comment" data-key="' + safeKey + '">' +
+        '<button data-action="add-comment" data-key="' + safeKey + '">Senden</button>' +
+      '</div>' +
+    '</div>';
 
     return html;
   };
@@ -161,7 +166,7 @@ window.GR = window.GR || {};
    * @returns {string} HTML
    */
   DR.buildDeleteSection = function(key) {
-    return `<div class="is"><button class="drb" onclick="window.GR.rooms.deleteRoom('${key}')">🗑 Löschen</button></div>`;
+    return '<div class="is"><button class="drb" data-action="delete-room" data-key="' + U.escAttr(key) + '">\uD83D\uDDD1 L\u00F6schen</button></div>';
   };
 
   /**
@@ -169,15 +174,9 @@ window.GR = window.GR || {};
    * @returns {string} HTML
    */
   DR.buildLastEditInfo = function() {
-    const delta = Date.now() - S.get('lastSaveTs');
-    let text;
-    if (delta < 60000) text = 'Gerade eben';
-    else if (delta < 3600000) text = `Vor ${Math.round(delta / 60000)} Min.`;
-    else if (delta < 86400000) text = `Vor ${Math.round(delta / 3600000)} Std.`;
-    else text = new Date(S.get('lastSaveTs')).toLocaleDateString('de-DE');
-
+    var text = U.formatLastEdit(S.get('lastSaveTs'));
     return text
-      ? `<div style="margin-top:10px;font-size:11px;color:var(--muted);text-align:center;">${text}</div>`
+      ? '<div style="margin-top:10px;font-size:11px;color:var(--muted);text-align:center;">' + U.escHtml(text) + '</div>'
       : '';
   };
 })(window.GR.detailRenderer = window.GR.detailRenderer || {});

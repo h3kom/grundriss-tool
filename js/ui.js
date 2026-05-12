@@ -4,6 +4,7 @@
  * @module ui
  * @description Toast, Sidebar, Floor-Switching, Edit-Mode, Modals, Intro.
  * Reagiert auf State-Events für lose Kopplung.
+ * Alle Event-Handler werden via Event Delegation (data-action) gebunden.
  */
 window.GR = window.GR || {};
 
@@ -31,15 +32,31 @@ window.GR = window.GR || {};
     const container = document.getElementById('tc');
     if (!container) return;
 
-    const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+    const icons = { success: '\u2705', error: '\u274C', warning: '\u26A0\uFE0F', info: '\u2139\uFE0F' };
     const el = document.createElement('div');
-    el.className = `t t${type[0]}`;
-    let html = `<span>${icons[type] || 'ℹ️'}</span><span>${U.escHtml(message)}</span>`;
+    el.className = 't t' + type[0];
+
+    const iconSpan = document.createElement('span');
+    iconSpan.textContent = icons[type] || '\u2139\uFE0F';
+    el.appendChild(iconSpan);
+
+    const msgSpan = document.createElement('span');
+    msgSpan.textContent = message;
+    el.appendChild(msgSpan);
+
     if (undoCallback) {
-      html += '<button class="tu" onclick="window.GR.ui.executeUndo()">↩ Rückgängig</button>';
+      const undoBtn = document.createElement('button');
+      undoBtn.className = 'tu';
+      undoBtn.dataset.action = 'execute-undo';
+      undoBtn.textContent = '\u21A9 R\u00FCckg\u00E4ngig';
+      el.appendChild(undoBtn);
     }
-    html += '<button class="td" onclick="window.GR.ui.dismissToast(this.parentElement)">✕</button>';
-    el.innerHTML = html;
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'td';
+    closeBtn.dataset.action = 'dismiss-toast';
+    closeBtn.textContent = '\u2715';
+    el.appendChild(closeBtn);
 
     if (undoCallback) {
       el.dataset.undoKey = S.get('undoStack').length;
@@ -48,11 +65,11 @@ window.GR = window.GR || {};
 
     container.appendChild(el);
     if (duration > 0) {
-      setTimeout(() => UI.dismissToast(el), duration);
+      setTimeout(function() { dismissToast(el); }, duration);
     }
-    while (container.children.length > 3) {
-      const first = container.firstChild;
-      if (first) UI.dismissToast(first);
+    while (container.children.length > C.TOAST_MAX_COUNT) {
+      var first = container.firstChild;
+      if (first) dismissToast(first);
     }
   }
 
@@ -63,7 +80,7 @@ window.GR = window.GR || {};
   function dismissToast(toastElement) {
     if (!toastElement || !toastElement.classList) return;
     toastElement.classList.add('to');
-    setTimeout(() => {
+    setTimeout(function() {
       if (toastElement.parentNode) toastElement.parentNode.removeChild(toastElement);
     }, 300);
   }
@@ -72,21 +89,23 @@ window.GR = window.GR || {};
    * Führt eine Undo-Operation aus.
    */
   function executeUndo() {
-    const container = document.getElementById('tc');
-    let target = null;
-    for (const el of container.querySelectorAll('.t')) {
-      if (el.dataset.undoKey !== undefined) {
-        target = el;
+    var container = document.getElementById('tc');
+    if (!container) return;
+    var target = null;
+    var elements = container.querySelectorAll('.t');
+    for (var i = 0; i < elements.length; i++) {
+      if (elements[i].dataset.undoKey !== undefined) {
+        target = elements[i];
         break;
       }
     }
     if (!target) return;
-    const key = parseInt(target.dataset.undoKey);
-    const callback = S.getUndo(key);
+    var key = parseInt(target.dataset.undoKey);
+    var callback = S.getUndo(key);
     if (callback) {
       callback();
       S.clearUndo(key);
-      toast('Rückgängig', 'info', 2000);
+      toast('R\u00FCckg\u00E4ngig', 'info', 2000);
     }
     dismissToast(target);
   }
@@ -141,22 +160,22 @@ window.GR = window.GR || {};
    */
   UI.switchFloor = function(floor) {
     S.set('activeFloor', floor);
-    document.querySelectorAll('.floor').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.floor-tabs button').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.floor').forEach(function(el) { el.classList.remove('active'); });
+    document.querySelectorAll('.floor-tabs button').forEach(function(el) { el.classList.remove('active'); });
 
-    const floorId = `floor${floor.charAt(0).toUpperCase()}${floor.slice(1)}`;
-    const tabId = `tab${floor.charAt(0).toUpperCase()}${floor.slice(1)}`;
+    var floorId = 'floor' + floor.charAt(0).toUpperCase() + floor.slice(1);
+    var tabId = 'tab' + floor.charAt(0).toUpperCase() + floor.slice(1);
 
     document.getElementById(floorId)?.classList.add('active');
     document.getElementById(tabId)?.classList.add('active');
 
     Sync.updateTabBadges();
 
-    const rooms = S.get('rooms');
+    var rooms = S.get('rooms');
     if (S.get('selectedRoom') && rooms[S.get('selectedRoom')] && rooms[S.get('selectedRoom')].floor !== floor) {
       S.set('selectedRoom', null);
-      const sbBody = document.getElementById('sbBody');
-      if (sbBody) sbBody.innerHTML = '<p class="hint">👆 Raum antippen</p>';
+      var sbBody = document.getElementById('sbBody');
+      if (sbBody) sbBody.innerHTML = '<p class="hint">\uD83D\uDC46 Raum antippen</p>';
     }
   };
 
@@ -175,8 +194,8 @@ window.GR = window.GR || {};
     document.getElementById('btnEm')?.classList.toggle('active', enabled);
     document.getElementById('eb')?.classList.toggle('show', enabled);
     document.getElementById('mc')?.classList.toggle('ea', enabled);
-    document.querySelectorAll('.ro').forEach(el => el.classList.toggle('em', enabled));
-    document.querySelectorAll('.fa button').forEach(btn => { btn.style.display = enabled ? '' : 'none'; });
+    document.querySelectorAll('.ro').forEach(function(el) { el.classList.toggle('em', enabled); });
+    document.querySelectorAll('.fa button').forEach(function(btn) { btn.style.display = enabled ? '' : 'none'; });
 
     if (enabled) {
       UI.closeSidebar();
@@ -185,7 +204,7 @@ window.GR = window.GR || {};
     }
 
     if (!enabled && S.get('selectedRoom') && !S.get('overview')) {
-      const DetailRdr = window.GR.detailRenderer;
+      var DetailRdr = window.GR.detailRenderer;
       if (DetailRdr) DetailRdr.renderDetail(S.get('selectedRoom'));
     }
   };
@@ -202,7 +221,7 @@ window.GR = window.GR || {};
   // ===================================================================
 
   /** @type {Function|null} Aktueller Confirm-Callback */
-  let _confirmCallback = null;
+  var _confirmCallback = null;
 
   /**
    * Zeigt einen modalen Bestätigungsdialog an.
@@ -211,17 +230,35 @@ window.GR = window.GR || {};
    */
   UI.confirm = function(message, onConfirm) {
     _confirmCallback = onConfirm;
-    const body = document.getElementById('sbBody');
-    if (body) {
-      body.innerHTML = `
-        <div class="confirm-dialog">
-          <p>${U.escHtml(message)}</p>
-          <div class="ma" style="margin-top:16px">
-            <button onclick="window.GR.ui.cancelConfirm()">Abbrechen</button>
-            <button class="p" onclick="window.GR.ui.executeConfirm()">Löschen</button>
-          </div>
-        </div>`;
-    }
+    var body = document.getElementById('sbBody');
+    if (!body) return;
+
+    body.innerHTML = '';
+
+    var dialog = document.createElement('div');
+    dialog.className = 'confirm-dialog';
+
+    var p = document.createElement('p');
+    p.textContent = message;
+    dialog.appendChild(p);
+
+    var actions = document.createElement('div');
+    actions.className = 'ma';
+    actions.style.marginTop = '16px';
+
+    var cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Abbrechen';
+    cancelBtn.dataset.action = 'cancel-confirm';
+    actions.appendChild(cancelBtn);
+
+    var confirmBtn = document.createElement('button');
+    confirmBtn.className = 'p';
+    confirmBtn.textContent = 'L\u00F6schen';
+    confirmBtn.dataset.action = 'execute-confirm';
+    actions.appendChild(confirmBtn);
+
+    dialog.appendChild(actions);
+    body.appendChild(dialog);
   };
 
   /**
@@ -230,8 +267,8 @@ window.GR = window.GR || {};
   UI.executeConfirm = function() {
     if (_confirmCallback) _confirmCallback();
     _confirmCallback = null;
-    const sbBody = document.getElementById('sbBody');
-    if (sbBody) sbBody.innerHTML = '<p class="hint">👆 Raum antippen</p>';
+    var sbBody = document.getElementById('sbBody');
+    if (sbBody) sbBody.innerHTML = '<p class="hint">\uD83D\uDC46 Raum antippen</p>';
   };
 
   /**
@@ -239,32 +276,32 @@ window.GR = window.GR || {};
    */
   UI.cancelConfirm = function() {
     _confirmCallback = null;
-    const sbBody = document.getElementById('sbBody');
-    if (sbBody) sbBody.innerHTML = '<p class="hint">👆 Raum antippen</p>';
+    var sbBody = document.getElementById('sbBody');
+    if (sbBody) sbBody.innerHTML = '<p class="hint">\uD83D\uDC46 Raum antippen</p>';
   };
 
   // ===================================================================
   // Rename Modal
   // ===================================================================
 
-  let _renameKey = null;
+  var _renameKey = null;
 
   /**
    * Öffnet den Umbenennen-Dialog.
    * @param {string} key - Raumschlüssel
    */
   UI.openRenameModal = function(key) {
-    const room = S.get('rooms')[key];
+    var room = S.get('rooms')[key];
     if (!room) return;
     _renameKey = key;
-    const el = document.getElementById('rm');
-    const input = document.getElementById('rn');
+    var el = document.getElementById('rm');
+    var input = document.getElementById('rn');
     if (input) {
       input.value = room.title;
       input.setAttribute('data-key', key);
     }
     if (el) el.classList.add('open');
-    setTimeout(() => {
+    setTimeout(function() {
       if (input) { input.focus(); input.select(); }
     }, 100);
   };
@@ -273,7 +310,7 @@ window.GR = window.GR || {};
    * Schließt den Umbenennen-Dialog.
    */
   UI.closeRenameModal = function() {
-    const el = document.getElementById('rm');
+    var el = document.getElementById('rm');
     if (el) el.classList.remove('open');
     _renameKey = null;
   };
@@ -282,16 +319,16 @@ window.GR = window.GR || {};
    * Bestätigt die Umbenennung.
    */
   UI.confirmRename = function() {
-    const input = document.getElementById('rn');
-    const key = input?.getAttribute('data-key');
+    var input = document.getElementById('rn');
+    var key = input?.getAttribute('data-key');
     if (!key || !S.get('rooms')[key]) { UI.closeRenameModal(); return; }
-    const title = input.value.trim();
+    var title = input.value.trim();
     if (!title) { toast('Name darf nicht leer sein', 'error', 2000); return; }
-    const oldTitle = S.get('rooms')[key].title;
+    var oldTitle = S.get('rooms')[key].title;
     S.get('rooms')[key].title = title;
     St.saveData();
     UI.closeRenameModal();
-    toast(`✏️ "${oldTitle}" → "${title}"`, 'success', 2000);
+    toast('\u270F\uFE0F "' + oldTitle + '" \u2192 "' + title + '"', 'success', 2000);
   };
 
   // ===================================================================
@@ -302,7 +339,7 @@ window.GR = window.GR || {};
    * Zeigt den Intro-Dialog.
    */
   UI.showIntro = function() {
-    const el = document.getElementById('io');
+    var el = document.getElementById('io');
     if (el) el.classList.add('open');
   };
 
@@ -310,20 +347,174 @@ window.GR = window.GR || {};
    * Schließt den Intro-Dialog.
    */
   UI.closeIntro = function() {
-    const el = document.getElementById('io');
+    var el = document.getElementById('io');
     if (el) el.classList.remove('open');
     localStorage.setItem(C.INTRO_SEEN_KEY, '1');
   };
 
   // ===================================================================
+  // Event Delegation (data-action)
+  // ===================================================================
+
+  /**
+   * Zentrale Event-Delegation für alle data-action-Buttons.
+   * Wird auf document-Ebene registriert, sodass auch dynamisch
+   * erzeugte Buttons (via innerHTML) korrekt behandelt werden.
+   */
+  function setupEventDelegation() {
+    // Click-Event-Delegation
+    document.addEventListener('click', function(e) {
+      var target = e.target.closest('[data-action]');
+      if (!target) return;
+
+      var action = target.dataset.action;
+      switch (action) {
+        case 'toggle-edit-mode':
+          UI.toggleEditMode();
+          break;
+        case 'switch-floor':
+          UI.switchFloor(target.dataset.floor);
+          break;
+        case 'place-new-room':
+          var I = window.GR.interaction;
+          if (I && I.enablePlaceNewRoom) I.enablePlaceNewRoom(target.dataset.floor);
+          break;
+        case 'cancel-place':
+          var PR = window.GR.placeRoom;
+          if (PR && PR.cancelPlaceNewRoom) PR.cancelPlaceNewRoom();
+          break;
+        case 'toggle-sidebar':
+          UI.toggleSidebar();
+          break;
+        case 'show-overview':
+          var OR = window.GR.overviewRenderer;
+          if (OR) OR.showOverview();
+          break;
+        case 'close-intro':
+          UI.closeIntro();
+          break;
+        case 'close-rename':
+          UI.closeRenameModal();
+          break;
+        case 'confirm-rename':
+          UI.confirmRename();
+          break;
+        case 'execute-confirm':
+          UI.executeConfirm();
+          break;
+        case 'cancel-confirm':
+          UI.cancelConfirm();
+          break;
+        case 'dismiss-toast':
+          dismissToast(target.parentElement);
+          break;
+        case 'execute-undo':
+          executeUndo();
+          break;
+        case 'show-room':
+          var Rdr = window.GR.renderer;
+          var roomKey = target.dataset.key;
+          if (Rdr && roomKey) Rdr.showRoom(roomKey);
+          break;
+        case 'open-rename':
+          UI.openRenameModal(target.dataset.key);
+          break;
+        case 'delete-task':
+          var Rooms = window.GR.rooms;
+          if (Rooms && target.dataset.key) Rooms.deleteTask(target.dataset.key, parseInt(target.dataset.idx));
+          break;
+        case 'add-task':
+          var Rooms2 = window.GR.rooms;
+          if (Rooms2 && target.dataset.key) Rooms2.addTask(target.dataset.key);
+          break;
+        case 'delete-comment':
+          var Rooms3 = window.GR.rooms;
+          if (Rooms3 && target.dataset.key) Rooms3.deleteComment(target.dataset.key, parseInt(target.dataset.idx));
+          break;
+        case 'add-comment':
+          var Rooms4 = window.GR.rooms;
+          if (Rooms4 && target.dataset.key) Rooms4.addComment(target.dataset.key);
+          break;
+        case 'delete-room':
+          var Rooms5 = window.GR.rooms;
+          if (Rooms5 && target.dataset.key) Rooms5.deleteRoom(target.dataset.key);
+          break;
+      }
+    });
+
+    // Keydown-Delegation für Rename-Input
+    document.addEventListener('keydown', function(e) {
+      if (e.target.id === 'rn' && e.key === 'Enter') {
+        e.preventDefault();
+        UI.confirmRename();
+      }
+    });
+
+    // Keydown-Delegation für dynamische Inputs (Aufgaben, Kommentare, Suche)
+    document.addEventListener('keydown', function(e) {
+      if (e.key !== 'Enter') return;
+
+      var target = e.target;
+      var action = target.dataset.actionEnter;
+      if (!action) return;
+
+      var key = target.dataset.key;
+      var R = window.GR.rooms;
+
+      switch (action) {
+        case 'add-task':
+          if (R && key) R.addTask(key);
+          break;
+        case 'add-comment':
+          if (R && key) R.addComment(key);
+          break;
+        case 'search-overview':
+          var OR = window.GR.overviewRenderer;
+          if (OR) OR.debouncedSearch();
+          break;
+      }
+    });
+
+    // Change-Delegation für Checkboxen und Textareas
+    document.addEventListener('change', function(e) {
+      var target = e.target;
+      var action = target.dataset.actionChange;
+      if (!action) return;
+
+      var key = target.dataset.key;
+      var idx = target.dataset.idx !== undefined ? parseInt(target.dataset.idx) : undefined;
+      var R = window.GR.rooms;
+
+      switch (action) {
+        case 'toggle-task':
+          if (R && key && idx !== undefined) R.toggleTask(key, idx, target.checked);
+          break;
+        case 'save-note':
+          if (R && key) R.saveNote(key, target.value);
+          break;
+      }
+    });
+
+    // Input-Delegation für Suche
+    document.addEventListener('input', function(e) {
+      if (e.target.classList.contains('os')) {
+        var OR = window.GR.overviewRenderer;
+        if (OR) OR.debouncedSearch();
+      }
+    });
+  }
+
+  // ===================================================================
   // Event-Abonnement für Edit-Mode
   // ===================================================================
   S.subscribe(C.EVT_EDIT_MODE_CHANGED, function(enabled) {
-    // Re-render detail if needed
     if (!enabled && S.get('selectedRoom') && !S.get('overview')) {
-      const DetailRdr = window.GR.detailRenderer;
+      var DetailRdr = window.GR.detailRenderer;
       if (DetailRdr) DetailRdr.renderDetail(S.get('selectedRoom'));
     }
   });
+
+  // Event Delegation beim ersten Aufruf initialisieren
+  setupEventDelegation();
 
 })(window.GR.ui = window.GR.ui || {});

@@ -3,6 +3,7 @@
  * =====================================================================
  * @module overviewRenderer
  * @description Rendert die Übersichts-Ansicht mit Suchfunktion in der Sidebar.
+ * Verwendet data-action für Event Delegation.
  */
 window.GR = window.GR || {};
 
@@ -23,7 +24,7 @@ window.GR = window.GR || {};
     document.getElementById('btnOv')?.classList.add('active');
     S.notify(C.EVT_ROOMS_CHANGED);
 
-    const UI = window.GR.ui;
+    var UI = window.GR.ui;
     if (UI) UI.openSidebar();
     OR.renderOverviewContent();
   };
@@ -32,32 +33,35 @@ window.GR = window.GR || {};
    * Rendert den Inhalt der Übersicht.
    */
   OR.renderOverviewContent = function() {
-    const searchValue = (document.querySelector('.os')?.value || '').toLowerCase();
+    var searchInput = document.querySelector('.os');
+    var searchValue = searchInput ? searchInput.value.toLowerCase() : '';
 
-    let html = '<h3 style="margin:0 0 4px;font-size:16px;">📊 Übersicht</h3>';
-    html += '<div class="osw"><span class="si">🔍</span>';
-    html += `<input type="text" class="os" id="os" placeholder="Räume suchen…" value="${U.escHtml(searchValue)}" oninput="window.GR.overviewRenderer.debouncedSearch()">`;
+    var html = '<h3 style="margin:0 0 4px;font-size:16px;">\uD83D\uDCCA \u00DCbersicht</h3>';
+    html += '<div class="osw"><span class="si">\uD83D\uDD0D</span>';
+    html += '<input type="text" class="os" id="os" placeholder="R\u00E4ume suchen\u2026" value="' + U.escAttr(searchValue) + '">';
     html += '</div><div class="orl">';
 
-    const rooms = S.get('rooms');
-    const roomEntries = Object.entries(rooms);
-    const filtered = searchValue
-      ? roomEntries.filter(([key, room]) =>
-          room.title.toLowerCase().includes(searchValue) ||
-          key.toLowerCase().includes(searchValue)
-        )
+    var rooms = S.get('rooms');
+    var roomEntries = Object.entries(rooms);
+    var filtered = searchValue
+      ? roomEntries.filter(function(entry) {
+          return entry[1].title.toLowerCase().includes(searchValue) ||
+            entry[0].toLowerCase().includes(searchValue);
+        })
       : roomEntries;
 
     if (filtered.length === 0) {
-      html += '<p style="font-size:13px;color:var(--muted);text-align:center;padding:16px 0;">🔍 Keine Räume.</p>';
+      html += '<p style="font-size:13px;color:var(--muted);text-align:center;padding:16px 0;">\uD83D\uDD0D Keine R\u00E4ume.</p>';
     } else {
-      for (const [key, room] of filtered) {
-        const progress = U.taskProgress(room);
-        const floorLabel = room.floor === 'eg' ? 'EG' : 'OG';
-        html += `<div class="ori" onclick="window.GR.renderer.showRoom('${key}')">
-          <div class="nm">${U.escHtml(room.title)}<span style="font-size:11px;color:var(--muted);margin-left:4px;">(${floorLabel})</span></div>
-          <div class="pt">${progress.done}/${progress.total} (${progress.percent}%)</div>
-        </div>`;
+      for (var i = 0; i < filtered.length; i++) {
+        var key = filtered[i][0];
+        var room = filtered[i][1];
+        var progress = U.taskProgress(room);
+        var floorLabel = room.floor === 'eg' ? 'EG' : 'OG';
+        html += '<div class="ori" data-action="show-room" data-key="' + U.escAttr(key) + '">' +
+          '<div class="nm">' + U.escHtml(room.title) + '<span style="font-size:11px;color:var(--muted);margin-left:4px;">(' + floorLabel + ')</span></div>' +
+          '<div class="pt">' + progress.done + '/' + progress.total + ' (' + progress.percent + '%)</div>' +
+        '</div>';
       }
     }
 
@@ -68,11 +72,11 @@ window.GR = window.GR || {};
   };
 
   /**
-   * Debounced search (wrapped for onclick).
+   * Debounced search (wrapped for input delegation).
    */
   OR.debouncedSearch = function() {
     if (S.get('debounceTimer')) clearTimeout(S.get('debounceTimer'));
-    S.set('debounceTimer', setTimeout(() => OR.renderOverviewContent(), 200));
+    S.set('debounceTimer', setTimeout(function() { OR.renderOverviewContent(); }, C.SEARCH_DEBOUNCE));
   };
 
   /**
@@ -80,15 +84,9 @@ window.GR = window.GR || {};
    * @returns {string} HTML
    */
   OR.buildLastEditInfo = function() {
-    const delta = Date.now() - S.get('lastSaveTs');
-    let text;
-    if (delta < 60000) text = 'Gerade eben';
-    else if (delta < 3600000) text = `Vor ${Math.round(delta / 60000)} Min.`;
-    else if (delta < 86400000) text = `Vor ${Math.round(delta / 3600000)} Std.`;
-    else text = new Date(S.get('lastSaveTs')).toLocaleDateString('de-DE');
-
+    var text = U.formatLastEdit(S.get('lastSaveTs'));
     return text
-      ? `<div style="margin-top:10px;font-size:11px;color:var(--muted);text-align:center;">${text}</div>`
+      ? '<div style="margin-top:10px;font-size:11px;color:var(--muted);text-align:center;">' + U.escHtml(text) + '</div>'
       : '';
   };
 })(window.GR.overviewRenderer = window.GR.overviewRenderer || {});

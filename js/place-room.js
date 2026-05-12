@@ -28,10 +28,10 @@ window.GR = window.GR || {};
     if (UI) UI.closeSidebar();
     const sbBody = document.getElementById('sbBody');
     if (sbBody) {
-      sbBody.innerHTML = `<p class="hint"><strong>Neuen Raum platzieren</strong><br/>
-        👆 Auf den Grundriss tippen & ziehen um die Größe festzulegen.<br/>
-        <button onclick="window.GR.placeRoom.cancelPlaceNewRoom()" style="margin-top:8px;background:#ef4444;color:#fff;border:none;padding:8px 16px;border-radius:var(--rs);cursor:pointer;font-size:14px;">Abbrechen</button>
-      </p>`;
+      sbBody.innerHTML = '<p class="hint"><strong>Neuen Raum platzieren</strong><br/>' +
+        '\uD83D\uDC46 Auf den Grundriss tippen & ziehen um die Gr\u00F6\u00DFe festzulegen.<br/>' +
+        '<button data-action="cancel-place" style="margin-top:8px;background:#ef4444;color:#fff;border:none;padding:8px 16px;border-radius:var(--rs);cursor:pointer;font-size:14px;">Abbrechen</button>' +
+      '</p>';
     }
   };
 

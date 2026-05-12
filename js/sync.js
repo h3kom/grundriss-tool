@@ -29,6 +29,8 @@ window.GR = window.GR || {};
    */
   Sync.startPolling = function() {
     if (S.get('pollInterval')) clearInterval(S.get('pollInterval'));
+    var syncErrors = 0;
+    var MAX_SYNC_ERRORS = 5;
     const interval = setInterval(async () => {
       // Nicht synchen wenn offline
       if (!isOnline()) {
@@ -54,8 +56,23 @@ window.GR = window.GR || {};
             Sync.setSyncStatus('synced');
           }
         }
+        syncErrors = 0;
       } catch (e) {
-        if (S.get('syncStatus') !== 'error') Sync.setSyncStatus('error');
+        syncErrors++;
+        console.warn('[sync] Polling error (' + syncErrors + '/' + MAX_SYNC_ERRORS + '):', e.message || e);
+        if (syncErrors >= MAX_SYNC_ERRORS) {
+          Sync.pausePolling();
+          Sync.setSyncStatus('error');
+          var UI = window.GR.ui;
+          if (UI && UI.toast) UI.toast('Sync-Fehler: Verbindung verloren', 'error', 5000);
+          // Retry nach 30 Sekunden
+          setTimeout(function() {
+            syncErrors = 0;
+            Sync.resumePolling();
+          }, 30000);
+        } else if (S.get('syncStatus') !== 'error') {
+          Sync.setSyncStatus('error');
+        }
       }
     }, C.SYNC_INTERVAL);
     S.set('pollInterval', interval);

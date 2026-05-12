@@ -92,9 +92,9 @@ window.GR = window.GR || {};
 
     // Debounced Cloud-Sync
     if (S.get('saveTimeout')) clearTimeout(S.get('saveTimeout'));
-    const timeout = setTimeout(() => {
+    const timeout = setTimeout(function() {
       Sync.saveToCloud();
-    }, 500);
+    }, C.CLOUD_SYNC_DEBOUNCE);
     S.set('saveTimeout', timeout);
   };
 
@@ -106,7 +106,11 @@ window.GR = window.GR || {};
   St.saveToLocal = function() {
     const now = Date.now();
     S.set('lastSaveTs', now);
-    localStorage.setItem(C.LOCAL_STORAGE_KEY, JSON.stringify(S.get('rooms')));
+    try {
+      localStorage.setItem(C.LOCAL_STORAGE_KEY, JSON.stringify(S.get('rooms')));
+    } catch (e) {
+      console.error('[storage] localStorage save failed:', e.message || e);
+    }
   };
 
   /**

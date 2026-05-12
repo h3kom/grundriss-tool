@@ -31,16 +31,16 @@ window.GR = window.GR || {};
     const room = S.get('rooms')[key];
 
     S.set('resizeState', {
-      key,
-      handle,
-      wrapper,
+      key: key,
+      handle: handle,
+      wrapper: wrapper,
       startX: raw.x,
       startY: raw.y,
       origLeft: room.left,
       origTop: room.top,
       origWidth: room.width,
       origHeight: room.height,
-      scale,
+      scale: scale,
       saved: false
     });
 
@@ -68,10 +68,10 @@ window.GR = window.GR || {};
     const dt = dy / scale;
 
     const handle = rs.handle;
-    let nl = rs.origLeft;
-    let nt = rs.origTop;
-    let nw = rs.origWidth;
-    let nh = rs.origHeight;
+    var nl = rs.origLeft;
+    var nt = rs.origTop;
+    var nw = rs.origWidth;
+    var nh = rs.origHeight;
 
     if (handle.indexOf('e') >= 0) nw = Math.max(C.MIN_ROOM_SIZE, rs.origWidth + dl);
     if (handle.indexOf('w') >= 0) {
@@ -84,12 +84,13 @@ window.GR = window.GR || {};
       nt = rs.origTop + rs.origHeight - nh;
     }
 
-    const el = document.querySelector(`.ro[data-key="${rs.key}"]`);
+    var safeKey = U.escAttr(rs.key);
+    var el = document.querySelector('.ro[data-key="' + safeKey + '"]');
     if (el) {
-      el.style.left = `${Math.round(nl * scale)}px`;
-      el.style.top = `${Math.round(nt * scale)}px`;
-      el.style.width = `${Math.round(nw * scale)}px`;
-      el.style.height = `${Math.round(nh * scale)}px`;
+      el.style.left = Math.round(nl * scale) + 'px';
+      el.style.top = Math.round(nt * scale) + 'px';
+      el.style.width = Math.round(nw * scale) + 'px';
+      el.style.height = Math.round(nh * scale) + 'px';
     }
   };
 
@@ -114,7 +115,8 @@ window.GR = window.GR || {};
     document.removeEventListener('touchmove', RS.onResizeMoveTouch);
     document.removeEventListener('touchend', RS.onResizeEndTouch);
 
-    const el = document.querySelector(`.ro[data-key="${rs.key}"]`);
+    var safeKey = U.escAttr(rs.key);
+    var el = document.querySelector('.ro[data-key="' + safeKey + '"]');
     if (el) el.classList.remove('rs');
 
     const room = S.get('rooms')[rs.key];
@@ -124,10 +126,10 @@ window.GR = window.GR || {};
     }
 
     const scale = U.getScale(rs.wrapper);
-    const nl = Math.round(parseInt(el.style.left) / scale);
-    const nt = Math.round(parseInt(el.style.top) / scale);
-    const nw = Math.round(parseInt(el.style.width) / scale);
-    const nh = Math.round(parseInt(el.style.height) / scale);
+    const nl = Math.round(parseInt(el.style.left, 10) / scale);
+    const nt = Math.round(parseInt(el.style.top, 10) / scale);
+    const nw = Math.round(parseInt(el.style.width, 10) / scale);
+    const nh = Math.round(parseInt(el.style.height, 10) / scale);
 
     if (!isNaN(nl)) room.left = nl;
     if (!isNaN(nt)) room.top = nt;

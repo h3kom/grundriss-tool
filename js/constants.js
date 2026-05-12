@@ -56,4 +56,27 @@ window.GR = window.GR || {};
 
   /** @const {string} Event-Name bei Sync-Status */
   C.EVT_SYNC_STATUS_CHANGED = 'syncStatusChanged';
+
+  /** @const {number} Drag-Deadzone in px bevor Drag aktiviert wird */
+  C.DRAG_DEAD_ZONE = 3;
+
+  /** @const {string[]} Handle-Richtungen für Resize-Griffe */
+  C.HANDLE_DIRECTIONS = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
+
+  /** @const {number} Cache-Gültigkeit für Skalierungsfaktor in ms */
+  C.SCALE_CACHE_TTL = 500;
+
+  /** @const {number} Debounce-Zeit für Cloud-Sync in ms */
+  C.CLOUD_SYNC_DEBOUNCE = 500;
+
+  /** @const {number} Maximale Anzahl gleichzeitig sichtbarer Toasts */
+  C.TOAST_MAX_COUNT = 3;
+
+  /** @const {number} Debounce-Zeit für Sucheingabe in ms */
+  C.SEARCH_DEBOUNCE = 200;
+
+  /** @const {number} Schwellwerte für "Zuletzt bearbeitet"-Anzeige in ms */
+  C.TIME_THRESHOLD_MINUTE = 60000;
+  C.TIME_THRESHOLD_HOUR = 3600000;
+  C.TIME_THRESHOLD_DAY = 86400000;
 })(window.GR.constants = window.GR.constants || {});
