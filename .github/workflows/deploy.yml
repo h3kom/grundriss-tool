@@ -9,19 +9,28 @@ permissions:
 
 jobs:
   deploy-prod:
-    name: Prod → /
+    name: Prod → /prod/
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy Prod to root
+      - name: Generate prod config from secrets
+        run: |
+          cat > config.local.js << 'EOF'
+          window._GR_CONFIG = {
+            SUPABASE_URL: '${{ secrets.PROD_SUPABASE_URL }}',
+            SUPABASE_ANON_KEY: '${{ secrets.PROD_SUPABASE_ANON_KEY }}'
+          };
+          EOF
+
+      - name: Deploy Prod to /prod/
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./
           publish_branch: gh-pages
-          destination_dir: .
+          destination_dir: prod
           keep_files: true
 
   deploy-dev:
