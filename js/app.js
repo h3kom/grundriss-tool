@@ -1,13 +1,24 @@
-// Grundriss Tool – App-Init & Zusammenschluss
-// =====================================================================
+/**
+ * Grundriss Tool – App-Init & Zusammenschluss
+ * =====================================================================
+ * @module app
+ * @description Initialisiert die Anwendung, registriert Keyboard-Shortcuts
+ * und verbindet alle Module.
+ */
 window.GR = window.GR || {};
 
 (function(App) {
+  'use strict';
+
+  const C = window.GR.constants;
   const S = window.GR.state;
   const St = window.GR.storage;
   const Rdr = window.GR.renderer;
   const UI = window.GR.ui;
   const I = window.GR.interaction;
+  const PR = window.GR.placeRoom;
+  const OR = window.GR.overviewRenderer;
+  const Sync = window.GR.sync;
 
   // ===================================================================
   // Keyboard Shortcuts
@@ -15,7 +26,7 @@ window.GR = window.GR || {};
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       if (S.get('isPlacing')) {
-        I.cancelPlaceNewRoom();
+        if (PR && PR.cancelPlaceNewRoom) PR.cancelPlaceNewRoom();
         return;
       }
       if (S.get('overview')) {
@@ -33,7 +44,7 @@ window.GR = window.GR || {};
     }
     if ((e.ctrlKey || e.metaKey) && e.key === 'o') {
       e.preventDefault();
-      Rdr.showOverview();
+      if (OR) OR.showOverview();
     }
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
       e.preventDefault();
@@ -48,8 +59,12 @@ window.GR = window.GR || {};
   App.init = async function() {
     // Set up plan interaction: drawing new rooms via mousedown/touchstart
     document.querySelectorAll('.pw').forEach(w => {
-      w.addEventListener('mousedown', I.startPlaceDraw);
-      w.addEventListener('touchstart', I.startPlaceDraw, { passive: false });
+      w.addEventListener('mousedown', function(e) {
+        if (PR && PR.startPlaceDraw) PR.startPlaceDraw(e);
+      });
+      w.addEventListener('touchstart', function(e) {
+        if (PR && PR.startPlaceDraw) PR.startPlaceDraw(e);
+      }, { passive: false });
     });
 
     await St.loadData();
@@ -62,11 +77,11 @@ window.GR = window.GR || {};
       el.id = 'syncI';
       document.body.appendChild(el);
     }
-    St.setSyncStatus('idle');
-    St.startPolling();
+    Sync.setSyncStatus('idle');
+    Sync.startPolling();
 
     // Show intro if first visit
-    if (!localStorage.getItem('gd')) setTimeout(UI.showIntro, 500);
+    if (!localStorage.getItem(C.INTRO_SEEN_KEY)) setTimeout(UI.showIntro, 500);
 
     // Sidebar default state
     S.set('sidebarOpen', false);
@@ -79,11 +94,11 @@ window.GR = window.GR || {};
     document.querySelectorAll('.pw img').forEach(img => {
       if (img.complete) {
         Rdr.render();
-        St.updateTabBadges();
+        Sync.updateTabBadges();
       } else {
         img.addEventListener('load', () => {
           Rdr.render();
-          St.updateTabBadges();
+          Sync.updateTabBadges();
         });
       }
     });
