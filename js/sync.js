@@ -46,8 +46,6 @@ window.GR = window.GR || {};
           if (serverTime > S.get('serverStamp')) {
             if (S.get('lastSaveTs') <= serverTime) {
               Sync.applyCloudData(result.data, serverTime);
-              const UI = window.GR.ui;
-              if (UI && UI.toast) UI.toast('Daten synchronisiert', 'info', 3000);
             } else {
               // Lokale Daten sind neuer – push
               Sync.saveToCloud();
