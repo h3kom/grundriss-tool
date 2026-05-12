@@ -11,11 +11,6 @@
  */
 
 window._GR_CONFIG = {
-  // DEV Supabase
   SUPABASE_URL: 'https://dein-dev-projekt.supabase.co',
-  SUPABASE_ANON_KEY: 'dein-dev-anon-key',
-
-  // PROD Supabase (auskommentieren für Produktiv-Einsatz)
-  // SUPABASE_URL: 'https://civkerrcyqgsqqjpccqe.supabase.co',
-  // SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+  SUPABASE_ANON_KEY: 'dein-dev-anon-key'
 };
