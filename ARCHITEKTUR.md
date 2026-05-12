@@ -13,6 +13,8 @@ Dank des **Event-Systems** sind die Module lose gekoppelt: Ein Modul muss andere
 ```
 grundriss-tool/
 ├── index.html              # Einstiegspunkt (verlinkt styles.css + alle JS-Skripte)
+├── config.local.js         # Lokale Konfiguration (gitignored, pro Umgebung)
+├── config.local.example.js # Beispiel-Konfiguration (zum Kopieren)
 ├── styles.css              # Alle CSS-Klassen (aus index.html ausgelagert)
 ├── EG.png                  # Grundriss-Bild Erdgeschoss
 ├── OG.png                  # Grundriss-Bild Obergeschoss
@@ -474,10 +476,52 @@ User klickt "Rückgängig" im Toast
 
 Die `<script>`-Tags in `index.html` sind strikt nach Abhängigkeiten geordnet:
 
-1. **Basismodule**: `constants.js` → `utils.js` → `state.js`
-2. **Infrastruktur**: `cloud.js` → `sync.js` → `storage.js`
-3. **Domänenlogik**: `rooms.js`
-4. **Interaktion**: `drag.js` → `resize.js` → `place-room.js` → `interaction.js`
-5. **Rendering**: `renderer.js` → `detail-renderer.js` → `overview-renderer.js`
-6. **UI**: `ui.js`
-7. **App**: `app.js` (startet automatisch per `init()` am Ende)
+1. **Lokale Config**: `config.local.js` (überschreibt Standardwerte, gitignored)
+2. **Basismodule**: `config.js` → `constants.js` → `utils.js` → `state.js`
+3. **Infrastruktur**: `cloud.js` → `sync.js` → `storage.js`
+4. **Domänenlogik**: `rooms.js`
+5. **Interaktion**: `drag.js` → `resize.js` → `place-room.js` → `interaction.js`
+6. **Rendering**: `renderer.js` → `detail-renderer.js` → `overview-renderer.js`
+7. **UI**: `ui.js`
+8. **App**: `app.js` (startet automatisch per `init()` am Ende)
+
+---
+
+## Dev/Prod-Workflow
+
+### Branch-Strategie
+
+| Branch | Zweck | Supabase |
+|--------|-------|----------|
+| `main` | Production (live) | Prod-Supabase (`civkerrcyqgsqqjpccqe`) |
+| `dev` | Entwicklung & Tests | Dev-Supabase (eigenes Projekt) |
+
+### Einrichtung
+
+1. **Dev-Supabase erstellen**: Neues Projekt im [Supabase-Dashboard](https://supabase.com) anlegen
+2. **`config.local.js` anlegen**: `config.local.example.js` kopieren und Dev-Keys eintragen
+3. **Tabelle erstellen**: Gleiche `rooms`-Tabelle im Dev-Projekt anlegen
+
+### Workflow
+
+```
+1. git checkout dev           → Auf dev-Branch wechseln
+2. Feature entwickeln         → Mit Dev-Supabase testen
+3. git commit & push          → Änderungen committen
+4. Pull Request auf GitHub    → dev → main
+5. Merge                      → Production ist aktuell
+```
+
+### config.local.js (Beispiel)
+
+```javascript
+// DEV-Umgebung
+window._GR_CONFIG = {
+  SUPABASE_URL: 'https://dev-projekt.supabase.co',
+  SUPABASE_ANON_KEY: 'dev-anon-key'
+};
+```
+
+Für **Production**: `config.local.js` löschen oder Prod-Keys eintragen → Standardwerte aus `constants.js` werden verwendet.
+
+**Wichtig**: `config.local.js` steht in `.gitignore` und wird **niemals** committed.
