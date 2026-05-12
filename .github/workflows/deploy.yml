@@ -1,0 +1,50 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main, dev]
+
+permissions:
+  contents: write
+
+jobs:
+  deploy-prod:
+    name: Prod → /
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy Prod to root
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./
+          publish_branch: gh-pages
+          destination_dir: .
+          keep_files: true
+
+  deploy-dev:
+    name: Dev → /dev/
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate dev config from secrets
+        run: |
+          cat > config.local.js << 'EOF'
+          window._GR_CONFIG = {
+            SUPABASE_URL: '${{ secrets.DEV_SUPABASE_URL }}',
+            SUPABASE_ANON_KEY: '${{ secrets.DEV_SUPABASE_ANON_KEY }}'
+          };
+          EOF
+
+      - name: Deploy Dev to /dev/
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./
+          publish_branch: gh-pages
+          destination_dir: dev
+          keep_files: true
