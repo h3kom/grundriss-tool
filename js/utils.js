@@ -73,6 +73,44 @@ window.GR = window.GR || {};
   };
 
   /**
+   * Escaped einen String für die sichere Verwendung in HTML-Attributen.
+   * Schützt gegen Injection in onclick/data-Attribute.
+   * @param {string} str - Roher String
+   * @returns {string} Escapeter String
+   */
+  U.escAttr = function(str) {
+    if (str == null) return '';
+    return String(str).replace(/[&"'<>]/g, function(ch) {
+      return { '&': '\x26amp;', '"': '\x26quot;', "'": '\x26#39;', '<': '\x26lt;', '>': '\x26gt;' }[ch];
+    });
+  };
+
+  /**
+   * Validiert, dass ein Raum-Key nur sichere Zeichen enthält.
+   * Verhindert Injection über Raum-Schlüssel.
+   * @param {string} key - Zu prüfender Schlüssel
+   * @returns {boolean} True wenn der Key sicher ist
+   */
+  U.isValidKey = function(key) {
+    return typeof key === 'string' && /^[a-zA-Z0-9_\-]+$/.test(key);
+  };
+
+  /**
+   * Formatiert die "Zuletzt bearbeitet"-Anzeige.
+   * Zentralisiert, um Duplikate in detail-renderer und overview-renderer zu vermeiden.
+   * @param {number} lastSaveTs - Timestamp der letzten Speicherung
+   * @returns {string} Formatierte Zeitanzeige
+   */
+  U.formatLastEdit = function(lastSaveTs) {
+    const C = window.GR.constants;
+    const delta = Date.now() - lastSaveTs;
+    if (delta < C.TIME_THRESHOLD_MINUTE) return 'Gerade eben';
+    if (delta < C.TIME_THRESHOLD_HOUR) return 'Vor ' + Math.round(delta / C.TIME_THRESHOLD_MINUTE) + ' Min.';
+    if (delta < C.TIME_THRESHOLD_DAY) return 'Vor ' + Math.round(delta / C.TIME_THRESHOLD_HOUR) + ' Std.';
+    return new Date(lastSaveTs).toLocaleDateString('de-DE');
+  };
+
+  /**
    * Generiert einen eindeutigen Raumschlüssel.
    * @param {Object<string,Object>} rooms - Aktuelle Räume
    * @returns {string} Eindeutiger Key (z. B. "raum", "raum1", …)
@@ -108,17 +146,16 @@ window.GR = window.GR || {};
 
   /**
    * Berechnet den aktuellen Skalierungsfaktor für eine Zeichenfläche.
-   * Verwendet einen Cache, der nach 500ms ungültig wird (Resize-freundlich).
+   * Verwendet einen Cache, der nach SCALE_CACHE_TTL ms ungültig wird (Resize-freundlich).
    * @param {HTMLElement} wrapper - .pw-Wrapper-Element
    * @returns {number} Skalierungsfaktor
    */
   U.getScale = function(wrapper) {
     const C = window.GR.constants;
     if (!wrapper) return 1;
-    // Cache prüfen (max 500ms alt)
     const cached = _scaleCache.get(wrapper);
     const now = Date.now();
-    if (cached && (now - cached.stamp) < 500) return cached.value;
+    if (cached && (now - cached.stamp) < C.SCALE_CACHE_TTL) return cached.value;
     const img = wrapper.querySelector('img');
     if (!img) return 1;
     const nativeWidth = C.NATIVE_WIDTHS[U.detectFloorId(wrapper.id)] || 1000;

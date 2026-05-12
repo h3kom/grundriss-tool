@@ -182,7 +182,7 @@ window.GR = window.GR || {};
    * @param {string} key - Raumschlüssel
    */
   Rdr.createResizeHandles = function(element, key) {
-    const handleNames = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
+    const handleNames = C.HANDLE_DIRECTIONS;
     for (const handle of handleNames) {
       const hdl = document.createElement('div');
       hdl.className = `rh ${handle}`;

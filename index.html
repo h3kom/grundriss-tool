@@ -3,57 +3,59 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; connect-src https://*.supabase.co; script-src 'self';" />
   <title>Grundriss Tool</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<div class="edit-banner" id="eb" role="status" aria-live="polite"><span>✏️ Bearbeiten</span><button onclick="window.GR.ui.toggleEditMode()" aria-label="Bearbeitungsmodus beenden">Fertig</button></div>
+<div class="edit-banner" id="eb" role="status" aria-live="polite"><span>&#9999;&#65039; Bearbeiten</span><button data-action="toggle-edit-mode" aria-label="Bearbeitungsmodus beenden">Fertig</button></div>
 <div class="content" id="mc" role="main" aria-label="Grundriss-Anzeige">
   <div class="floor-tabs" id="ft" role="tablist" aria-label="Etagenauswahl">
-    <button class="active" onclick="window.GR.ui.switchFloor('eg')" id="tabEg" role="tab" aria-selected="true" aria-controls="floorEg">EG <span class="tab-badge" id="badgeEg">0</span></button>
-    <button onclick="window.GR.ui.switchFloor('og')" id="tabOg" role="tab" aria-selected="false" aria-controls="floorOg">OG <span class="tab-badge" id="badgeOg">0</span></button>
+    <button class="active" data-action="switch-floor" data-floor="eg" id="tabEg" role="tab" aria-selected="true" aria-controls="floorEg">EG <span class="tab-badge" id="badgeEg">0</span></button>
+    <button data-action="switch-floor" data-floor="og" id="tabOg" role="tab" aria-selected="false" aria-controls="floorOg">OG <span class="tab-badge" id="badgeOg">0</span></button>
   </div>
   <div class="floor active" id="floorEg">
-    <h1>EG <span class="fa"><button onclick="window.GR.interaction.enablePlaceNewRoom('eg')">+ Raum</button><span class="cnt" id="cntEg"></span></span></h1>
+    <h1>EG <span class="fa"><button data-action="place-new-room" data-floor="eg">+ Raum</button><span class="cnt" id="cntEg"></span></span></h1>
     <div class="pw" id="eg-w" style="width:1000px">
       <div class="pi"><img src="EG.png" alt="EG"><div id="eg-r"></div></div>
     </div>
   </div>
   <div class="floor" id="floorOg">
-    <h1>OG <span class="fa"><button onclick="window.GR.interaction.enablePlaceNewRoom('og')">+ Raum</button><span class="cnt" id="cntOg"></span></span></h1>
+    <h1>OG <span class="fa"><button data-action="place-new-room" data-floor="og">+ Raum</button><span class="cnt" id="cntOg"></span></span></h1>
     <div class="pw" id="og-w" style="width:800px">
       <div class="pi"><img src="OG.png" alt="OG"><div id="og-r"></div></div>
     </div>
   </div>
 </div>
 <div class="sb" id="sb">
-  <button class="sb-toggle" onclick="window.GR.ui.toggleSidebar()"><span class="arrow">▼</span> Info & Details <span class="arrow">▼</span></button>
+  <button class="sb-toggle" data-action="toggle-sidebar"><span class="arrow">&#9660;</span> Info & Details <span class="arrow">&#9660;</span></button>
   <div class="sb-hdr">
     <h2 id="sbTitle">Info</h2>
     <div class="sb-tools">
-      <button id="btnOv" onclick="window.GR.overviewRenderer.showOverview()">📊</button>
-      <button id="btnEm" onclick="window.GR.ui.toggleEditMode()">✏️</button>
+      <button id="btnOv" data-action="show-overview">&#128202;</button>
+      <button id="btnEm" data-action="toggle-edit-mode">&#9999;&#65039;</button>
     </div>
   </div>
-  <div class="sb-body" id="sbBody"><p class="hint">👆 Raum antippen für Details</p></div>
+  <div class="sb-body" id="sbBody"><p class="hint">&#128070; Raum antippen f&uuml;r Details</p></div>
 </div>
 <div class="mo" id="rm"><div class="mb">
-  <h3>✏️ Raum umbenennen</h3>
-  <label>Name</label><input type="text" id="rn" placeholder="Raum name..." onkeydown="if(event.key==='Enter')window.GR.ui.confirmRename()">
-  <div class="ma"><button onclick="window.GR.ui.closeRenameModal()">Abbrechen</button><button class="p" onclick="window.GR.ui.confirmRename()">Speichern</button></div>
+  <h3>&#9999;&#65039; Raum umbenennen</h3>
+  <label>Name</label><input type="text" id="rn" placeholder="Raum name..." />
+  <div class="ma"><button data-action="close-rename">Abbrechen</button><button class="p" data-action="confirm-rename">Speichern</button></div>
 </div></div>
 <div id="syncI" role="status" aria-live="polite" aria-label="Sync-Status"></div>
+<div id="tc"></div>
 <div class="io" id="io"><div class="ib">
-  <div style="font-size:48px;margin-bottom:8px">🏗️</div>
+  <div style="font-size:48px;margin-bottom:8px">&#127959;&#65039;</div>
   <h2>Willkommen!</h2>
-  <p>Räume & Aufgaben verwalten</p>
+  <p>R&auml;ume & Aufgaben verwalten</p>
   <ul class="fl">
-    <li>👆 Raum antippen</li>
-    <li>✏️ Bearbeiten = verschieben & skalieren</li>
-    <li>📊 Übersicht</li>
-    <li>☁️ Automatischer Sync</li>
+    <li>&#128070; Raum antippen</li>
+    <li>&#9999;&#65039; Bearbeiten = verschieben & skalieren</li>
+    <li>&#128202; &Uuml;bersicht</li>
+    <li>&#9729;&#65039; Automatischer Sync</li>
   </ul>
-  <button onclick="window.GR.ui.closeIntro()">Los geht's!</button>
+  <button data-action="close-intro">Los geht's!</button>
 </div></div>
 <script src="js/config.js"></script>
 <script src="js/constants.js"></script>
