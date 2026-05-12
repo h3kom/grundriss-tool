@@ -14,6 +14,7 @@ window.GR = window.GR || {};
   const D = window.GR.drag;
   const RS = window.GR.resize;
   const PR = window.GR.placeRoom;
+  const U = window.GR.utils;
 
   // Delegierte Funktionen
   I.startDrag = function(e, key) { if (D) D.startDrag(e, key); };
@@ -39,18 +40,11 @@ window.GR = window.GR || {};
   I.finishPlaceDraw = function() { if (PR) PR.finishPlaceDraw(); };
 
   /**
-   * Ermittelt die Pointer-Position aus einem Mouse- oder Touch-Event.
+   * Ermittelt die Pointer-Position über die zentrale utils-Funktion.
    * @param {Event} e
    * @returns {{x:number, y:number}}
    */
   I.getPointerPos = function(e) {
-    const touch = e.touches;
-    if (touch && touch.length > 0) {
-      return { x: touch[0].clientX, y: touch[0].clientY };
-    }
-    if (e.changedTouches && e.changedTouches.length > 0) {
-      return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
-    }
-    return { x: e.clientX, y: e.clientY };
+    return U.getPointerPos(e);
   };
 })(window.GR.interaction = window.GR.interaction || {});

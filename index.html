@@ -7,11 +7,11 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<div class="edit-banner" id="eb"><span>✏️ Bearbeiten</span><button onclick="window.GR.ui.toggleEditMode()">Fertig</button></div>
-<div class="content" id="mc">
-  <div class="floor-tabs" id="ft">
-    <button class="active" onclick="window.GR.ui.switchFloor('eg')" id="tabEg">EG <span class="tab-badge" id="badgeEg">0</span></button>
-    <button onclick="window.GR.ui.switchFloor('og')" id="tabOg">OG <span class="tab-badge" id="badgeOg">0</span></button>
+<div class="edit-banner" id="eb" role="status" aria-live="polite"><span>✏️ Bearbeiten</span><button onclick="window.GR.ui.toggleEditMode()" aria-label="Bearbeitungsmodus beenden">Fertig</button></div>
+<div class="content" id="mc" role="main" aria-label="Grundriss-Anzeige">
+  <div class="floor-tabs" id="ft" role="tablist" aria-label="Etagenauswahl">
+    <button class="active" onclick="window.GR.ui.switchFloor('eg')" id="tabEg" role="tab" aria-selected="true" aria-controls="floorEg">EG <span class="tab-badge" id="badgeEg">0</span></button>
+    <button onclick="window.GR.ui.switchFloor('og')" id="tabOg" role="tab" aria-selected="false" aria-controls="floorOg">OG <span class="tab-badge" id="badgeOg">0</span></button>
   </div>
   <div class="floor active" id="floorEg">
     <h1>EG <span class="fa"><button onclick="window.GR.interaction.enablePlaceNewRoom('eg')">+ Raum</button><span class="cnt" id="cntEg"></span></span></h1>
@@ -42,6 +42,7 @@
   <label>Name</label><input type="text" id="rn" placeholder="Raum name..." onkeydown="if(event.key==='Enter')window.GR.ui.confirmRename()">
   <div class="ma"><button onclick="window.GR.ui.closeRenameModal()">Abbrechen</button><button class="p" onclick="window.GR.ui.confirmRename()">Speichern</button></div>
 </div></div>
+<div id="syncI" role="status" aria-live="polite" aria-label="Sync-Status"></div>
 <div class="io" id="io"><div class="ib">
   <div style="font-size:48px;margin-bottom:8px">🏗️</div>
   <h2>Willkommen!</h2>
@@ -54,6 +55,7 @@
   </ul>
   <button onclick="window.GR.ui.closeIntro()">Los geht's!</button>
 </div></div>
+<script src="js/config.js"></script>
 <script src="js/constants.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/state.js"></script>

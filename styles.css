@@ -157,6 +157,14 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 :focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 
+/* Loading Indicator */
+.loading-indicator{position:fixed;top:0;left:0;right:0;z-index:999;background:var(--blue);color:#fff;text-align:center;padding:8px;font-size:13px;font-weight:600;opacity:0;transform:translateY(-100%);transition:all .3s ease}
+.loading-indicator.show{opacity:1;transform:translateY(0)}
+
+/* Confirm Dialog */
+.confirm-dialog p{font-size:15px;margin:0 0 8px;font-weight:500}
+.ma button:active{opacity:.7}
+
 @media(min-width:768px){
   body{display:flex;height:100vh;height:100dvh;overflow:hidden}
   .content{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px 16px 20px}

@@ -17,28 +17,53 @@ window.GR = window.GR || {};
   const Sync = window.GR.sync;
 
   /**
+   * Zeigt/versteckt den Lade-Indikator.
+   * @param {boolean} show
+   */
+  function showLoading(show) {
+    let el = document.getElementById('loadingIndicator');
+    if (show) {
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'loadingIndicator';
+        el.className = 'loading-indicator';
+        el.textContent = '⏳ Lade Daten...';
+        document.body.appendChild(el);
+      }
+      el.classList.add('show');
+    } else {
+      if (el) el.classList.remove('show');
+    }
+  }
+
+  /**
    * Lädt Daten: zuerst Cloud, dann localStorage als Fallback.
    * @returns {Promise<void>}
    */
   St.loadData = async function() {
     Sync.setSyncStatus('idle');
+    showLoading(true);
 
-    const cloudLoaded = await St.loadFromCloud();
-    if (cloudLoaded) return;
+    try {
+      const cloudLoaded = await St.loadFromCloud();
+      if (cloudLoaded) return;
 
-    const local = localStorage.getItem(C.LOCAL_STORAGE_KEY);
-    if (local) {
-      try {
-        S.set('rooms', JSON.parse(local));
-        U.ensureAllRooms(S.get('rooms'));
-        return;
-      } catch (e) {
-        // corrupted – start empty
+      const local = localStorage.getItem(C.LOCAL_STORAGE_KEY);
+      if (local) {
+        try {
+          S.set('rooms', JSON.parse(local));
+          U.ensureAllRooms(S.get('rooms'));
+          return;
+        } catch (e) {
+          // corrupted – start empty
+        }
       }
-    }
 
-    S.set('rooms', {});
-    St.saveToLocal();
+      S.set('rooms', {});
+      St.saveToLocal();
+    } finally {
+      showLoading(false);
+    }
   };
 
   /**
@@ -49,7 +74,7 @@ window.GR = window.GR || {};
     const result = await Cl.fetchData();
     if (result && result.data && Object.keys(result.data).length > 0) {
       S.set('rooms', result.data);
-      U.ensureAllRooms(S.get('rooms'));
+      S.migrateRooms(S.get('rooms'));
       S.set('serverStamp', result.updatedAt || Date.now());
       localStorage.setItem(C.LOCAL_STORAGE_KEY, JSON.stringify(S.get('rooms')));
       return true;
@@ -75,10 +100,11 @@ window.GR = window.GR || {};
 
   /**
    * Speichert nur lokal (ohne Cloud).
+   * Achtung: Überschreibt serverStamp NICHT mit lokalem Timestamp,
+   * damit Sync-Konflikte korrekt erkannt werden.
    */
   St.saveToLocal = function() {
     const now = Date.now();
-    S.set('serverStamp', now);
     S.set('lastSaveTs', now);
     localStorage.setItem(C.LOCAL_STORAGE_KEY, JSON.stringify(S.get('rooms')));
   };

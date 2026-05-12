@@ -101,17 +101,62 @@ window.GR = window.GR || {};
   };
 
   /**
+   * Cache für Skalierungsfaktoren pro Etagen-Wrapper.
+   * @type {Map<HTMLElement,{value:number,stamp:number}>}
+   */
+  const _scaleCache = new Map();
+
+  /**
    * Berechnet den aktuellen Skalierungsfaktor für eine Zeichenfläche.
+   * Verwendet einen Cache, der nach 500ms ungültig wird (Resize-freundlich).
    * @param {HTMLElement} wrapper - .pw-Wrapper-Element
    * @returns {number} Skalierungsfaktor
    */
   U.getScale = function(wrapper) {
     const C = window.GR.constants;
     if (!wrapper) return 1;
+    // Cache prüfen (max 500ms alt)
+    const cached = _scaleCache.get(wrapper);
+    const now = Date.now();
+    if (cached && (now - cached.stamp) < 500) return cached.value;
     const img = wrapper.querySelector('img');
     if (!img) return 1;
     const nativeWidth = C.NATIVE_WIDTHS[U.detectFloorId(wrapper.id)] || 1000;
     const displayWidth = img.getBoundingClientRect().width;
-    return displayWidth > 0 && nativeWidth > 0 ? displayWidth / nativeWidth : 1;
+    const value = displayWidth > 0 && nativeWidth > 0 ? displayWidth / nativeWidth : 1;
+    _scaleCache.set(wrapper, { value, stamp: now });
+    return value;
+  };
+
+  /**
+   * Ermittelt die Pointer-Position aus einem Mouse- oder Touch-Event.
+   * Zentralisiert, damit die Logik nicht in mehreren Modulen dupliziert wird.
+   * @param {Event} e - Mouse- oder Touch-Event
+   * @returns {{x:number, y:number}} Pointer-Koordinaten
+   */
+  U.getPointerPos = function(e) {
+    const touch = e.touches;
+    if (touch && touch.length > 0) {
+      return { x: touch[0].clientX, y: touch[0].clientY };
+    }
+    if (e.changedTouches && e.changedTouches.length > 0) {
+      return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+    }
+    return { x: e.clientX, y: e.clientY };
+  };
+
+  /**
+   * Generiert oder liest eine eindeutige Geräte-ID (UUID) aus dem localStorage.
+   * Wird für die Benutzerisolierung bei Supabase-Zeilen verwendet.
+   * @returns {string} Geräte-UUID
+   */
+  U.getDeviceId = function() {
+    const KEY = 'gr_device_id';
+    let id = localStorage.getItem(KEY);
+    if (!id) {
+      id = 'd' + Date.now().toString(36) + Math.random().toString(36).substring(2, 10);
+      localStorage.setItem(KEY, id);
+    }
+    return id;
   };
 })(window.GR.utils = window.GR.utils || {});

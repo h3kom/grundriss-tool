@@ -13,13 +13,29 @@ window.GR = window.GR || {};
   const S = window.GR.state;
   const Cl = window.GR.cloud;
   const U = window.GR.utils;
+  const St = window.GR.storage;
+
+  /**
+   * Prüft, ob das Gerät online ist.
+   * @returns {boolean}
+   */
+  function isOnline() {
+    return typeof navigator.onLine === 'undefined' ? true : navigator.onLine;
+  }
 
   /**
    * Startet das Polling-Intervall für Cloud-Sync.
+   * Berücksichtigt Offline-Status und Tab-Visibility.
    */
   Sync.startPolling = function() {
     if (S.get('pollInterval')) clearInterval(S.get('pollInterval'));
     const interval = setInterval(async () => {
+      // Nicht synchen wenn offline
+      if (!isOnline()) {
+        if (S.get('syncStatus') !== 'error') Sync.setSyncStatus('error');
+        return;
+      }
+      // Nicht synchen wenn bereits ein Sync läuft
       if (S.get('isSyncing')) return;
       try {
         const result = await Cl.fetchData();
@@ -43,6 +59,45 @@ window.GR = window.GR || {};
       }
     }, C.SYNC_INTERVAL);
     S.set('pollInterval', interval);
+
+    // Tab-Visibility API: Polling pausieren wenn Tab unsichtbar
+    document.addEventListener('visibilitychange', function() {
+      if (document.hidden) {
+        Sync.pausePolling();
+      } else {
+        Sync.resumePolling();
+      }
+    });
+
+    // Online/Offline-Event-Listener
+    window.addEventListener('online', function() {
+      Sync.setSyncStatus('idle');
+      // Sofort einmal synchen bei Rückkehr online
+      Sync.saveToCloud();
+    });
+    window.addEventListener('offline', function() {
+      Sync.setSyncStatus('error');
+    });
+  };
+
+  /**
+   * Pausiert das Polling-Intervall.
+   */
+  Sync.pausePolling = function() {
+    const interval = S.get('pollInterval');
+    if (interval) {
+      clearInterval(interval);
+      S.set('pollInterval', null);
+    }
+  };
+
+  /**
+   * Setzt das Polling-Intervall fort.
+   */
+  Sync.resumePolling = function() {
+    if (!S.get('pollInterval')) {
+      Sync.startPolling();
+    }
   };
 
   /**
@@ -56,7 +111,7 @@ window.GR = window.GR || {};
     const ts = timestamp || Date.now();
     S.set('serverStamp', ts);
     S.set('lastSaveTs', ts);
-    localStorage.setItem(C.LOCAL_STORAGE_KEY, JSON.stringify(S.get('rooms')));
+    St.saveToLocal();
     Sync.updateTabBadges();
     S.notify(C.EVT_ROOMS_CHANGED);
   };
@@ -65,6 +120,10 @@ window.GR = window.GR || {};
    * Speichert lokale Daten asynchron in die Cloud.
    */
   Sync.saveToCloud = async function() {
+    if (!isOnline()) {
+      Sync.setSyncStatus('error');
+      return;
+    }
     if (S.get('isSyncing')) return;
     S.set('isSyncing', true);
     Sync.setSyncStatus('syncing');

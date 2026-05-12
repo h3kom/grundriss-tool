@@ -9,6 +9,7 @@ window.GR = window.GR || {};
 (function(D) {
   'use strict';
 
+  const C = window.GR.constants;
   const S = window.GR.state;
   const St = window.GR.storage;
   const U = window.GR.utils;
@@ -128,19 +129,11 @@ window.GR = window.GR || {};
   D.onDragEndTouch = function() { onDragEndCleanup(); };
 
   /**
-   * Ermittelt die Pointer-Position aus einem Mouse- oder Touch-Event.
+   * Ermittelt die Pointer-Position über die zentrale utils-Funktion.
    * @param {Event} e
    * @returns {{x:number, y:number}}
    */
   D.getPointerPos = function(e) {
-    const touch = e.touches;
-    if (touch && touch.length > 0) {
-      return { x: touch[0].clientX, y: touch[0].clientY };
-    }
-    // Fallback for TouchEvent without touches (e.g. touchend)
-    if (e.changedTouches && e.changedTouches.length > 0) {
-      return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
-    }
-    return { x: e.clientX, y: e.clientY };
+    return U.getPointerPos(e);
   };
 })(window.GR.drag = window.GR.drag || {});

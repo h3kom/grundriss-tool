@@ -9,6 +9,7 @@ window.GR = window.GR || {};
 (function(RS) {
   'use strict';
 
+  const C = window.GR.constants;
   const S = window.GR.state;
   const St = window.GR.storage;
   const U = window.GR.utils;
@@ -72,14 +73,14 @@ window.GR = window.GR || {};
     let nw = rs.origWidth;
     let nh = rs.origHeight;
 
-    if (handle.indexOf('e') >= 0) nw = Math.max(20, rs.origWidth + dl);
+    if (handle.indexOf('e') >= 0) nw = Math.max(C.MIN_ROOM_SIZE, rs.origWidth + dl);
     if (handle.indexOf('w') >= 0) {
-      nw = Math.max(20, rs.origWidth - dl);
+      nw = Math.max(C.MIN_ROOM_SIZE, rs.origWidth - dl);
       nl = rs.origLeft + rs.origWidth - nw;
     }
-    if (handle.indexOf('s') >= 0) nh = Math.max(20, rs.origHeight + dt);
+    if (handle.indexOf('s') >= 0) nh = Math.max(C.MIN_ROOM_SIZE, rs.origHeight + dt);
     if (handle.indexOf('n') >= 0) {
-      nh = Math.max(20, rs.origHeight - dt);
+      nh = Math.max(C.MIN_ROOM_SIZE, rs.origHeight - dt);
       nt = rs.origTop + rs.origHeight - nh;
     }
 
@@ -130,8 +131,8 @@ window.GR = window.GR || {};
 
     if (!isNaN(nl)) room.left = nl;
     if (!isNaN(nt)) room.top = nt;
-    if (!isNaN(nw)) room.width = Math.max(20, nw);
-    if (!isNaN(nh)) room.height = Math.max(20, nh);
+    if (!isNaN(nw)) room.width = Math.max(C.MIN_ROOM_SIZE, nw);
+    if (!isNaN(nh)) room.height = Math.max(C.MIN_ROOM_SIZE, nh);
 
     rs.saved = true;
     St.saveData();
@@ -142,18 +143,11 @@ window.GR = window.GR || {};
   RS.onResizeEndTouch = function() { onResizeEndCleanup(); };
 
   /**
-   * Ermittelt die Pointer-Position aus einem Mouse- oder Touch-Event.
+   * Ermittelt die Pointer-Position über die zentrale utils-Funktion.
    * @param {Event} e
    * @returns {{x:number, y:number}}
    */
   RS.getPointerPos = function(e) {
-    const touch = e.touches;
-    if (touch && touch.length > 0) {
-      return { x: touch[0].clientX, y: touch[0].clientY };
-    }
-    if (e.changedTouches && e.changedTouches.length > 0) {
-      return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
-    }
-    return { x: e.clientX, y: e.clientY };
+    return U.getPointerPos(e);
   };
 })(window.GR.resize = window.GR.resize || {});

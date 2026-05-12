@@ -13,6 +13,29 @@ window.GR = window.GR || {};
   const C = window.GR.constants;
   const listeners = {};
 
+  /**
+   * Aktuelle Daten-Migrations-Version.
+   * Wird erhöht, wenn neue Felder in rooms[] benötigt werden.
+   * @type {number}
+   */
+  const DATA_VERSION = 2;
+
+  /**
+   * Führt versionierte Daten-Migrationen auf allen Räumen durch.
+   * @param {Object<string,Object>} rooms
+   */
+  function migrateRooms(rooms) {
+    if (!rooms || typeof rooms !== 'object') return;
+    for (const key of Object.keys(rooms)) {
+      const room = rooms[key];
+      // V1 → V2: Comments + done Felder sicherstellen
+      if (!room.comments) room.comments = [];
+      if (!room.done) room.done = {};
+      // V2 → V3 (Zukunft): Hier weitere Migrationen einfügen
+      // Beispiel: if (!room.tags) room.tags = [];
+    }
+  }
+
   const _state = {
     rooms: {},
     selectedRoom: null,
@@ -37,12 +60,14 @@ window.GR = window.GR || {};
   };
 
   /**
-   * Gibt einen State-Wert oder das gesamte State-Objekt zurück.
+   * Gibt einen State-Wert, das gesamte State-Objekt oder einen Default-Wert zurück.
    * @param {string} [key] - Schlüssel oder undefined für das ganze Objekt
+   * @param {*} [defaultValue] - Fallback-Wert, wenn key nicht in _state existiert
    * @returns {*}
    */
-  S.get = function(key) {
-    return key ? _state[key] : _state;
+  S.get = function(key, defaultValue) {
+    if (key === undefined) return _state;
+    return key in _state ? _state[key] : defaultValue;
   };
 
   /**
@@ -51,6 +76,11 @@ window.GR = window.GR || {};
    * @param {*} value - Neuer Wert
    */
   S.set = function(key, value) {
+    // Nur bekannte State-Keys setzen, sonst Warnung
+    if (!(key in _state)) {
+      console.warn(`[state] Unknown key "${key}" ignored by set()`);
+      return;
+    }
     const old = _state[key];
     _state[key] = value;
     // Automatische Events für bekannte Schlüssel
@@ -81,7 +111,21 @@ window.GR = window.GR || {};
    * @param {Object} obj - Partial-Objekt
    */
   S.merge = function(obj) {
+    const old = {};
+    for (const key of Object.keys(obj)) {
+      old[key] = _state[key];
+    }
     Object.assign(_state, obj);
+    // Feuert Events für bekannte Schlüssel
+    for (const key of Object.keys(obj)) {
+      if (old[key] !== obj[key]) {
+        if (key === 'editMode') S.notify(C.EVT_EDIT_MODE_CHANGED, obj[key]);
+        if (key === 'activeFloor') S.notify(C.EVT_FLOOR_CHANGED, obj[key]);
+        if (key === 'selectedRoom') S.notify(C.EVT_SELECTION_CHANGED, obj[key]);
+        if (key === 'syncStatus') S.notify(C.EVT_SYNC_STATUS_CHANGED, obj[key]);
+        if (key === 'rooms') S.notify(C.EVT_ROOMS_CHANGED);
+      }
+    }
   };
 
   // ===================================================================
@@ -149,4 +193,7 @@ window.GR = window.GR || {};
   S.clearUndo = function(key) {
     _state.undoStack[key] = null;
   };
+
+  // Export migration for storage module
+  S.migrateRooms = migrateRooms;
 })(window.GR.state = window.GR.state || {});

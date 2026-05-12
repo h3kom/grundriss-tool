@@ -10,10 +10,13 @@ window.GR = window.GR || {};
   'use strict';
 
   /** @const {string} Supabase-Projekt-URL */
-  C.SUPABASE_URL = 'https://civkerrcyqgsqqjpccqe.supabase.co';
+  C.SUPABASE_URL = window._GR_CONFIG?.SUPABASE_URL || 'https://civkerrcyqgsqqjpccqe.supabase.co';
 
   /** @const {string} Supabase anonymer API-Key */
-  C.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpdmtlcnJjeXFnc3FxanBjY3FlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzMzkxNzAsImV4cCI6MjA5MzkxNTE3MH0.Q01QUWnwYm-aDAhbwi-Rb_kBU28s8Rx27J0RUkILY1U';
+  C.SUPABASE_ANON_KEY = window._GR_CONFIG?.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpdmtlcnJjeXFnc3FxanBjY3FlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzMzkxNzAsImV4cCI6MjA5MzkxNTE3MH0.Q01QUWnwYm-aDAhbwi-Rb_kBU28s8Rx27J0RUkILY1U';
+
+  /** @const {number} Mindestgröße für Räume in Pixeln */
+  C.MIN_ROOM_SIZE = 20;
 
   /** @const {Object<string,number>} Native Breiten für jede Etage */
   C.NATIVE_WIDTHS = { eg: 1000, og: 800 };
