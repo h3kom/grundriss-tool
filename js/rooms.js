@@ -30,8 +30,6 @@ window.GR = window.GR || {};
     if (!room.done) room.done = {};
     room.done[idx] = checked;
     St.saveData();
-    const UI = window.GR.ui;
-    if (checked && UI && UI.toast) UI.toast('✅ Erledigt!', 'success', 2000);
   };
 
   /**
