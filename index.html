@@ -189,40 +189,40 @@
   </style>
 </head>
 <body>
-<div class="edit-banner" id="eb"><span>✏️ Bearbeiten</span><button onclick="toggleEditMode()">Fertig</button></div>
+<div class="edit-banner" id="eb"><span>✏️ Bearbeiten</span><button onclick="window.GR.ui.toggleEditMode()">Fertig</button></div>
 <div class="content" id="mc">
   <div class="floor-tabs" id="ft">
-    <button class="active" onclick="switchFloor('eg')" id="tabEg">EG <span class="tab-badge" id="badgeEg">0</span></button>
-    <button onclick="switchFloor('og')" id="tabOg">OG <span class="tab-badge" id="badgeOg">0</span></button>
+    <button class="active" onclick="window.GR.ui.switchFloor('eg')" id="tabEg">EG <span class="tab-badge" id="badgeEg">0</span></button>
+    <button onclick="window.GR.ui.switchFloor('og')" id="tabOg">OG <span class="tab-badge" id="badgeOg">0</span></button>
   </div>
   <div class="floor active" id="floorEg">
-    <h1>EG <span class="fa"><button onclick="enablePlaceNewRoom('eg')">+ Raum</button><span class="cnt" id="cntEg"></span></span></h1>
+    <h1>EG <span class="fa"><button onclick="window.GR.interaction.enablePlaceNewRoom('eg')">+ Raum</button><span class="cnt" id="cntEg"></span></span></h1>
     <div class="pw" id="eg-w" style="width:1000px">
       <div class="pi"><img src="EG.png" alt="EG"><div id="eg-r"></div></div>
     </div>
   </div>
   <div class="floor" id="floorOg">
-    <h1>OG <span class="fa"><button onclick="enablePlaceNewRoom('og')">+ Raum</button><span class="cnt" id="cntOg"></span></span></h1>
+    <h1>OG <span class="fa"><button onclick="window.GR.interaction.enablePlaceNewRoom('og')">+ Raum</button><span class="cnt" id="cntOg"></span></span></h1>
     <div class="pw" id="og-w" style="width:800px">
       <div class="pi"><img src="OG.png" alt="OG"><div id="og-r"></div></div>
     </div>
   </div>
 </div>
 <div class="sb" id="sb">
-  <button class="sb-toggle" onclick="toggleSidebar()"><span class="arrow">▼</span> Info & Details <span class="arrow">▼</span></button>
+  <button class="sb-toggle" onclick="window.GR.ui.toggleSidebar()"><span class="arrow">▼</span> Info & Details <span class="arrow">▼</span></button>
   <div class="sb-hdr">
     <h2 id="sbTitle">Info</h2>
     <div class="sb-tools">
-      <button id="btnOv" onclick="showOverview()">📊</button>
-      <button id="btnEm" onclick="toggleEditMode()">✏️</button>
+      <button id="btnOv" onclick="window.GR.renderer.showOverview()">📊</button>
+      <button id="btnEm" onclick="window.GR.ui.toggleEditMode()">✏️</button>
     </div>
   </div>
   <div class="sb-body" id="sbBody"><p class="hint">👆 Raum antippen für Details</p></div>
 </div>
 <div class="mo" id="rm"><div class="mb">
   <h3>✏️ Raum umbenennen</h3>
-  <label>Name</label><input type="text" id="rn" placeholder="Raum name..." onkeydown="if(event.key==='Enter')confirmRename()">
-  <div class="ma"><button onclick="closeRenameModal()">Abbrechen</button><button class="p" onclick="confirmRename()">Speichern</button></div>
+  <label>Name</label><input type="text" id="rn" placeholder="Raum name..." onkeydown="if(event.key==='Enter')window.GR.ui.confirmRename()">
+  <div class="ma"><button onclick="window.GR.ui.closeRenameModal()">Abbrechen</button><button class="p" onclick="window.GR.ui.confirmRename()">Speichern</button></div>
 </div></div>
 <div class="io" id="io"><div class="ib">
   <div style="font-size:48px;margin-bottom:8px">🏗️</div>
@@ -234,8 +234,15 @@
     <li>📊 Übersicht</li>
     <li>☁️ Automatischer Sync</li>
   </ul>
-  <button onclick="closeIntro()">Los geht's!</button>
+  <button onclick="window.GR.ui.closeIntro()">Los geht's!</button>
 </div></div>
-<script src="grundriss-tool.js"></script>
+<script src="js/constants.js"></script>
+<script src="js/state.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/rooms.js"></script>
+<script src="js/renderer.js"></script>
+<script src="js/interaction.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>
