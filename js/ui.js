@@ -14,6 +14,7 @@ window.GR = window.GR || {};
   const S = window.GR.state;
   const St = window.GR.storage;
   const Sync = window.GR.sync;
+  const U = window.GR.utils;
 
   // ===================================================================
   // Toast
@@ -33,7 +34,7 @@ window.GR = window.GR || {};
     const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
     const el = document.createElement('div');
     el.className = `t t${type[0]}`;
-    let html = `<span>${icons[type] || 'ℹ️'}</span><span>${escHtml(message)}</span>`;
+    let html = `<span>${icons[type] || 'ℹ️'}</span><span>${U.escHtml(message)}</span>`;
     if (undoCallback) {
       html += '<button class="tu" onclick="window.GR.ui.executeUndo()">↩ Rückgängig</button>';
     }
@@ -197,6 +198,52 @@ window.GR = window.GR || {};
   };
 
   // ===================================================================
+  // Confirm Modal (ersetzt browser-native confirm())
+  // ===================================================================
+
+  /** @type {Function|null} Aktueller Confirm-Callback */
+  let _confirmCallback = null;
+
+  /**
+   * Zeigt einen modalen Bestätigungsdialog an.
+   * @param {string} message - Die anzuzeigende Nachricht
+   * @param {Function} onConfirm - Wird bei Bestätigung aufgerufen
+   */
+  UI.confirm = function(message, onConfirm) {
+    _confirmCallback = onConfirm;
+    const body = document.getElementById('sbBody');
+    if (body) {
+      body.innerHTML = `
+        <div class="confirm-dialog">
+          <p>${U.escHtml(message)}</p>
+          <div class="ma" style="margin-top:16px">
+            <button onclick="window.GR.ui.cancelConfirm()">Abbrechen</button>
+            <button class="p" onclick="window.GR.ui.executeConfirm()">Löschen</button>
+          </div>
+        </div>`;
+    }
+  };
+
+  /**
+   * Führt die Bestätigung aus.
+   */
+  UI.executeConfirm = function() {
+    if (_confirmCallback) _confirmCallback();
+    _confirmCallback = null;
+    const sbBody = document.getElementById('sbBody');
+    if (sbBody) sbBody.innerHTML = '<p class="hint">👆 Raum antippen</p>';
+  };
+
+  /**
+   * Bricht die Bestätigung ab.
+   */
+  UI.cancelConfirm = function() {
+    _confirmCallback = null;
+    const sbBody = document.getElementById('sbBody');
+    if (sbBody) sbBody.innerHTML = '<p class="hint">👆 Raum antippen</p>';
+  };
+
+  // ===================================================================
   // Rename Modal
   // ===================================================================
 
@@ -279,15 +326,4 @@ window.GR = window.GR || {};
     }
   });
 
-  /**
-   * Lokale HTML-Escaping-Hilfe (damit toast keine Abhängigkeit von utils braucht).
-   * @param {string} str
-   * @returns {string}
-   */
-  function escHtml(str) {
-    if (str == null) return '';
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-  }
 })(window.GR.ui = window.GR.ui || {});

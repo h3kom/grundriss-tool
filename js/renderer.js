@@ -4,6 +4,7 @@
  * @module renderer
  * @description Zeichnet die Raum-Elemente auf den Grundriss und erstellt
  * die Resize-Handles. Reagiert auf roomsChanged-Events.
+ * Nutzt DOM-Diffing: nur geänderte Räume werden neu gerendert.
  */
 window.GR = window.GR || {};
 
@@ -29,22 +30,72 @@ window.GR = window.GR || {};
   };
 
   /**
-   * Rendert eine einzelne Etage.
+   * Rendert eine einzelne Etage mit DOM-Diffing.
+   * Bestehende DOM-Elemente werden wiederverwendet, nur neue/entfernte
+   * Räume führen zu DOM-Operationen.
    * @param {string} floor - Etagen-Kürzel ('eg' | 'og')
    */
   Rdr.renderFloor = function(floor) {
     const container = document.getElementById(`${floor}-r`);
     if (!container) return;
-    container.innerHTML = '';
 
     const wrapper = document.getElementById(`${floor}-w`);
     const scale = U.getScale(wrapper);
     const rooms = S.get('rooms');
+    const selectedKey = S.get('selectedRoom');
+    const editMode = S.get('editMode');
 
+    // Bestehende Raum-Elemente erfassen
+    const existingElements = new Map();
+    for (const child of container.children) {
+      const key = child.getAttribute('data-key');
+      if (key) existingElements.set(key, child);
+    }
+
+    // Neue Räume hinzufügen, bestehende aktualisieren
+    const processedKeys = new Set();
     for (const key of Object.keys(rooms)) {
       const room = rooms[key];
       if (room.floor !== floor) continue;
-      container.appendChild(Rdr.createRoomElement(key, room, scale));
+
+      processedKeys.add(key);
+      let element = existingElements.get(key);
+
+      if (!element) {
+        // Neuen Raum erstellen
+        element = Rdr.createRoomElement(key, room, scale);
+        container.appendChild(element);
+      } else {
+        // Bestehenden Raum aktualisieren (nur bei Änderungen)
+        element.style.left = `${Math.round(room.left * scale)}px`;
+        element.style.top = `${Math.round(room.top * scale)}px`;
+        element.style.width = `${Math.round(room.width * scale)}px`;
+        element.style.height = `${Math.round(room.height * scale)}px`;
+
+        // Selection-Status aktualisieren
+        const isSelected = selectedKey === key;
+        element.classList.toggle('sel', isSelected);
+        element.classList.toggle('em', editMode);
+
+        // Label aktualisieren (progress)
+        const progress = U.taskProgress(room);
+        const existingLabel = element.querySelector('.rl');
+        if (existingLabel) {
+          const newHtml = progress.total > 0
+            ? `${U.escHtml(room.title)}<span class="pm">${progress.percent}%</span>`
+            : U.escHtml(room.title);
+          if (existingLabel.innerHTML !== newHtml) {
+            existingLabel.innerHTML = newHtml;
+          }
+        }
+      }
+    }
+
+    // Entfernte Räume löschen
+    for (const [key, element] of existingElements) {
+      if (!processedKeys.has(key)) {
+        element.remove();
+      }
     }
   };
 
@@ -66,6 +117,9 @@ window.GR = window.GR || {};
     div.style.width = `${Math.round(room.width * scale)}px`;
     div.style.height = `${Math.round(room.height * scale)}px`;
     div.setAttribute('data-key', key);
+    div.setAttribute('tabindex', '0');
+    div.setAttribute('role', 'button');
+    div.setAttribute('aria-label', `Raum: ${room.title}`);
 
     // Click: select or show
     div.addEventListener('click', (e) => {
@@ -78,6 +132,18 @@ window.GR = window.GR || {};
       if (window.innerWidth < 768) {
         const UI = window.GR.ui;
         if (UI) UI.openSidebar();
+      }
+    });
+
+    // Keyboard-Navigation: Enter/Leertaste zum Auswählen
+    div.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        if (editMode) {
+          Rdr.selectRoomEdit(key);
+        } else {
+          Rdr.showRoom(key);
+        }
       }
     });
 
@@ -203,7 +269,6 @@ window.GR = window.GR || {};
   // Event-Abonnement
   // ===================================================================
   S.subscribe(C.EVT_ROOMS_CHANGED, function() {
-    // Re-render floor plan when rooms change
     Rdr.render();
   });
 

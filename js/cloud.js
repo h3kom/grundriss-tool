@@ -10,6 +10,7 @@ window.GR = window.GR || {};
   'use strict';
 
   const C = window.GR.constants;
+  const U = window.GR.utils;
   const BASE = `${C.SUPABASE_URL}/rest/v1/${C.SUPABASE_TABLE}`;
   const HEADERS = {
     'Content-Type': 'application/json',
@@ -18,12 +19,21 @@ window.GR = window.GR || {};
   };
 
   /**
-   * Lädt Raumdaten von Supabase.
+   * Ermittelt die gerätespezifische Row-ID für Supabase.
+   * @returns {string} Eindeutige Zeilen-ID für dieses Gerät
+   */
+  function getRowId() {
+    return U.getDeviceId();
+  }
+
+  /**
+   * Lädt Raumdaten von Supabase (gerätespezifisch).
    * @returns {Promise<{data: Object, updatedAt: number}|null>}
    */
   Cl.fetchData = async function() {
     try {
-      const res = await fetch(`${BASE}?id=eq.${C.SUPABASE_ROW_ID}&select=data,updated_at`, { headers: HEADERS });
+      const rowId = getRowId();
+      const res = await fetch(`${BASE}?id=eq.${rowId}&select=data,updated_at`, { headers: HEADERS });
       if (!res.ok) return null;
       const rows = await res.json();
       if (rows && rows.length > 0 && rows[0].data) {
@@ -34,6 +44,7 @@ window.GR = window.GR || {};
       }
       return null;
     } catch (e) {
+      console.warn('[cloud] fetchData failed:', e.message || e);
       return null;
     }
   };
@@ -45,10 +56,11 @@ window.GR = window.GR || {};
    */
   Cl.saveData = async function(rooms) {
     try {
+      const rowId = getRowId();
       const res = await fetch(BASE, {
         method: 'POST',
         headers: Object.assign({}, HEADERS, { 'Prefer': 'resolution=merge-duplicates,return=representation' }),
-        body: JSON.stringify({ id: C.SUPABASE_ROW_ID, data: rooms })
+        body: JSON.stringify({ id: rowId, data: rooms })
       });
       if (res.ok) {
         const rows = await res.json();
@@ -60,6 +72,7 @@ window.GR = window.GR || {};
       }
       return { ok: false, updatedAt: null };
     } catch (e) {
+      console.warn('[cloud] saveData failed:', e.message || e);
       return { ok: false, updatedAt: null };
     }
   };

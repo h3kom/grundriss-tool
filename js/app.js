@@ -58,7 +58,8 @@ window.GR = window.GR || {};
   // ===================================================================
   App.init = async function() {
     // Set up plan interaction: drawing new rooms via mousedown/touchstart
-    document.querySelectorAll('.pw').forEach(w => {
+    const pwElements = document.querySelectorAll('.pw');
+    pwElements.forEach(w => {
       w.addEventListener('mousedown', function(e) {
         if (PR && PR.startPlaceDraw) PR.startPlaceDraw(e);
       });
@@ -70,13 +71,7 @@ window.GR = window.GR || {};
     await St.loadData();
     Rdr.render();
 
-    // Ensure sync indicator exists
-    let el = document.getElementById('syncI');
-    if (!el) {
-      el = document.createElement('div');
-      el.id = 'syncI';
-      document.body.appendChild(el);
-    }
+    // Sync indicator is already in HTML
     Sync.setSyncStatus('idle');
     Sync.startPolling();
 
@@ -91,7 +86,8 @@ window.GR = window.GR || {};
     window.addEventListener('resize', () => { Rdr.render(); });
 
     // Re-render on image load
-    document.querySelectorAll('.pw img').forEach(img => {
+    const pwImgs = document.querySelectorAll('.pw img');
+    pwImgs.forEach(img => {
       if (img.complete) {
         Rdr.render();
         Sync.updateTabBadges();

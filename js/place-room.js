@@ -178,8 +178,8 @@ window.GR = window.GR || {};
     if (preview) {
       finalLeft = parseFloat(preview.style.left) || ps.relStartX;
       finalTop = parseFloat(preview.style.top) || ps.relStartY;
-      finalWidth = Math.max(20, parseFloat(preview.style.width) || 1);
-      finalHeight = Math.max(20, parseFloat(preview.style.height) || 1);
+      finalWidth = Math.max(C.MIN_ROOM_SIZE, parseFloat(preview.style.width) || 1);
+      finalHeight = Math.max(C.MIN_ROOM_SIZE, parseFloat(preview.style.height) || 1);
       preview.remove();
     } else if (ps.relEndX !== null) {
       const sx = ps.relStartX;
@@ -188,8 +188,8 @@ window.GR = window.GR || {};
       const ey = ps.relEndY;
       finalLeft = Math.min(sx, ex);
       finalTop = Math.min(sy, ey);
-      finalWidth = Math.max(20, Math.abs(ex - sx));
-      finalHeight = Math.max(20, Math.abs(ey - sy));
+      finalWidth = Math.max(C.MIN_ROOM_SIZE, Math.abs(ex - sx));
+      finalHeight = Math.max(C.MIN_ROOM_SIZE, Math.abs(ey - sy));
     }
 
     // Convert display pixels to native coordinates
@@ -213,8 +213,8 @@ window.GR = window.GR || {};
       comments: [],
       left: Math.max(0, nativeLeft),
       top: Math.max(0, nativeTop),
-      width: Math.max(20, nativeWidth),
-      height: Math.max(20, nativeHeight)
+      width: Math.max(C.MIN_ROOM_SIZE, nativeWidth),
+      height: Math.max(C.MIN_ROOM_SIZE, nativeHeight)
     };
 
     St.saveData();
@@ -230,18 +230,11 @@ window.GR = window.GR || {};
   };
 
   /**
-   * Ermittelt die Pointer-Position.
+   * Ermittelt die Pointer-Position über die zentrale utils-Funktion.
    * @param {Event} e
    * @returns {{x:number, y:number}}
    */
   PR.getPointerPos = function(e) {
-    const touch = e.touches;
-    if (touch && touch.length > 0) {
-      return { x: touch[0].clientX, y: touch[0].clientY };
-    }
-    if (e.changedTouches && e.changedTouches.length > 0) {
-      return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
-    }
-    return { x: e.clientX, y: e.clientY };
+    return U.getPointerPos(e);
   };
 })(window.GR.placeRoom = window.GR.placeRoom || {});

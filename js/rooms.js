@@ -62,7 +62,7 @@ window.GR = window.GR || {};
     room.tasks.splice(idx, 1);
     const newDone = {};
     for (const k of Object.keys(room.done)) {
-      if (!room.done.hasOwnProperty(k)) continue;
+      if (!Object.prototype.hasOwnProperty.call(room.done, k)) continue;
       const ki = parseInt(k);
       if (ki < idx) newDone[k] = room.done[k];
       else if (ki > idx) newDone[(ki - 1).toString()] = room.done[k];
@@ -127,17 +127,21 @@ window.GR = window.GR || {};
    */
   R.deleteRoom = function(key) {
     const rooms = S.get('rooms');
-    if (!confirm(`"${rooms[key].title}" löschen?`)) return;
-    const backupRoom = U.deepClone(rooms[key]);
-    const backupKey = key;
-    delete rooms[key];
-    S.set('selectedRoom', null);
-    St.saveData();
+    const roomTitle = rooms[key]?.title || 'Unbekannt';
     const UI = window.GR.ui;
-    if (UI && UI.toast) {
-      UI.toast(`"${backupRoom.title}" gelöscht`, 'warning', 6000, function() {
-        rooms[backupKey] = backupRoom;
+    if (UI && UI.confirm) {
+      UI.confirm(`"${roomTitle}" löschen?`, function() {
+        const backupRoom = U.deepClone(rooms[key]);
+        const backupKey = key;
+        delete rooms[key];
+        S.set('selectedRoom', null);
         St.saveData();
+        if (UI && UI.toast) {
+          UI.toast(`"${backupRoom.title}" gelöscht`, 'warning', 6000, function() {
+            rooms[backupKey] = backupRoom;
+            St.saveData();
+          });
+        }
       });
     }
   };
