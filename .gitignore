@@ -1,6 +1,2 @@
-*.bak  
-config.local.js  
-node_modules/  
-dist/  
-.env  
-.env.local 
+*.bak
+config.local.js
