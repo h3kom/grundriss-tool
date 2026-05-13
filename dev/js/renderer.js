@@ -213,10 +213,10 @@ window.GR = window.GR || {};
       const UI = window.GR.ui;
       if (UI && UI.switchFloor) UI.switchFloor(room.floor);
     }
-    S.set('selectedRoom', key);
     S.set('overview', false);
     document.getElementById('btnOv')?.classList.remove('active');
-    Rdr.render();
+    // selectedRoom setzen triggert EVT_SELECTION_CHANGED → render() automatisch
+    S.set('selectedRoom', key);
     const DetailRdr = window.GR.detailRenderer;
     if (DetailRdr) DetailRdr.renderDetail(key);
     Rdr.scrollToRoom(key);

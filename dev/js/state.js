@@ -1,10 +1,3 @@
-/**
- * Grundriss Tool – Zentrales State-Management mit Event-System
- * =====================================================================
- * @module state
- * @description Verwaltet den globalen Anwendungszustand und feuert Events
- * bei Änderungen, damit Module lose gekoppelt bleiben.
- */
 window.GR = window.GR || {};
 
 (function(S) {
@@ -20,20 +13,26 @@ window.GR = window.GR || {};
    */
   const DATA_VERSION = 2;
 
+  /** @const {string} localStorage Key für Daten-Versionsnummer */
+  const DATA_VERSION_KEY = 'gr_data_version';
+
   /**
    * Führt versionierte Daten-Migrationen auf allen Räumen durch.
+   * Wird nur ausgeführt, wenn sich DATA_VERSION erhöht hat.
    * @param {Object<string,Object>} rooms
    */
   function migrateRooms(rooms) {
     if (!rooms || typeof rooms !== 'object') return;
+    // Prüfe, ob Migration überhaupt nötig ist
+    const storedVersion = parseInt(localStorage.getItem(DATA_VERSION_KEY) || '0', 10);
+    if (storedVersion >= DATA_VERSION) return;
     for (const key of Object.keys(rooms)) {
       const room = rooms[key];
-      // V1 → V2: Comments + done Felder sicherstellen
       if (!room.comments) room.comments = [];
       if (!room.done) room.done = {};
-      // V2 → V3 (Zukunft): Hier weitere Migrationen einfügen
-      // Beispiel: if (!room.tags) room.tags = [];
     }
+    // Version persistieren, damit Migration nicht bei jedem Laden läuft
+    try { localStorage.setItem(DATA_VERSION_KEY, String(DATA_VERSION)); } catch (e) { /* noop */ }
   }
 
   const _state = {
@@ -56,7 +55,8 @@ window.GR = window.GR || {};
     pollInterval: null,
     isSyncing: false,
     saveTimeout: null,
-    activeFloor: 'eg'
+    activeFloor: 'eg',
+    searchQuery: ''
   };
 
   /**
@@ -187,11 +187,12 @@ window.GR = window.GR || {};
   };
 
   /**
-   * Set undo entry to null (consumed).
+   * Removes an undo entry completely (consumed).
+   * Verwendet splice statt null-Setzung, um Memory-Leaks zu vermeiden.
    * @param {number} key - Index
    */
   S.clearUndo = function(key) {
-    _state.undoStack[key] = null;
+    _state.undoStack.splice(key, 1);
   };
 
   // Export migration for storage module
