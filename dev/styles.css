@@ -256,6 +256,7 @@ img.pi{position:relative;width:100%;height:auto;display:block;pointer-events:non
 .tb-left,.tb-right{display:flex;align-items:center;gap:6px}
 .tb-btn{background:var(--input);border:1px solid var(--border);color:var(--text);padding:5px 10px;border-radius:var(--rs);cursor:pointer;font-size:13px;font-weight:500;min-height:34px;white-space:nowrap}
 .tb-btn:hover{background:var(--blue-light)}
+.tb-btn.active{background:var(--blue);color:#fff;border-color:var(--blue)}
 .tb-project-name{font-weight:700;font-size:14px;color:var(--text);margin-left:4px}
 
 .mc{flex:1;overflow-y:auto;overflow-x:hidden}
