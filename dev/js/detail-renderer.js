@@ -23,8 +23,8 @@ window.GR = window.GR || {};
     if (!room) return;
 
     var progress = U.taskProgress(room);
-    var sbBody = document.getElementById('sbBody');
-    if (!sbBody) return;
+    var sc = document.getElementById('sc');
+    if (!sc) return;
 
     var html = DR.buildDetailHeader(key, room);
     html += DR.buildProgressBar(progress);
@@ -34,7 +34,7 @@ window.GR = window.GR || {};
     if (S.get('editMode')) html += DR.buildDeleteSection(key);
     html += DR.buildLastEditInfo();
 
-    sbBody.innerHTML = html;
+    sc.innerHTML = html;
   };
 
   /**
