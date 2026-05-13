@@ -10,6 +10,7 @@ window.GR = window.GR || {};
   'use strict';
 
   const C = window.GR.constants;
+  const U = window.GR.utils;
   const BASE = `${C.SUPABASE_URL}/rest/v1/${C.SUPABASE_TABLE}`;
   const HEADERS = {
     'Content-Type': 'application/json',
@@ -18,8 +19,9 @@ window.GR = window.GR || {};
   };
 
   /**
-   * Lädt Raumdaten von Supabase (gerätespezifisch).
-   * @returns {Promise<{data: Object, updatedAt: number}|null>}
+   * Lädt Raumdaten von Supabase.
+   * Prüft auch, ob die Daten von einem anderen Gerät geändert wurden.
+   * @returns {Promise<{data: Object, updatedAt: number, deviceId: string|null}|null>}
    */
   Cl.fetchData = async function() {
     try {
@@ -28,9 +30,15 @@ window.GR = window.GR || {};
       if (!res.ok) return null;
       const rows = await res.json();
       if (rows && rows.length > 0 && rows[0].data) {
+        // Metadaten aus den Daten extrahieren (falls vorhanden)
+        const cloudData = rows[0].data;
+        const cloudDeviceId = cloudData._meta ? cloudData._meta.deviceId : null;
+        // Bereinige Metadaten aus den Raumdaten
+        if (cloudData._meta) delete cloudData._meta;
         return {
-          data: rows[0].data,
-          updatedAt: new Date(rows[0].updated_at).getTime() || 0
+          data: cloudData,
+          updatedAt: new Date(rows[0].updated_at).getTime() || 0,
+          deviceId: cloudDeviceId
         };
       }
       return null;
@@ -42,16 +50,24 @@ window.GR = window.GR || {};
 
   /**
    * Schreibt Raumdaten nach Supabase (Upsert).
+   * Inkludiert Geräte-ID zur Erkennung von Änderungen durch andere Geräte.
    * @param {Object} rooms - Raumdaten-Objekt
    * @returns {Promise<{ok: boolean, updatedAt: number|null}>}
    */
   Cl.saveData = async function(rooms) {
     try {
       const rowId = C.SUPABASE_ROW_ID;
+      // Geräte-ID in die Daten einbetten für Multi-Device-Erkennung
+      const payload = Object.assign({}, rooms, {
+        _meta: {
+          deviceId: U.getDeviceId(),
+          savedAt: Date.now()
+        }
+      });
       const res = await fetch(BASE, {
         method: 'POST',
         headers: Object.assign({}, HEADERS, { 'Prefer': 'resolution=merge-duplicates,return=representation' }),
-        body: JSON.stringify({ id: rowId, data: rooms })
+        body: JSON.stringify({ id: rowId, data: payload })
       });
       if (res.ok) {
         const rows = await res.json();

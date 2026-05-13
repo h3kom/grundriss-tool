@@ -368,6 +368,7 @@ window.GR = window.GR || {};
       if (!target) return;
 
       var action = target.dataset.action;
+      var R = window.GR.rooms;
       switch (action) {
         case 'toggle-edit-mode':
           UI.toggleEditMode();
@@ -420,24 +421,19 @@ window.GR = window.GR || {};
           UI.openRenameModal(target.dataset.key);
           break;
         case 'delete-task':
-          var Rooms = window.GR.rooms;
-          if (Rooms && target.dataset.key) Rooms.deleteTask(target.dataset.key, parseInt(target.dataset.idx));
+          if (R && target.dataset.key) R.deleteTask(target.dataset.key, parseInt(target.dataset.idx));
           break;
         case 'add-task':
-          var Rooms2 = window.GR.rooms;
-          if (Rooms2 && target.dataset.key) Rooms2.addTask(target.dataset.key);
+          if (R && target.dataset.key) R.addTask(target.dataset.key);
           break;
         case 'delete-comment':
-          var Rooms3 = window.GR.rooms;
-          if (Rooms3 && target.dataset.key) Rooms3.deleteComment(target.dataset.key, parseInt(target.dataset.idx));
+          if (R && target.dataset.key) R.deleteComment(target.dataset.key, parseInt(target.dataset.idx));
           break;
         case 'add-comment':
-          var Rooms4 = window.GR.rooms;
-          if (Rooms4 && target.dataset.key) Rooms4.addComment(target.dataset.key);
+          if (R && target.dataset.key) R.addComment(target.dataset.key);
           break;
         case 'delete-room':
-          var Rooms5 = window.GR.rooms;
-          if (Rooms5 && target.dataset.key) Rooms5.deleteRoom(target.dataset.key);
+          if (R && target.dataset.key) R.deleteRoom(target.dataset.key);
           break;
       }
     });
@@ -498,6 +494,8 @@ window.GR = window.GR || {};
     // Input-Delegation für Suche
     document.addEventListener('input', function(e) {
       if (e.target.classList.contains('os')) {
+        // Suchwert im State speichern (zuverlässiger als DOM-Read)
+        S.set('searchQuery', e.target.value);
         var OR = window.GR.overviewRenderer;
         if (OR) OR.debouncedSearch();
       }
