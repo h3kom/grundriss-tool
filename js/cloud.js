@@ -1,86 +1,95 @@
 /**
- * Grundriss Tool – Supabase-Cloud-API
+ * Grundriss Tool – Cloud-Sync (Supabase)
  * =====================================================================
  * @module cloud
- * @description Kapselt alle Supabase-Fetch-Operationen (lesen & schreiben).
+ * @description Speichert/Lädt Raumdaten in Supabase (project-based).
  */
 window.GR = window.GR || {};
 
-(function(Cl) {
+(function(Cloud) {
   'use strict';
 
   const C = window.GR.constants;
-  const U = window.GR.utils;
-  const BASE = `${C.SUPABASE_URL}/rest/v1/${C.SUPABASE_TABLE}`;
-  const HEADERS = {
-    'Content-Type': 'application/json',
-    'apikey': C.SUPABASE_ANON_KEY,
-    'Authorization': `Bearer ${C.SUPABASE_ANON_KEY}`
-  };
+  const S = window.GR.state;
 
   /**
-   * Lädt Raumdaten von Supabase.
-   * Prüft auch, ob die Daten von einem anderen Gerät geändert wurden.
-   * @returns {Promise<{data: Object, updatedAt: number, deviceId: string|null}|null>}
+   * Speichert die aktuellen Räume in Supabase.
+   * @param {Object} rooms - Raumdaten
+   * @returns {Promise<{ok: boolean, error?: string}>}
    */
-  Cl.fetchData = async function() {
+  Cloud.saveToCloud = async function(rooms) {
+    var Auth = window.GR.auth;
+    var sb = Auth ? Auth.getSupabase() : null;
+    if (!sb) return { ok: false, error: 'Supabase nicht verfügbar' };
+
+    var project = S.get('currentProject');
+    if (!project) return { ok: false, error: 'Kein Projekt ausgewählt' };
+    if (!project.roomsRowId) return { ok: false, error: 'Keine Room-Row-ID' };
+
     try {
-      const rowId = C.SUPABASE_ROW_ID;
-      const res = await fetch(`${BASE}?id=eq.${rowId}&select=data,updated_at`, { headers: HEADERS });
-      if (!res.ok) return null;
-      const rows = await res.json();
-      if (rows && rows.length > 0 && rows[0].data) {
-        // Metadaten aus den Daten extrahieren (falls vorhanden)
-        const cloudData = rows[0].data;
-        const cloudDeviceId = cloudData._meta ? cloudData._meta.deviceId : null;
-        // Bereinige Metadaten aus den Raumdaten
-        if (cloudData._meta) delete cloudData._meta;
-        return {
-          data: cloudData,
-          updatedAt: new Date(rows[0].updated_at).getTime() || 0,
-          deviceId: cloudDeviceId
-        };
+      var result = await sb.from('rooms')
+        .update({ data: rooms, updated_at: new Date().toISOString() })
+        .eq('id', project.roomsRowId);
+
+      if (result.error) {
+        console.warn('[cloud] Save error:', result.error.message);
+        return { ok: false, error: result.error.message };
       }
-      return null;
+
+      return { ok: true };
     } catch (e) {
-      console.warn('[cloud] fetchData failed:', e.message || e);
-      return null;
+      console.warn('[cloud] Save exception:', e.message);
+      return { ok: false, error: e.message };
     }
   };
 
   /**
-   * Schreibt Raumdaten nach Supabase (Upsert).
-   * Inkludiert Geräte-ID zur Erkennung von Änderungen durch andere Geräte.
-   * @param {Object} rooms - Raumdaten-Objekt
-   * @returns {Promise<{ok: boolean, updatedAt: number|null}>}
+   * Lädt Raumdaten aus Supabase.
+   * @returns {Promise<{ok: boolean, rooms?: Object, error?: string}>}
    */
-  Cl.saveData = async function(rooms) {
+  Cloud.loadFromCloud = async function() {
+    var Auth = window.GR.auth;
+    var sb = Auth ? Auth.getSupabase() : null;
+    if (!sb) return { ok: false, error: 'Supabase nicht verfügbar' };
+
+    var project = S.get('currentProject');
+    if (!project) return { ok: false, error: 'Kein Projekt ausgewählt' };
+
     try {
-      const rowId = C.SUPABASE_ROW_ID;
-      // Geräte-ID in die Daten einbetten für Multi-Device-Erkennung
-      const payload = Object.assign({}, rooms, {
-        _meta: {
-          deviceId: U.getDeviceId(),
-          savedAt: Date.now()
-        }
-      });
-      const res = await fetch(BASE, {
-        method: 'POST',
-        headers: Object.assign({}, HEADERS, { 'Prefer': 'resolution=merge-duplicates,return=representation' }),
-        body: JSON.stringify({ id: rowId, data: payload })
-      });
-      if (res.ok) {
-        const rows = await res.json();
-        let updatedAt = null;
-        if (rows && rows.length > 0 && rows[0].updated_at) {
-          updatedAt = new Date(rows[0].updated_at).getTime();
-        }
-        return { ok: true, updatedAt };
+      var result = await sb.from('rooms')
+        .select('data, updated_at, id')
+        .eq('project_id', project.id)
+        .order('updated_at', { ascending: false })
+        .limit(1);
+
+      if (result.error) {
+        return { ok: false, error: result.error.message };
       }
-      return { ok: false, updatedAt: null };
+
+      if (result.data && result.data.length > 0) {
+        // Update roomsRowId falls nötig
+        if (result.data[0].id !== project.roomsRowId) {
+          project.roomsRowId = result.data[0].id;
+        }
+        return { ok: true, rooms: result.data[0].data || {} };
+      }
+
+      return { ok: true, rooms: {} };
     } catch (e) {
-      console.warn('[cloud] saveData failed:', e.message || e);
-      return { ok: false, updatedAt: null };
+      return { ok: false, error: e.message };
     }
   };
+
+  /**
+   * Alte saveToSupabase-Funktion (backward compat).
+   * Leitet an saveToCloud weiter.
+   */
+  Cloud.saveToSupabase = Cloud.saveToCloud;
+
+  /**
+   * Alte loadFromSupabase-Funktion (backward compat).
+   * Leitet an loadFromCloud weiter.
+   */
+  Cloud.loadFromSupabase = Cloud.loadFromCloud;
+
 })(window.GR.cloud = window.GR.cloud || {});
