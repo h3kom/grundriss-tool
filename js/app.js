@@ -222,6 +222,8 @@ window.GR = window.GR || {};
     }
 
     S.set('activeFloor', 'eg');
+    var nameEl = document.getElementById('projectName');
+    if (nameEl) nameEl.textContent = 'Lokales Projekt';
     App.showView('editor');
 
     // Intro anzeigen falls noch nicht gesehen
@@ -506,6 +508,9 @@ window.GR = window.GR || {};
 
     var success = await Proj.openProject(projectId);
     if (success) {
+      var proj = S.get('currentProject');
+      var nameEl = document.getElementById('projectName');
+      if (nameEl && proj) nameEl.textContent = proj.name || '';
       App.showView('editor');
       var Rdr = window.GR.renderer;
       if (Rdr && Rdr.render) Rdr.render();
