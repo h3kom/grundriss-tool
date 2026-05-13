@@ -192,31 +192,38 @@ window.GR = window.GR || {};
   // Undo
   // ===================================================================
 
+  /** Unique ID counter for undo entries */
+  var _undoCounter = 0;
+
   /**
    * Push an undo callback (with max limit).
    * @param {Function} callback - Rückgängig-Funktion
+   * @returns {number} Unique undo ID
    */
   S.pushUndo = function(callback) {
-    _state.undoStack.push(callback);
+    var id = ++_undoCounter;
+    _state.undoStack.push({ id: id, fn: callback });
     if (_state.undoStack.length > C.MAX_UNDO) _state.undoStack.shift();
+    return id;
   };
 
   /**
-   * Get undo callback by key.
-   * @param {number} key - Index
+   * Get undo callback by ID.
+   * @param {number} id - Undo ID
    * @returns {Function|null}
    */
-  S.getUndo = function(key) {
-    return _state.undoStack[key];
+  S.getUndo = function(id) {
+    var entry = _state.undoStack.find(function(e) { return e.id === id; });
+    return entry ? entry.fn : null;
   };
 
   /**
-   * Removes an undo entry completely (consumed).
-   * Verwendet splice statt null-Setzung, um Memory-Leaks zu vermeiden.
-   * @param {number} key - Index
+   * Removes an undo entry by ID (consumed).
+   * @param {number} id - Undo ID
    */
-  S.clearUndo = function(key) {
-    _state.undoStack.splice(key, 1);
+  S.clearUndo = function(id) {
+    var idx = _state.undoStack.findIndex(function(e) { return e.id === id; });
+    if (idx >= 0) _state.undoStack.splice(idx, 1);
   };
 
   // Export migration for storage module
