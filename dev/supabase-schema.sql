@@ -224,22 +224,19 @@ CREATE POLICY "Owners can delete projects"
   ON public.projects FOR DELETE
   USING (owner_id = auth.uid());
 
--- Project Members: Owner und Members können sehen
+-- Project Members: KEIN Cross-Reference zu projects (vermeidet infinite recursion!)
+-- WICHTIG: project_members SELECT darf NICHT projects referenzieren!
 DROP POLICY IF EXISTS "Members can view project members" ON public.project_members;
 CREATE POLICY "Members can view project members"
   ON public.project_members FOR SELECT
-  USING (
-    user_id = auth.uid()
-    OR EXISTS (
-      SELECT 1 FROM public.projects p WHERE p.id = project_id AND p.owner_id = auth.uid()
-    )
-  );
+  USING (user_id = auth.uid());
 
 DROP POLICY IF EXISTS "Owners can add members" ON public.project_members;
 CREATE POLICY "Owners can add members"
   ON public.project_members FOR INSERT
   WITH CHECK (
-    EXISTS (
+    user_id = auth.uid()
+    OR EXISTS (
       SELECT 1 FROM public.projects p WHERE p.id = project_id AND p.owner_id = auth.uid()
     )
   );
@@ -248,7 +245,8 @@ DROP POLICY IF EXISTS "Owners can remove members" ON public.project_members;
 CREATE POLICY "Owners can remove members"
   ON public.project_members FOR DELETE
   USING (
-    EXISTS (
+    user_id = auth.uid()
+    OR EXISTS (
       SELECT 1 FROM public.projects p WHERE p.id = project_id AND p.owner_id = auth.uid()
     )
   );
@@ -262,20 +260,18 @@ CREATE POLICY "Owners can update member roles"
     )
   );
 
--- Floors: Projekt-Mitglieder können sehen
+-- Floors: Projekt-Mitglieder können sehen (kein nested EXISTS!)
 DROP POLICY IF EXISTS "Members can view floors" ON public.floors;
 CREATE POLICY "Members can view floors"
   ON public.floors FOR SELECT
   USING (
     EXISTS (
       SELECT 1 FROM public.projects p
-      WHERE p.id = project_id AND (
-        p.owner_id = auth.uid()
-        OR EXISTS (
-          SELECT 1 FROM public.project_members pm
-          WHERE pm.project_id = p.id AND pm.user_id = auth.uid()
-        )
-      )
+      WHERE p.id = project_id AND p.owner_id = auth.uid()
+    )
+    OR EXISTS (
+      SELECT 1 FROM public.project_members pm
+      WHERE pm.project_id = project_id AND pm.user_id = auth.uid()
     )
   );
 
@@ -285,13 +281,11 @@ CREATE POLICY "Editors can insert floors"
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM public.projects p
-      WHERE p.id = project_id AND (
-        p.owner_id = auth.uid()
-        OR EXISTS (
-          SELECT 1 FROM public.project_members pm
-          WHERE pm.project_id = p.id AND pm.user_id = auth.uid() AND pm.role IN ('owner', 'editor')
-        )
-      )
+      WHERE p.id = project_id AND p.owner_id = auth.uid()
+    )
+    OR EXISTS (
+      SELECT 1 FROM public.project_members pm
+      WHERE pm.project_id = project_id AND pm.user_id = auth.uid() AND pm.role IN ('owner', 'editor')
     )
   );
 
@@ -301,13 +295,11 @@ CREATE POLICY "Editors can update floors"
   USING (
     EXISTS (
       SELECT 1 FROM public.projects p
-      WHERE p.id = project_id AND (
-        p.owner_id = auth.uid()
-        OR EXISTS (
-          SELECT 1 FROM public.project_members pm
-          WHERE pm.project_id = p.id AND pm.user_id = auth.uid() AND pm.role IN ('owner', 'editor')
-        )
-      )
+      WHERE p.id = project_id AND p.owner_id = auth.uid()
+    )
+    OR EXISTS (
+      SELECT 1 FROM public.project_members pm
+      WHERE pm.project_id = project_id AND pm.user_id = auth.uid() AND pm.role IN ('owner', 'editor')
     )
   );
 
@@ -321,22 +313,19 @@ CREATE POLICY "Owners can delete floors"
     )
   );
 
--- Rooms: Projekt-Mitglieder können sehen/bearbeiten
+-- Rooms: Projekt-Mitglieder können sehen/bearbeiten (kein nested EXISTS!)
 DROP POLICY IF EXISTS "Members can view rooms" ON public.rooms;
 CREATE POLICY "Members can view rooms"
   ON public.rooms FOR SELECT
   USING (
-    -- Ohne project_id: Owner-basiert (Fallback für alte Daten)
     project_id IS NULL
     OR EXISTS (
       SELECT 1 FROM public.projects p
-      WHERE p.id = project_id AND (
-        p.owner_id = auth.uid()
-        OR EXISTS (
-          SELECT 1 FROM public.project_members pm
-          WHERE pm.project_id = p.id AND pm.user_id = auth.uid()
-        )
-      )
+      WHERE p.id = project_id AND p.owner_id = auth.uid()
+    )
+    OR EXISTS (
+      SELECT 1 FROM public.project_members pm
+      WHERE pm.project_id = project_id AND pm.user_id = auth.uid()
     )
   );
 
@@ -346,13 +335,11 @@ CREATE POLICY "Editors can insert rooms"
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM public.projects p
-      WHERE p.id = project_id AND (
-        p.owner_id = auth.uid()
-        OR EXISTS (
-          SELECT 1 FROM public.project_members pm
-          WHERE pm.project_id = p.id AND pm.user_id = auth.uid() AND pm.role IN ('owner', 'editor')
-        )
-      )
+      WHERE p.id = project_id AND p.owner_id = auth.uid()
+    )
+    OR EXISTS (
+      SELECT 1 FROM public.project_members pm
+      WHERE pm.project_id = project_id AND pm.user_id = auth.uid() AND pm.role IN ('owner', 'editor')
     )
   );
 
@@ -363,13 +350,11 @@ CREATE POLICY "Editors can update rooms"
     project_id IS NULL
     OR EXISTS (
       SELECT 1 FROM public.projects p
-      WHERE p.id = project_id AND (
-        p.owner_id = auth.uid()
-        OR EXISTS (
-          SELECT 1 FROM public.project_members pm
-          WHERE pm.project_id = p.id AND pm.user_id = auth.uid() AND pm.role IN ('owner', 'editor')
-        )
-      )
+      WHERE p.id = project_id AND p.owner_id = auth.uid()
+    )
+    OR EXISTS (
+      SELECT 1 FROM public.project_members pm
+      WHERE pm.project_id = project_id AND pm.user_id = auth.uid() AND pm.role IN ('owner', 'editor')
     )
   );
 
