@@ -23,6 +23,9 @@ window.GR = window.GR || {};
     return typeof navigator.onLine === 'undefined' ? true : navigator.onLine;
   }
 
+  /** @type {boolean} Ob die globalen Listener bereits registriert wurden */
+  var _globalListenersRegistered = false;
+
   /**
    * Startet das Polling-Intervall für Cloud-Sync.
    * Berücksichtigt Offline-Status und Tab-Visibility.
@@ -75,24 +78,29 @@ window.GR = window.GR || {};
     }, C.SYNC_INTERVAL);
     S.set('pollInterval', interval);
 
-    // Tab-Visibility API: Polling pausieren wenn Tab unsichtbar
-    document.addEventListener('visibilitychange', function() {
-      if (document.hidden) {
-        Sync.pausePolling();
-      } else {
-        Sync.resumePolling();
-      }
-    });
+    // Globale Listener nur EINMAL registrieren (verhindert Memory-Leak)
+    if (!_globalListenersRegistered) {
+      _globalListenersRegistered = true;
 
-    // Online/Offline-Event-Listener
-    window.addEventListener('online', function() {
-      Sync.setSyncStatus('idle');
-      // Sofort einmal synchen bei Rückkehr online
-      Sync.saveToCloud();
-    });
-    window.addEventListener('offline', function() {
-      Sync.setSyncStatus('error');
-    });
+      // Tab-Visibility API: Polling pausieren wenn Tab unsichtbar
+      document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+          Sync.pausePolling();
+        } else {
+          Sync.resumePolling();
+        }
+      });
+
+      // Online/Offline-Event-Listener
+      window.addEventListener('online', function() {
+        Sync.setSyncStatus('idle');
+        // Sofort einmal synchen bei Rückkehr online
+        Sync.saveToCloud();
+      });
+      window.addEventListener('offline', function() {
+        Sync.setSyncStatus('error');
+      });
+    }
   };
 
   /**
@@ -116,14 +124,31 @@ window.GR = window.GR || {};
   };
 
   /**
-   * Wendet Cloud-Daten auf den lokalen State an.
+   * Wendet Cloud-Daten auf den lokalen State an (Merge-Strategie).
+   * Lokale Änderungen, die neuer sind als der Sync-Zeitpunkt, werden nicht überschrieben.
    * @param {Object} data - Raumdaten von der Cloud
    * @param {number} timestamp - Server-Timestamp
    */
   Sync.applyCloudData = function(data, timestamp) {
+    const localRooms = S.get('rooms');
+    const ts = timestamp || Date.now();
+
+    // Merge: Cloud-Daten als Basis, lokale Änderungen beibehalten
+    for (const key of Object.keys(localRooms)) {
+      if (localRooms[key]._dirty) {
+        // Lokal geänderter Raum – behalte lokale Version, markiere als sauber
+        if (!data[key]) {
+          data[key] = localRooms[key]; // Neuer lokaler Raum, noch nicht in Cloud
+        } else {
+          // Beide vorhanden: lokal geänderten Raum bevorzugen
+          data[key] = localRooms[key];
+        }
+        delete data[key]._dirty;
+      }
+    }
+
     S.set('rooms', data);
     U.ensureAllRooms(S.get('rooms'));
-    const ts = timestamp || Date.now();
     S.set('serverStamp', ts);
     S.set('lastSaveTs', ts);
     St.saveToLocal();
