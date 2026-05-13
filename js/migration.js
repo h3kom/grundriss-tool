@@ -81,6 +81,10 @@ window.GR = window.GR || {};
       ];
 
       var floorResult = await sb.from('floors').insert(floorRecords).select('id, name, sort_order');
+      if (floorResult.error) {
+        console.warn('[migration] floor insert failed:', floorResult.error.message);
+        return { ok: false };
+      }
       var floors = floorResult.data || [];
 
       // Alte Raumdaten: Floor-IDs von 'eg'/'og' auf neue Floor-IDs mappen
@@ -97,17 +101,25 @@ window.GR = window.GR || {};
       }
 
       // Räume in Supabase speichern
-      await sb.from('rooms').insert({
+      var roomsResult = await sb.from('rooms').insert({
         project_id: projectId,
         data: migratedRooms
       });
+      if (roomsResult.error) {
+        console.warn('[migration] rooms insert failed:', roomsResult.error.message);
+        return { ok: false };
+      }
 
       // Owner als Member hinzufügen
-      await sb.from('project_members').insert({
+      var memberResult = await sb.from('project_members').insert({
         project_id: projectId,
         user_id: user.id,
         role: 'owner'
       });
+      if (memberResult.error) {
+        console.warn('[migration] member insert failed:', memberResult.error.message);
+        // Non-fatal – Projekt existiert bereits
+      }
 
       // Migration als fertig markieren
       Mig._markMigrated();

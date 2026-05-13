@@ -59,8 +59,7 @@ window.GR = window.GR || {};
     el.appendChild(closeBtn);
 
     if (undoCallback) {
-      el.dataset.undoKey = S.get('undoStack').length;
-      S.pushUndo(undoCallback);
+      el.dataset.undoKey = S.pushUndo(undoCallback);
     }
 
     container.appendChild(el);
