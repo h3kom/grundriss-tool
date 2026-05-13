@@ -1,9 +1,3 @@
-/**
- * Grundriss Tool – Drag-Interaktion (Räume verschieben)
- * =====================================================================
- * @module drag
- * @description Ermöglicht das Verschieben von Räumen per Maus/Touch im Edit-Mode.
- */
 window.GR = window.GR || {};
 
 (function(D) {
@@ -68,8 +62,8 @@ window.GR = window.GR || {};
       e.preventDefault();
     }
 
-    var safeKey = U.escAttr(ds.key);
-    var el = document.querySelector('.ro[data-key="' + safeKey + '"]');
+    // Element aus dragState referenzieren statt每mal DOM-Query
+    const el = ds.element;
     if (el) {
       const scale = U.getScale(ds.wrapper);
       el.style.left = Math.round(ds.origLeft * scale + dx) + 'px';
@@ -105,8 +99,7 @@ window.GR = window.GR || {};
       return;
     }
 
-    var safeKey = U.escAttr(ds.key);
-    var el = document.querySelector('.ro[data-key="' + safeKey + '"]');
+    const el = ds.element;
     if (!el) {
       S.set('dragState', null);
       return;
@@ -118,8 +111,14 @@ window.GR = window.GR || {};
 
     const rooms = S.get('rooms');
     if (newLeft !== ds.origLeft || newTop !== ds.origTop) {
-      rooms[ds.key].left = newLeft;
-      rooms[ds.key].top = newTop;
+      // Grenzenprüfung: Raum darf nicht aus dem Grundriss verschoben werden
+      const nativeWidth = C.NATIVE_WIDTHS[U.detectFloorId(ds.wrapper.id)] || 1000;
+      const room = rooms[ds.key];
+      const clampedLeft = Math.max(0, Math.min(newLeft, nativeWidth - (room ? room.width : C.MIN_ROOM_SIZE)));
+      const clampedTop = Math.max(0, newTop);
+
+      rooms[ds.key].left = clampedLeft;
+      rooms[ds.key].top = clampedTop;
       ds.saved = true;
       St.saveData();
     }

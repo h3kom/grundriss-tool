@@ -67,9 +67,10 @@ window.GR = window.GR || {};
    */
   U.escHtml = function(str) {
     if (str == null) return '';
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+    // String-basiertes Escaping – performanter als DOM-Element-Erstellung
+    return String(str).replace(/[&<>"']/g, function(ch) {
+      return { '&': '\x26amp;', '<': '\x26lt;', '>': '\x26gt;', '"': '\x26quot;', "'": '\x26#39;' }[ch];
+    });
   };
 
   /**

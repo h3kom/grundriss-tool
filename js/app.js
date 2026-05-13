@@ -68,7 +68,12 @@ window.GR = window.GR || {};
       }, { passive: false });
     });
 
-    await St.loadData();
+    try {
+      await St.loadData();
+    } catch (e) {
+      console.error('[app] Fehler beim Laden der Daten:', e);
+      UI.toast('⚠️ Fehler beim Laden – lokale Daten werden verwendet', 'error', 4000);
+    }
     Rdr.render();
 
     // Sync indicator is already in HTML
