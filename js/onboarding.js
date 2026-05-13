@@ -106,7 +106,9 @@ window.GR = window.GR || {};
    * Schritt 2: Stockwerke konfigurieren.
    */
   OB.renderStep2 = function(body) {
-    var projectName = (document.getElementById('obProjectName')?.value || '').trim() || 'Unbenanntes Projekt';
+    // Projektname aus Step 1 lesen und merken (Input wird bei renderStep2 zerstört)
+    OB._projectName = (document.getElementById('obProjectName')?.value || '').trim() || 'Unbenanntes Projekt';
+    var projectName = OB._projectName;
 
     body.innerHTML =
       '<div class="ob-step">' +
@@ -189,7 +191,7 @@ window.GR = window.GR || {};
    * Erstellt das Projekt aus den Wizard-Daten.
    */
   OB.createProjectFromWizard = async function() {
-    var projectName = (document.getElementById('obProjectName')?.value || '').trim() || 'Unbenanntes Projekt';
+    var projectName = OB._projectName || 'Unbenanntes Projekt';
 
     // Floor-Namen aus Inputs lesen (falls zwischenzeitlich geändert)
     var nameInputs = document.querySelectorAll('.ob-floor-name');
@@ -227,6 +229,10 @@ window.GR = window.GR || {};
 
       // Projekt öffnen
       await Proj.openProject(result.projectId);
+
+      // Projektname in Top-Bar setzen
+      var nameEl = document.getElementById('projectName');
+      if (nameEl) nameEl.textContent = projectName;
 
       // View wechseln zum Editor
       var App = window.GR.app;
