@@ -1,3 +1,9 @@
+/**
+ * Grundriss Tool – State Management
+ * =====================================================================
+ * @module state
+ * @description Zentraler State mit Pub/Sub-Event-System.
+ */
 window.GR = window.GR || {};
 
 (function(S) {
@@ -36,17 +42,35 @@ window.GR = window.GR || {};
   }
 
   const _state = {
+    // === Auth & User ===
+    currentUser: null,
+    isAuthenticated: false,
+
+    // === Project ===
+    currentProject: null,        // { id, name, ownerId, roomsRowId }
+    currentProjectFloors: [],    // [{ id, name, imageUrl, nativeWidth, sortOrder }]
+
+    // === Rooms ===
     rooms: {},
     selectedRoom: null,
     editMode: false,
     overview: false,
+
+    // === UI ===
     sidebarOpen: false,
     sidebarWasManuallyOpened: false,
+    activeFloor: 'eg',
+    searchQuery: '',
+    currentView: 'auth',        // 'auth' | 'dashboard' | 'editor'
+
+    // === Interaction ===
     dragState: null,
     resizeState: null,
     isPlacing: false,
     placeFloor: null,
     placeState: null,
+
+    // === Sync ===
     debounceTimer: null,
     lastSaveTs: Date.now(),
     undoStack: [],
@@ -54,9 +78,7 @@ window.GR = window.GR || {};
     serverStamp: 0,
     pollInterval: null,
     isSyncing: false,
-    saveTimeout: null,
-    activeFloor: 'eg',
-    searchQuery: ''
+    saveTimeout: null
   };
 
   /**
@@ -76,7 +98,6 @@ window.GR = window.GR || {};
    * @param {*} value - Neuer Wert
    */
   S.set = function(key, value) {
-    // Nur bekannte State-Keys setzen, sonst Warnung
     if (!(key in _state)) {
       console.warn(`[state] Unknown key "${key}" ignored by set()`);
       return;
@@ -95,6 +116,9 @@ window.GR = window.GR || {};
     }
     if (key === 'syncStatus' && old !== value) {
       S.notify(C.EVT_SYNC_STATUS_CHANGED, value);
+    }
+    if (key === 'currentView' && old !== value) {
+      S.notify(C.EVT_AUTH_CHANGED, value);
     }
   };
 

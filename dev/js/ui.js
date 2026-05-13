@@ -29,30 +29,30 @@ window.GR = window.GR || {};
    * @param {Function} [undoCallback] - Optionale Undo-Funktion
    */
   function toast(message, type, duration, undoCallback) {
-    const container = document.getElementById('tc');
+    var container = document.getElementById('toasts') || document.getElementById('tc');
     if (!container) return;
 
-    const icons = { success: '\u2705', error: '\u274C', warning: '\u26A0\uFE0F', info: '\u2139\uFE0F' };
-    const el = document.createElement('div');
+    var icons = { success: '\u2705', error: '\u274C', warning: '\u26A0\uFE0F', info: '\u2139\uFE0F' };
+    var el = document.createElement('div');
     el.className = 't t' + type[0];
 
-    const iconSpan = document.createElement('span');
+    var iconSpan = document.createElement('span');
     iconSpan.textContent = icons[type] || '\u2139\uFE0F';
     el.appendChild(iconSpan);
 
-    const msgSpan = document.createElement('span');
+    var msgSpan = document.createElement('span');
     msgSpan.textContent = message;
     el.appendChild(msgSpan);
 
     if (undoCallback) {
-      const undoBtn = document.createElement('button');
+      var undoBtn = document.createElement('button');
       undoBtn.className = 'tu';
       undoBtn.dataset.action = 'execute-undo';
       undoBtn.textContent = '\u21A9 R\u00FCckg\u00E4ngig';
       el.appendChild(undoBtn);
     }
 
-    const closeBtn = document.createElement('button');
+    var closeBtn = document.createElement('button');
     closeBtn.className = 'td';
     closeBtn.dataset.action = 'dismiss-toast';
     closeBtn.textContent = '\u2715';
@@ -75,7 +75,6 @@ window.GR = window.GR || {};
 
   /**
    * Schließt einen Toast mit Animation.
-   * @param {HTMLElement} toastElement
    */
   function dismissToast(toastElement) {
     if (!toastElement || !toastElement.classList) return;
@@ -89,7 +88,7 @@ window.GR = window.GR || {};
    * Führt eine Undo-Operation aus.
    */
   function executeUndo() {
-    var container = document.getElementById('tc');
+    var container = document.getElementById('toasts') || document.getElementById('tc');
     if (!container) return;
     var target = null;
     var elements = container.querySelectorAll('.t');
@@ -114,39 +113,32 @@ window.GR = window.GR || {};
   UI.toast = toast;
   UI.dismissToast = dismissToast;
   UI.executeUndo = executeUndo;
-  // Override storage stub
   St.toast = toast;
 
   // ===================================================================
   // Sidebar
   // ===================================================================
 
-  /**
-   * Öffnet/schließt die Sidebar.
-   */
   UI.toggleSidebar = function() {
     S.set('sidebarOpen', !S.get('sidebarOpen'));
-    document.getElementById('sb')?.classList.toggle('open', S.get('sidebarOpen'));
+    var sb = document.getElementById('sb');
+    if (sb) sb.classList.toggle('open', S.get('sidebarOpen'));
     if (S.get('sidebarOpen')) S.set('sidebarWasManuallyOpened', true);
   };
 
-  /**
-   * Öffnet die Sidebar, falls geschlossen.
-   */
   UI.openSidebar = function() {
     if (!S.get('sidebarOpen')) {
       S.set('sidebarOpen', true);
-      document.getElementById('sb')?.classList.add('open');
+      var sb = document.getElementById('sb');
+      if (sb) sb.classList.add('open');
     }
   };
 
-  /**
-   * Schließt die Sidebar, falls offen.
-   */
   UI.closeSidebar = function() {
     if (S.get('sidebarOpen')) {
       S.set('sidebarOpen', false);
-      document.getElementById('sb')?.classList.remove('open');
+      var sb = document.getElementById('sb');
+      if (sb) sb.classList.remove('open');
     }
   };
 
@@ -154,28 +146,36 @@ window.GR = window.GR || {};
   // Floor Switching
   // ===================================================================
 
-  /**
-   * Wechselt zwischen EG und OG.
-   * @param {string} floor - 'eg' | 'og'
-   */
   UI.switchFloor = function(floor) {
     S.set('activeFloor', floor);
-    document.querySelectorAll('.floor').forEach(function(el) { el.classList.remove('active'); });
-    document.querySelectorAll('.floor-tabs button').forEach(function(el) { el.classList.remove('active'); });
 
-    var floorId = 'floor' + floor.charAt(0).toUpperCase() + floor.slice(1);
-    var tabId = 'tab' + floor.charAt(0).toUpperCase() + floor.slice(1);
+    // Floor-Tabs aktualisieren
+    document.querySelectorAll('.ft-tab').forEach(function(el) { el.classList.remove('active'); });
+    var tab = document.getElementById('tab-' + floor);
+    if (tab) tab.classList.add('active');
 
-    document.getElementById(floorId)?.classList.add('active');
-    document.getElementById(tabId)?.classList.add('active');
+    // Plan-Wrapper Sichtbarkeit
+    var floors = S.get('currentProjectFloors');
+    if (!floors || floors.length === 0) {
+      floors = [{ id: 'eg' }, { id: 'og' }];
+    }
+    for (var i = 0; i < floors.length; i++) {
+      var w = document.getElementById(floors[i].id + '-w');
+      if (w) w.style.display = (floors[i].id === floor) ? '' : 'none';
+    }
+
+    // Scale-Cache zurücksetzen
+    U._resetScaleCache();
 
     Sync.updateTabBadges();
 
+    // Auswahl zurücksetzen wenn Raum auf anderer Etage
     var rooms = S.get('rooms');
-    if (S.get('selectedRoom') && rooms[S.get('selectedRoom')] && rooms[S.get('selectedRoom')].floor !== floor) {
+    var selected = S.get('selectedRoom');
+    if (selected && rooms[selected] && rooms[selected].floor !== floor) {
       S.set('selectedRoom', null);
-      var sbBody = document.getElementById('sbBody');
-      if (sbBody) sbBody.innerHTML = '<p class="hint">\uD83D\uDC46 Raum antippen</p>';
+      var sc = document.getElementById('sc');
+      if (sc) sc.innerHTML = '<p class="hint">\uD83D\uDC46 Raum antippen</p>';
     }
   };
 
@@ -183,19 +183,14 @@ window.GR = window.GR || {};
   // Edit Mode
   // ===================================================================
 
-  /**
-   * Setzt den Edit-Mode.
-   * @param {boolean} enabled
-   */
   UI.setEditMode = function(enabled) {
     if (S.get('editMode') === enabled) return;
     S.set('editMode', enabled);
 
-    document.getElementById('btnEm')?.classList.toggle('active', enabled);
-    document.getElementById('eb')?.classList.toggle('show', enabled);
-    document.getElementById('mc')?.classList.toggle('ea', enabled);
+    var btnEdit = document.getElementById('btnEdit');
+    if (btnEdit) btnEdit.classList.toggle('active', enabled);
+
     document.querySelectorAll('.ro').forEach(function(el) { el.classList.toggle('em', enabled); });
-    document.querySelectorAll('.fa button').forEach(function(btn) { btn.style.display = enabled ? '' : 'none'; });
 
     if (enabled) {
       UI.closeSidebar();
@@ -209,28 +204,36 @@ window.GR = window.GR || {};
     }
   };
 
-  /**
-   * Schaltet den Edit-Mode um.
-   */
   UI.toggleEditMode = function() {
     UI.setEditMode(!S.get('editMode'));
   };
 
   // ===================================================================
-  // Confirm Modal (ersetzt browser-native confirm())
+  // Overview
   // ===================================================================
 
-  /** @type {Function|null} Aktueller Confirm-Callback */
+  UI.toggleOverview = function() {
+    var overview = !S.get('overview');
+    S.set('overview', overview);
+
+    var btnOv = document.getElementById('btnOv');
+    if (btnOv) btnOv.classList.toggle('active', overview);
+
+    if (overview) {
+      var OR = window.GR.overviewRenderer;
+      if (OR) OR.showOverview();
+    }
+  };
+
+  // ===================================================================
+  // Confirm (im Sidebar-Content)
+  // ===================================================================
+
   var _confirmCallback = null;
 
-  /**
-   * Zeigt einen modalen Bestätigungsdialog an.
-   * @param {string} message - Die anzuzeigende Nachricht
-   * @param {Function} onConfirm - Wird bei Bestätigung aufgerufen
-   */
   UI.confirm = function(message, onConfirm) {
     _confirmCallback = onConfirm;
-    var body = document.getElementById('sbBody');
+    var body = document.getElementById('sc');
     if (!body) return;
 
     body.innerHTML = '';
@@ -261,23 +264,17 @@ window.GR = window.GR || {};
     body.appendChild(dialog);
   };
 
-  /**
-   * Führt die Bestätigung aus.
-   */
   UI.executeConfirm = function() {
     if (_confirmCallback) _confirmCallback();
     _confirmCallback = null;
-    var sbBody = document.getElementById('sbBody');
-    if (sbBody) sbBody.innerHTML = '<p class="hint">\uD83D\uDC46 Raum antippen</p>';
+    var sc = document.getElementById('sc');
+    if (sc) sc.innerHTML = '<p class="hint">\uD83D\uDC46 Raum antippen</p>';
   };
 
-  /**
-   * Bricht die Bestätigung ab.
-   */
   UI.cancelConfirm = function() {
     _confirmCallback = null;
-    var sbBody = document.getElementById('sbBody');
-    if (sbBody) sbBody.innerHTML = '<p class="hint">\uD83D\uDC46 Raum antippen</p>';
+    var sc = document.getElementById('sc');
+    if (sc) sc.innerHTML = '<p class="hint">\uD83D\uDC46 Raum antippen</p>';
   };
 
   // ===================================================================
@@ -286,10 +283,6 @@ window.GR = window.GR || {};
 
   var _renameKey = null;
 
-  /**
-   * Öffnet den Umbenennen-Dialog.
-   * @param {string} key - Raumschlüssel
-   */
   UI.openRenameModal = function(key) {
     var room = S.get('rooms')[key];
     if (!room) return;
@@ -306,18 +299,12 @@ window.GR = window.GR || {};
     }, 100);
   };
 
-  /**
-   * Schließt den Umbenennen-Dialog.
-   */
   UI.closeRenameModal = function() {
     var el = document.getElementById('rm');
     if (el) el.classList.remove('open');
     _renameKey = null;
   };
 
-  /**
-   * Bestätigt die Umbenennung.
-   */
   UI.confirmRename = function() {
     var input = document.getElementById('rn');
     var key = input?.getAttribute('data-key');
@@ -335,19 +322,13 @@ window.GR = window.GR || {};
   // Intro
   // ===================================================================
 
-  /**
-   * Zeigt den Intro-Dialog.
-   */
   UI.showIntro = function() {
-    var el = document.getElementById('io');
+    var el = document.getElementById('intro');
     if (el) el.classList.add('open');
   };
 
-  /**
-   * Schließt den Intro-Dialog.
-   */
   UI.closeIntro = function() {
-    var el = document.getElementById('io');
+    var el = document.getElementById('intro');
     if (el) el.classList.remove('open');
     localStorage.setItem(C.INTRO_SEEN_KEY, '1');
   };
@@ -356,11 +337,6 @@ window.GR = window.GR || {};
   // Event Delegation (data-action)
   // ===================================================================
 
-  /**
-   * Zentrale Event-Delegation für alle data-action-Buttons.
-   * Wird auf document-Ebene registriert, sodass auch dynamisch
-   * erzeugte Buttons (via innerHTML) korrekt behandelt werden.
-   */
   function setupEventDelegation() {
     // Click-Event-Delegation
     document.addEventListener('click', function(e) {
@@ -387,11 +363,15 @@ window.GR = window.GR || {};
         case 'toggle-sidebar':
           UI.toggleSidebar();
           break;
+        case 'close-sidebar':
+          UI.closeSidebar();
+          break;
         case 'show-overview':
-          var OR = window.GR.overviewRenderer;
-          if (OR) OR.showOverview();
+        case 'toggle-overview':
+          UI.toggleOverview();
           break;
         case 'close-intro':
+        case 'intro-close':
           UI.closeIntro();
           break;
         case 'close-rename':
@@ -438,7 +418,7 @@ window.GR = window.GR || {};
       }
     });
 
-    // Keydown-Delegation für Rename-Input
+    // Keydown für Rename-Input
     document.addEventListener('keydown', function(e) {
       if (e.target.id === 'rn' && e.key === 'Enter') {
         e.preventDefault();
@@ -446,7 +426,7 @@ window.GR = window.GR || {};
       }
     });
 
-    // Keydown-Delegation für dynamische Inputs (Aufgaben, Kommentare, Suche)
+    // Enter-Key für dynamische Inputs
     document.addEventListener('keydown', function(e) {
       if (e.key !== 'Enter') return;
 
@@ -471,7 +451,7 @@ window.GR = window.GR || {};
       }
     });
 
-    // Change-Delegation für Checkboxen und Textareas
+    // Change für Checkboxen und Textareas
     document.addEventListener('change', function(e) {
       var target = e.target;
       var action = target.dataset.actionChange;
@@ -491,10 +471,9 @@ window.GR = window.GR || {};
       }
     });
 
-    // Input-Delegation für Suche
+    // Input für Suche
     document.addEventListener('input', function(e) {
       if (e.target.classList.contains('os')) {
-        // Suchwert im State speichern (zuverlässiger als DOM-Read)
         S.set('searchQuery', e.target.value);
         var OR = window.GR.overviewRenderer;
         if (OR) OR.debouncedSearch();
@@ -503,8 +482,36 @@ window.GR = window.GR || {};
   }
 
   // ===================================================================
-  // Event-Abonnement für Edit-Mode
+  // Floor-Tab Click Handler
   // ===================================================================
+
+  document.addEventListener('click', function(e) {
+    var tab = e.target.closest('.ft-tab');
+    if (tab && tab.dataset.floor) {
+      UI.switchFloor(tab.dataset.floor);
+    }
+  });
+
+  // Edit-Mode Button
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('#btnEdit')) {
+      UI.toggleEditMode();
+    }
+    if (e.target.closest('#btnOv')) {
+      UI.toggleOverview();
+    }
+    if (e.target.closest('#sbC')) {
+      UI.closeSidebar();
+    }
+    if (e.target.closest('#introClose')) {
+      UI.closeIntro();
+    }
+  });
+
+  // ===================================================================
+  // State Events
+  // ===================================================================
+
   S.subscribe(C.EVT_EDIT_MODE_CHANGED, function(enabled) {
     if (!enabled && S.get('selectedRoom') && !S.get('overview')) {
       var DetailRdr = window.GR.detailRenderer;
@@ -512,7 +519,7 @@ window.GR = window.GR || {};
     }
   });
 
-  // Event Delegation beim ersten Aufruf initialisieren
+  // Init
   setupEventDelegation();
 
 })(window.GR.ui = window.GR.ui || {});

@@ -18,10 +18,10 @@ window.GR = window.GR || {};
   /** @const {number} Mindestgröße für Räume in Pixeln */
   C.MIN_ROOM_SIZE = 20;
 
-  /** @const {Object<string,number>} Native Breiten für jede Etage */
+  /** @const {Object<string,number>} Native Breiten – wird dynamisch überschrieben */
   C.NATIVE_WIDTHS = { eg: 1000, og: 800 };
 
-  /** @const {string[]} Liste der Etagen-Kürzel */
+  /** @const {string[]} Liste der Etagen-Kürzel – wird dynamisch überschrieben */
   C.FLOORS = ['eg', 'og'];
 
   /** @const {number} Maximale Anzahl von Undo-Einträgen */
@@ -39,8 +39,12 @@ window.GR = window.GR || {};
   /** @const {string} Supabase Tabellenname */
   C.SUPABASE_TABLE = 'rooms';
 
-  /** @const {number} Supabase Row-ID */
+  /** @const {number} Supabase Row-ID – legacy, wird nicht mehr verwendet */
   C.SUPABASE_ROW_ID = 1;
+
+  // ===================================================================
+  // Events
+  // ===================================================================
 
   /** @const {string} Event-Name bei Raum-Änderungen */
   C.EVT_ROOMS_CHANGED = 'roomsChanged';
@@ -56,6 +60,16 @@ window.GR = window.GR || {};
 
   /** @const {string} Event-Name bei Sync-Status */
   C.EVT_SYNC_STATUS_CHANGED = 'syncStatusChanged';
+
+  /** @const {string} Event-Name bei Auth-Änderungen */
+  C.EVT_AUTH_CHANGED = 'authChanged';
+
+  /** @const {string} Event-Name bei Projekt-Wechsel */
+  C.EVT_PROJECT_CHANGED = 'projectChanged';
+
+  // ===================================================================
+  // Weitere Konstanten
+  // ===================================================================
 
   /** @const {number} Drag-Deadzone in px bevor Drag aktiviert wird */
   C.DRAG_DEAD_ZONE = 3;

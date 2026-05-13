@@ -2,79 +2,209 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; connect-src https://*.supabase.co; script-src 'self';" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Grundriss Tool</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:;base64,iVBORw0KGgo=" />
+  <link rel="stylesheet" href="styles.css" />
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Local config (overrides defaults) -->
+  <script src="config.local.js" onerror="window._GR_CONFIG=null"></script>
 </head>
 <body>
-<div class="edit-banner" id="eb" role="status" aria-live="polite"><span>&#9999;&#65039; Bearbeiten</span><button data-action="toggle-edit-mode" aria-label="Bearbeitungsmodus beenden">Fertig</button></div>
-<div class="content" id="mc" role="main" aria-label="Grundriss-Anzeige">
-  <div class="floor-tabs" id="ft" role="tablist" aria-label="Etagenauswahl">
-    <button class="active" data-action="switch-floor" data-floor="eg" id="tabEg" role="tab" aria-selected="true" aria-controls="floorEg">EG <span class="tab-badge" id="badgeEg">0</span></button>
-    <button data-action="switch-floor" data-floor="og" id="tabOg" role="tab" aria-selected="false" aria-controls="floorOg">OG <span class="tab-badge" id="badgeOg">0</span></button>
-  </div>
-  <div class="floor active" id="floorEg">
-    <h1>EG <span class="fa"><button data-action="place-new-room" data-floor="eg">+ Raum</button><span class="cnt" id="cntEg"></span></span></h1>
-    <div class="pw" id="eg-w" style="width:1000px">
-      <div class="pi"><img src="EG.png" alt="EG"><div id="eg-r"></div></div>
+
+  <!-- ============================================================ -->
+  <!-- AUTH VIEW                                                     -->
+  <!-- ============================================================ -->
+  <div id="authView" class="view auth-view">
+    <div class="auth-container">
+      <div class="auth-header">
+        <h1>🏗️ Grundriss Tool</h1>
+        <p>Gebäude planen, Räume definieren, Projekte verwalten.</p>
+      </div>
+
+      <!-- Login Form -->
+      <div id="loginForm" class="auth-form">
+        <h2>Anmelden</h2>
+        <div id="loginError" class="auth-error"></div>
+        <input type="email" id="loginEmail" placeholder="E-Mail" autocomplete="email" />
+        <input type="password" id="loginPassword" placeholder="Passwort" autocomplete="current-password" />
+        <button data-action="do-login" class="auth-btn-primary">Anmelden</button>
+        <div class="auth-links">
+          <a href="#" data-action="show-reset">Passwort vergessen?</a>
+          <a href="#" data-action="show-register">Neues Konto erstellen</a>
+        </div>
+      </div>
+
+      <!-- Register Form -->
+      <div id="registerForm" class="auth-form" style="display:none">
+        <h2>Registrieren</h2>
+        <div id="regError" class="auth-error"></div>
+        <input type="text" id="regName" placeholder="Name" autocomplete="name" />
+        <input type="email" id="regEmail" placeholder="E-Mail" autocomplete="email" />
+        <input type="password" id="regPassword" placeholder="Passwort (mind. 6 Zeichen)" autocomplete="new-password" />
+        <button data-action="do-register" class="auth-btn-primary">Registrieren</button>
+        <div class="auth-links">
+          <a href="#" data-action="show-login">Schon ein Konto? Anmelden</a>
+        </div>
+      </div>
+
+      <!-- Reset Form -->
+      <div id="resetForm" class="auth-form" style="display:none">
+        <h2>Passwort zurücksetzen</h2>
+        <div id="resetError" class="auth-error"></div>
+        <input type="email" id="resetEmail" placeholder="E-Mail" autocomplete="email" />
+        <button data-action="do-reset" class="auth-btn-primary">Link senden</button>
+        <div class="auth-links">
+          <a href="#" data-action="show-login">Zurück zur Anmeldung</a>
+        </div>
+      </div>
     </div>
   </div>
-  <div class="floor" id="floorOg">
-    <h1>OG <span class="fa"><button data-action="place-new-room" data-floor="og">+ Raum</button><span class="cnt" id="cntOg"></span></span></h1>
-    <div class="pw" id="og-w" style="width:800px">
-      <div class="pi"><img src="OG.png" alt="OG"><div id="og-r"></div></div>
+
+  <!-- ============================================================ -->
+  <!-- DASHBOARD VIEW                                                -->
+  <!-- ============================================================ -->
+  <div id="dashboardView" class="view dashboard-view" style="display:none">
+    <header class="dash-header">
+      <h1>🏗️ Grundriss Tool</h1>
+      <div id="dashUser" class="dash-user"></div>
+    </header>
+    <main id="dashProjects" class="dash-content"></main>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- EDITOR VIEW                                                   -->
+  <!-- ============================================================ -->
+  <div id="editorView" class="view editor-view" style="display:none">
+
+    <!-- Top-Bar -->
+    <div id="tb" class="tb">
+      <div class="tb-left">
+        <button data-action="back-to-dashboard" class="tb-btn" title="Zurück">← Projekte</button>
+        <span id="projectName" class="tb-project-name"></span>
+      </div>
+      <div class="tb-right">
+        <span id="syncI"></span>
+        <button id="btnOv" class="tb-btn" title="Übersicht">📊</button>
+        <button data-action="share-project" class="tb-btn" title="Teilen">👥 Teilen</button>
+        <button id="btnEdit" class="tb-btn" title="Bearbeiten">✏️</button>
+      </div>
+    </div>
+
+    <!-- Main-Content: Tabs + Sidebar -->
+    <div id="mc" class="mc">
+
+      <!-- Floor-Tabs -->
+      <div id="ft" class="ft">
+        <button id="tab-eg" class="ft-tab active" data-floor="eg">
+          <span class="ft-label">Erdgeschoss</span>
+          <span id="badge-eg" class="ft-badge">0</span>
+        </button>
+        <button id="tab-og" class="ft-tab" data-floor="og">
+          <span class="ft-label">Obergeschoss</span>
+          <span id="badge-og" class="ft-badge">0</span>
+        </button>
+      </div>
+
+      <!-- Plan-Wrapper EG -->
+      <div id="eg-w" class="pw" data-floor="eg">
+        <div class="plan-nav">
+          <span id="cnt-eg" class="cnt"></span>
+        </div>
+        <img id="eg-img" class="pi" src="EG.png" alt="Grundriss Erdgeschoss" draggable="false" />
+        <div id="eg-r" class="pr"></div>
+      </div>
+
+      <!-- Plan-Wrapper OG -->
+      <div id="og-w" class="pw" data-floor="og">
+        <div class="plan-nav">
+          <span id="cnt-og" class="cnt"></span>
+        </div>
+        <img id="og-img" class="pi" src="OG.png" alt="Grundriss Obergeschoss" draggable="false" />
+        <div id="og-r" class="pr"></div>
+      </div>
+
+      <!-- Sidebar -->
+      <div id="sb" class="sb">
+        <div id="sbH" class="sb-h">
+          <h2>Details</h2>
+          <button id="sbC" class="sb-c" title="Schließen">✕</button>
+        </div>
+        <div id="sc" class="sc"></div>
+      </div>
+
     </div>
   </div>
-</div>
-<div class="sb" id="sb">
-  <button class="sb-toggle" data-action="toggle-sidebar"><span class="arrow">&#9660;</span> Info & Details <span class="arrow">&#9660;</span></button>
-  <div class="sb-hdr">
-    <h2 id="sbTitle">Info</h2>
-    <div class="sb-tools">
-      <button id="btnOv" data-action="show-overview">&#128202;</button>
-      <button id="btnEm" data-action="toggle-edit-mode">&#9999;&#65039;</button>
+
+  <!-- ============================================================ -->
+  <!-- ONBOARDING WIZARD (Modal)                                     -->
+  <!-- ============================================================ -->
+  <div id="onboarding" class="modal">
+    <div class="modal-backdrop" data-action="ob-cancel"></div>
+    <div class="modal-content ob-modal">
+      <div id="obBody"></div>
     </div>
   </div>
-  <div class="sb-body" id="sbBody"><p class="hint">&#128070; Raum antippen f&uuml;r Details</p></div>
-</div>
-<div class="mo" id="rm"><div class="mb">
-  <h3>&#9999;&#65039; Raum umbenennen</h3>
-  <label>Name</label><input type="text" id="rn" placeholder="Raum name..." />
-  <div class="ma"><button data-action="close-rename">Abbrechen</button><button class="p" data-action="confirm-rename">Speichern</button></div>
-</div></div>
-<div id="syncI" role="status" aria-live="polite" aria-label="Sync-Status"></div>
-<div id="tc"></div>
-<div class="io" id="io"><div class="ib">
-  <div style="font-size:48px;margin-bottom:8px">&#127959;&#65039;</div>
-  <h2>Willkommen!</h2>
-  <p>R&auml;ume & Aufgaben verwalten</p>
-  <ul class="fl">
-    <li>&#128070; Raum antippen</li>
-    <li>&#9999;&#65039; Bearbeiten = verschieben & skalieren</li>
-    <li>&#128202; &Uuml;bersicht</li>
-    <li>&#9729;&#65039; Automatischer Sync</li>
-  </ul>
-  <button data-action="close-intro">Los geht's!</button>
-</div></div>
-<!-- config.local.js: gitignored, nur lokal vorhanden. Fallback in config.js → constants.js -->
-<script src="config.local.js"></script>
-<script src="js/config.js"></script>
-<script src="js/constants.js"></script>
-<script src="js/utils.js"></script>
-<script src="js/state.js"></script>
-<script src="js/cloud.js"></script>
-<script src="js/sync.js"></script>
-<script src="js/storage.js"></script>
-<script src="js/rooms.js"></script>
-<script src="js/drag.js"></script>
-<script src="js/resize.js"></script>
-<script src="js/place-room.js"></script>
-<script src="js/interaction.js"></script>
-<script src="js/renderer.js"></script>
-<script src="js/detail-renderer.js"></script>
-<script src="js/overview-renderer.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/app.js"></script>
+
+  <!-- ============================================================ -->
+  <!-- SHARE MODAL                                                   -->
+  <!-- ============================================================ -->
+  <div id="shareModal" class="modal">
+    <div class="modal-backdrop" data-action="close-share"></div>
+    <div class="modal-content share-modal">
+      <div class="share-header">
+        <h3>👥 Projekt teilen</h3>
+        <button data-action="close-share" class="sb-c" title="Schließen">✕</button>
+      </div>
+      <div id="shareBody" class="share-body"></div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- TOAST Container                                               -->
+  <!-- ============================================================ -->
+  <div id="toasts" class="toast-container"></div>
+
+  <!-- ============================================================ -->
+  <!-- INTRO Modal                                                   -->
+  <!-- ============================================================ -->
+  <div id="intro" class="modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content intro-content">
+      <h2>Willkommen! 👋</h2>
+      <p>Klicke auf <strong>✏️ Bearbeiten</strong> oben rechts, um Räume hinzuzufügen.</p>
+      <p>Markiere einen Raum im Edit-Modus, um ihn zu verschieben oder zu skalieren.</p>
+      <button id="introClose" class="auth-btn-primary">Los geht's!</button>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- Scripts (Reihenfolge wichtig!)                                -->
+  <!-- ============================================================ -->
+  <script src="js/constants.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/sync.js"></script>
+  <script src="js/cloud.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/rooms.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/detail-renderer.js"></script>
+  <script src="js/overview-renderer.js"></script>
+  <script src="js/drag.js"></script>
+  <script src="js/resize.js"></script>
+  <script src="js/interaction.js"></script>
+  <script src="js/place-room.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/demo-template.js"></script>
+  <!-- New modules -->
+  <script src="js/auth.js"></script>
+  <script src="js/projects.js"></script>
+  <script src="js/onboarding.js"></script>
+  <script src="js/collaboration.js"></script>
+  <script src="js/migration.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>

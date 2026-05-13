@@ -146,6 +146,13 @@ window.GR = window.GR || {};
   const _scaleCache = new Map();
 
   /**
+   * Setzt den Skalierungs-Cache zurück (z. B. nach Projekt-Wechsel).
+   */
+  U._resetScaleCache = function() {
+    _scaleCache.clear();
+  };
+
+  /**
    * Berechnet den aktuellen Skalierungsfaktor für eine Zeichenfläche.
    * Verwendet einen Cache, der nach SCALE_CACHE_TTL ms ungültig wird (Resize-freundlich).
    * @param {HTMLElement} wrapper - .pw-Wrapper-Element

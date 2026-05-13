@@ -21,12 +21,20 @@ window.GR = window.GR || {};
   // ===================================================================
 
   /**
-   * Rendert alle Etagen neu.
+   * Rendert alle Etagen neu (dynamisch basierend auf Projekt-Floors).
    */
   Rdr.render = function() {
     Sync.updateTabBadges();
-    Rdr.renderFloor('eg');
-    Rdr.renderFloor('og');
+    var floors = S.get('currentProjectFloors');
+    if (floors && floors.length > 0) {
+      for (var i = 0; i < floors.length; i++) {
+        Rdr.renderFloor(floors[i].id);
+      }
+    } else {
+      // Legacy fallback
+      Rdr.renderFloor('eg');
+      Rdr.renderFloor('og');
+    }
   };
 
   /**
