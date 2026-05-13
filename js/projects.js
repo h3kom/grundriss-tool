@@ -306,6 +306,8 @@ window.GR = window.GR || {};
 
   /**
    * Baut die Floor-Tabs und Floor-Container dynamisch auf.
+   * Struktur entspricht exakt dem statischen HTML in index.html:
+   *   .pw > .plan-nav > span.cnt, img.pi, div.pr
    * @param {Array} floors - Floor-Daten aus Supabase
    */
   Proj.buildFloorUI = function(floors) {
@@ -313,9 +315,20 @@ window.GR = window.GR || {};
     var contentEl = document.getElementById('mc');
     if (!tabsContainer || !contentEl) return;
 
-    // Bestehende Floor-Elemente entfernen
-    var existingFloors = contentEl.querySelectorAll('.floor');
-    existingFloors.forEach(function(el) { el.remove(); });
+    // Sidebar-Element merken (darf nicht gelöscht werden)
+    var sidebar = document.getElementById('sb');
+
+    // Alle bestehenden Floor-Elemente entfernen
+    // Alte dynamische .floor-Container
+    contentEl.querySelectorAll('.floor').forEach(function(el) { el.remove(); });
+    // Alte .pw-Wrapper (statisch oder dynamisch)
+    contentEl.querySelectorAll('.pw').forEach(function(el) { el.remove(); });
+    // Alte statische Elemente falls noch vorhanden
+    ['eg-w', 'og-w', 'eg-r', 'og-r', 'eg-img', 'og-img'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.remove();
+    });
+
     tabsContainer.innerHTML = '';
 
     // Floor-Tabs und Container erstellen
@@ -323,53 +336,54 @@ window.GR = window.GR || {};
       var f = floors[i];
       var isActive = i === 0;
 
-      // Tab-Button
+      // Tab-Button (wie im statischen HTML: class="ft-tab")
       var tab = document.createElement('button');
-      tab.className = isActive ? 'active' : '';
-      tab.setAttribute('data-action', 'switch-floor');
+      tab.id = 'tab-' + f.id;
+      tab.className = 'ft-tab' + (isActive ? ' active' : '');
       tab.setAttribute('data-floor', f.id);
-      tab.setAttribute('role', 'tab');
-      tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
-      tab.innerHTML = U.escHtml(f.name) + ' <span class="tab-badge" id="badge-' + f.id + '">0</span>';
+      tab.innerHTML =
+        '<span class="ft-label">' + U.escHtml(f.name) + '</span>' +
+        '<span class="ft-badge" id="badge-' + f.id + '">0</span>';
       tabsContainer.appendChild(tab);
 
-      // Floor-Container
-      var floorDiv = document.createElement('div');
-      floorDiv.className = 'floor' + (isActive ? ' active' : '');
-      floorDiv.id = 'floor-' + f.id;
-
-      var h1 = document.createElement('h1');
-      h1.innerHTML = U.escHtml(f.name) +
-        ' <span class="fa"><button data-action="place-new-room" data-floor="' + f.id + '">+ Raum</button>' +
-        '<span class="cnt" id="cnt-' + f.id + '"></span></span>';
-      floorDiv.appendChild(h1);
-
+      // Plan-Wrapper (.pw) – wie im statischen HTML
       var pw = document.createElement('div');
       pw.className = 'pw';
       pw.id = f.id + '-w';
-      pw.style.width = (f.native_width || 1000) + 'px';
+      pw.setAttribute('data-floor', f.id);
+      if (!isActive) pw.style.display = 'none';
 
-      var pi = document.createElement('div');
-      pi.className = 'pi';
+      // plan-nav mit Raumzähler
+      var planNav = document.createElement('div');
+      planNav.className = 'plan-nav';
+      var cntSpan = document.createElement('span');
+      cntSpan.id = 'cnt-' + f.id;
+      cntSpan.className = 'cnt';
+      planNav.appendChild(cntSpan);
+      pw.appendChild(planNav);
 
+      // Image (class="pi" direkt auf img, nicht auf wrapper div)
       var img = document.createElement('img');
+      img.className = 'pi';
+      img.id = f.id + '-img';
       img.src = f.image_url || '';
       img.alt = U.escHtml(f.name);
+      img.setAttribute('draggable', 'false');
       img.addEventListener('load', function() {
         var Rdr = window.GR.renderer;
         var Sync = window.GR.sync;
         if (Rdr && Rdr.render) Rdr.render();
         if (Sync && Sync.updateTabBadges) Sync.updateTabBadges();
       });
+      pw.appendChild(img);
 
+      // Rooms-Container (class="pr")
       var roomsDiv = document.createElement('div');
+      roomsDiv.className = 'pr';
       roomsDiv.id = f.id + '-r';
+      pw.appendChild(roomsDiv);
 
-      pi.appendChild(img);
-      pi.appendChild(roomsDiv);
-      pw.appendChild(pi);
-      floorDiv.appendChild(pw);
-      contentEl.appendChild(floorDiv);
+      contentEl.appendChild(pw);
 
       // Plan-Wrapper Events (für place-room)
       var PR = window.GR.placeRoom;
@@ -381,9 +395,14 @@ window.GR = window.GR || {};
       }, { passive: false });
     }
 
+    // Sidebar wieder anhängen (falls entfernt)
+    if (sidebar && !document.getElementById('sb')) {
+      contentEl.appendChild(sidebar);
+    }
+
     // Caches zurücksetzen
-    if (window.GR.utils && window.GR.utils._resetScaleCache) {
-      window.GR.utils._resetScaleCache();
+    if (U && U._resetScaleCache) {
+      U._resetScaleCache();
     }
   };
 
