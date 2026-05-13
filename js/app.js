@@ -161,9 +161,13 @@ window.GR = window.GR || {};
    * Führt Migration durch und zeigt Dashboard.
    */
   App.handlePostLogin = async function() {
-    // Migration prüfen
-    if (!Mig.isMigrated()) {
-      await Mig.migrateLocalData();
+    try {
+      // Migration prüfen
+      if (Mig && !Mig.isMigrated()) {
+        await Mig.migrateLocalData();
+      }
+    } catch (e) {
+      console.warn('[app] Migration error (non-fatal):', e);
     }
     App.showView('dashboard');
   };
@@ -407,6 +411,8 @@ window.GR = window.GR || {};
     var password = document.getElementById('loginPassword')?.value;
     var errorEl = document.getElementById('loginError');
 
+    if (errorEl) errorEl.textContent = '';
+
     if (!email || !password) {
       if (errorEl) errorEl.textContent = 'Bitte E-Mail und Passwort eingeben';
       return;
@@ -415,13 +421,18 @@ window.GR = window.GR || {};
     var btn = document.querySelector('[data-action="do-login"]');
     if (btn) { btn.disabled = true; btn.textContent = '⏳ Anmelden...'; }
 
-    var result = await Auth.login(email, password);
+    try {
+      var result = await Auth.login(email, password);
 
-    if (!result.ok) {
-      if (errorEl) errorEl.textContent = result.error || 'Anmeldung fehlgeschlagen';
+      if (!result.ok) {
+        if (errorEl) errorEl.textContent = result.error || 'Anmeldung fehlgeschlagen';
+        if (btn) { btn.disabled = false; btn.textContent = 'Anmelden'; }
+      }
+      // Bei Erfolg wird EVT_AUTH_CHANGED gefeuert → handlePostLogin
+    } catch (e) {
+      if (errorEl) errorEl.textContent = 'Unerwarteter Fehler: ' + e.message;
       if (btn) { btn.disabled = false; btn.textContent = 'Anmelden'; }
     }
-    // Bei Erfolg wird EVT_AUTH_CHANGED gefeuert → handlePostLogin
   };
 
   /**
@@ -445,15 +456,25 @@ window.GR = window.GR || {};
     var btn = document.querySelector('[data-action="do-register"]');
     if (btn) { btn.disabled = true; btn.textContent = '⏳ Registrieren...'; }
 
-    var result = await Auth.register(email, password, name);
+    try {
+      var result = await Auth.register(email, password, name);
 
-    if (!result.ok) {
-      if (errorEl) errorEl.textContent = result.error || 'Registrierung fehlgeschlagen';
+      if (!result.ok) {
+        if (errorEl) errorEl.textContent = result.error || 'Registrierung fehlgeschlagen';
+        if (btn) { btn.disabled = false; btn.textContent = 'Registrieren'; }
+      } else if (result.autoLogin) {
+        // E-Mail-Bestätigung deaktiviert → direkt eingeloggt
+        // EVT_AUTH_CHANGED wird automatisch gefeuert
+      } else if (result.needsConfirmation) {
+        // E-Mail-Bestätigung nötig
+        var UI = window.GR.ui;
+        if (UI && UI.toast) UI.toast('✅ Registrierung erfolgreich! Bitte bestätige deine E-Mail-Adresse.', 'success', 5000);
+        if (btn) { btn.disabled = false; btn.textContent = 'Registrieren'; }
+        App.toggleAuthForm('login');
+      }
+    } catch (e) {
+      if (errorEl) errorEl.textContent = 'Unerwarteter Fehler: ' + e.message;
       if (btn) { btn.disabled = false; btn.textContent = 'Registrieren'; }
-    } else {
-      var UI = window.GR.ui;
-      if (UI && UI.toast) UI.toast('✅ Registrierung erfolgreich! Bitte bestätige deine E-Mail.', 'success', 5000);
-      App.toggleAuthForm('login');
     }
   };
 

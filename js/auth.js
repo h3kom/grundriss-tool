@@ -108,13 +108,37 @@ window.GR = window.GR || {};
         }
       });
       if (result.error) {
-        return { ok: false, error: result.error.message };
+        return { ok: false, error: translateError(result.error.message) };
       }
-      return { ok: true };
+      // Prüfe ob E-Mail-Bestätigung erforderlich ist
+      if (result.data?.user && result.data.session) {
+        // Auto-Login: E-Mail-Bestätigung deaktiviert, User ist direkt eingeloggt
+        return { ok: true, autoLogin: true };
+      }
+      return { ok: true, needsConfirmation: true };
     } catch (e) {
-      return { ok: false, error: e.message || 'Unbekannter Fehler' };
+      return { ok: false, error: translateError(e.message) };
     }
   };
+
+  /**
+   * Übersetzt Supabase-Fehlermeldungen auf Deutsch.
+   * @param {string} msg - Original-Fehlermeldung
+   * @returns {string} Deutsche Fehlermeldung
+   */
+  function translateError(msg) {
+    if (!msg) return 'Unbekannter Fehler';
+    var lower = msg.toLowerCase();
+    if (lower.includes('invalid login credentials')) return 'E-Mail oder Passwort falsch';
+    if (lower.includes('email not confirmed')) return 'Bitte bestätige zuerst deine E-Mail-Adresse';
+    if (lower.includes('user already registered')) return 'Diese E-Mail ist bereits registriert';
+    if (lower.includes('password should be at least')) return 'Passwort muss mind. 6 Zeichen haben';
+    if (lower.includes('unable to validate email address')) return 'Ungültige E-Mail-Adresse';
+    if (lower.includes('signup is disabled')) return 'Registrierung ist deaktiviert';
+    if (lower.includes('too many requests')) return 'Zu viele Versuche. Bitte warte einen Moment';
+    if (lower.includes('network')) return 'Netzwerkfehler. Bitte prüfe deine Verbindung';
+    return msg;
+  }
 
   /**
    * Loggt einen User mit E-Mail und Passwort ein.
@@ -130,11 +154,11 @@ window.GR = window.GR || {};
         password: password
       });
       if (result.error) {
-        return { ok: false, error: result.error.message };
+        return { ok: false, error: translateError(result.error.message) };
       }
       return { ok: true };
     } catch (e) {
-      return { ok: false, error: e.message || 'Unbekannter Fehler' };
+      return { ok: false, error: translateError(e.message) };
     }
   };
 
