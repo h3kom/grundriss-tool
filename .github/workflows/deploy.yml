@@ -33,7 +33,7 @@ jobs:
           publish_dir: ./
           publish_branch: gh-pages
           destination_dir: prod
-          keep_files: true
+          keep_files: false
 
   deploy-dev:
     name: Dev → /dev/
@@ -60,4 +60,4 @@ jobs:
           publish_dir: ./
           publish_branch: gh-pages
           destination_dir: dev
-          keep_files: true
+          keep_files: false
