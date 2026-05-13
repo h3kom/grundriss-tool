@@ -33,8 +33,12 @@ window.GR = window.GR || {};
    * Rendert den Inhalt der Übersicht.
    */
   OR.renderOverviewContent = function() {
+    // Suchwert aus State statt aus DOM (zuverlässiger bei Re-Renders)
+    var searchValue = (S.get('searchQuery') || '').toLowerCase();
     var searchInput = document.querySelector('.os');
-    var searchValue = searchInput ? searchInput.value.toLowerCase() : '';
+    if (searchInput && searchInput.value.toLowerCase() !== searchValue) {
+      searchInput.value = searchValue;
+    }
 
     var html = '<h3 style="margin:0 0 4px;font-size:16px;">\uD83D\uDCCA \u00DCbersicht</h3>';
     html += '<div class="osw"><span class="si">\uD83D\uDD0D</span>';

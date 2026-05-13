@@ -1,9 +1,3 @@
-/**
- * Grundriss Tool – Resize-Interaktion (Räume skalieren)
- * =====================================================================
- * @module resize
- * @description Ermöglicht das Skalieren von Räumen über 8 Anfasspunkte im Edit-Mode.
- */
 window.GR = window.GR || {};
 
 (function(RS) {
@@ -29,6 +23,7 @@ window.GR = window.GR || {};
     const wrapper = e.currentTarget.closest('.pw');
     const scale = U.getScale(wrapper);
     const room = S.get('rooms')[key];
+    const el = e.currentTarget.closest('.ro');
 
     S.set('resizeState', {
       key: key,
@@ -41,10 +36,10 @@ window.GR = window.GR || {};
       origWidth: room.width,
       origHeight: room.height,
       scale: scale,
-      saved: false
+      saved: false,
+      element: el // Element referenzieren statt每mal DOM-Query
     });
 
-    const el = e.currentTarget.closest('.ro');
     if (el) el.classList.add('rs');
 
     document.addEventListener('mousemove', RS.onResizeMove);
@@ -68,10 +63,10 @@ window.GR = window.GR || {};
     const dt = dy / scale;
 
     const handle = rs.handle;
-    var nl = rs.origLeft;
-    var nt = rs.origTop;
-    var nw = rs.origWidth;
-    var nh = rs.origHeight;
+    let nl = rs.origLeft;
+    let nt = rs.origTop;
+    let nw = rs.origWidth;
+    let nh = rs.origHeight;
 
     if (handle.indexOf('e') >= 0) nw = Math.max(C.MIN_ROOM_SIZE, rs.origWidth + dl);
     if (handle.indexOf('w') >= 0) {
@@ -84,8 +79,12 @@ window.GR = window.GR || {};
       nt = rs.origTop + rs.origHeight - nh;
     }
 
-    var safeKey = U.escAttr(rs.key);
-    var el = document.querySelector('.ro[data-key="' + safeKey + '"]');
+    // Grenzenprüfung: Positionen dürfen nicht negativ werden
+    nl = Math.max(0, nl);
+    nt = Math.max(0, nt);
+
+    // Element aus resizeState referenzieren statt每mal DOM-Query
+    const el = rs.element;
     if (el) {
       el.style.left = Math.round(nl * scale) + 'px';
       el.style.top = Math.round(nt * scale) + 'px';
@@ -115,8 +114,7 @@ window.GR = window.GR || {};
     document.removeEventListener('touchmove', RS.onResizeMoveTouch);
     document.removeEventListener('touchend', RS.onResizeEndTouch);
 
-    var safeKey = U.escAttr(rs.key);
-    var el = document.querySelector('.ro[data-key="' + safeKey + '"]');
+    const el = rs.element;
     if (el) el.classList.remove('rs');
 
     const room = S.get('rooms')[rs.key];
@@ -131,8 +129,8 @@ window.GR = window.GR || {};
     const nw = Math.round(parseInt(el.style.width, 10) / scale);
     const nh = Math.round(parseInt(el.style.height, 10) / scale);
 
-    if (!isNaN(nl)) room.left = nl;
-    if (!isNaN(nt)) room.top = nt;
+    if (!isNaN(nl)) room.left = Math.max(0, nl);
+    if (!isNaN(nt)) room.top = Math.max(0, nt);
     if (!isNaN(nw)) room.width = Math.max(C.MIN_ROOM_SIZE, nw);
     if (!isNaN(nh)) room.height = Math.max(C.MIN_ROOM_SIZE, nh);
 
