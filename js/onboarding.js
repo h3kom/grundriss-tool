@@ -17,6 +17,7 @@ window.GR = window.GR || {};
   // Als Properties am OB-Objekt, damit app.js sie lesen/schreiben kann
   OB._wizardFloors = [];
   OB._wizardStep = 1;
+  OB._projectName = '';
 
   /**
    * Öffnet den Onboarding-Wizard.
@@ -24,6 +25,7 @@ window.GR = window.GR || {};
   OB.openWizard = function() {
     OB._wizardStep = 1;
     OB._wizardFloors = [];
+    OB._projectName = '';
     // Standard: 2 Stockwerke
     OB.addFloor('Erdgeschoss', '', 1000);
     OB.addFloor('Obergeschoss', '', 800);
@@ -98,7 +100,13 @@ window.GR = window.GR || {};
 
     setTimeout(function() {
       var input = document.getElementById('obProjectName');
-      if (input) input.focus();
+      if (input) {
+        input.focus();
+        // Projektname bei jeder Eingabe direkt speichern
+        input.addEventListener('input', function() {
+          OB._projectName = this.value.trim();
+        });
+      }
     }, 100);
   };
 
@@ -107,8 +115,12 @@ window.GR = window.GR || {};
    */
   OB.renderStep2 = function(body) {
     // Projektname aus Step 1 lesen und merken (Input wird bei renderStep2 zerstört)
-    OB._projectName = (document.getElementById('obProjectName')?.value || '').trim() || 'Unbenanntes Projekt';
-    var projectName = OB._projectName;
+    // Fallback: falls der input-Listener nicht gefeuert hat, hier aus DOM lesen
+    if (!OB._projectName) {
+      var nameInput = document.getElementById('obProjectName');
+      OB._projectName = (nameInput ? nameInput.value : '').trim();
+    }
+    var projectName = OB._projectName && OB._projectName.trim() ? OB._projectName.trim() : 'Unbenanntes Projekt';
 
     body.innerHTML =
       '<div class="ob-step">' +
@@ -191,7 +203,7 @@ window.GR = window.GR || {};
    * Erstellt das Projekt aus den Wizard-Daten.
    */
   OB.createProjectFromWizard = async function() {
-    var projectName = OB._projectName || 'Unbenanntes Projekt';
+    var projectName = OB._projectName && OB._projectName.trim() ? OB._projectName.trim() : 'Unbenanntes Projekt';
 
     // Floor-Namen aus Inputs lesen (falls zwischenzeitlich geändert)
     var nameInputs = document.querySelectorAll('.ob-floor-name');
