@@ -5,7 +5,7 @@
 @keyframes to{from{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}to{opacity:0;transform:translateX(-50%) translateY(10px) scale(.95)}}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;-webkit-font-smoothing:antialiased;padding-bottom:env(safe-area-inset-bottom)}
 .content{padding:10px 10px 120px;min-height:100vh;min-height:100dvh}
 .content.ea{padding-top:60px}
 
@@ -202,7 +202,7 @@ img.pi{position:relative;width:100%;height:auto;display:block;pointer-events:non
 .auth-header p{color:var(--muted);font-size:14px;margin:0}
 .auth-form h2{margin:0 0 16px;font-size:18px;font-weight:700}
 .auth-error{color:var(--red);font-size:13px;margin-bottom:10px;min-height:18px}
-.auth-form input{width:100%;background:var(--input);border:1px solid var(--border);color:var(--text);padding:12px 14px;border-radius:var(--rm);font-size:14px;min-height:46px;outline:none;margin-bottom:10px}
+.auth-form input{width:100%;background:var(--input);border:1px solid var(--border);color:var(--text);padding:12px 14px;border-radius:var(--rm);font-size:16px;min-height:46px;outline:none;margin-bottom:10px}
 .auth-form input:focus{border-color:var(--blue)}
 .auth-btn-primary{width:100%;background:var(--blue);color:#fff;border:none;padding:12px;border-radius:var(--rm);cursor:pointer;font-size:15px;font-weight:600;min-height:46px;transition:background .15s}
 .auth-btn-primary:hover{background:var(--blue-hover)}
@@ -359,4 +359,18 @@ img.pi{position:relative;width:100%;height:auto;display:block;pointer-events:non
 }
 @media(min-width:768px) and (max-width:1023px){
   .editor-view .mc{grid-template-columns:1fr 300px}
+}
+
+/* ================================================================== */
+/* MOBILE OPTIMIZATIONS                                               */
+/* ================================================================== */
+@media(max-width:767px){
+  .mc{padding-bottom:60px}
+  .sb{max-height:80vh;padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+  .tb{padding:4px 8px;gap:4px}
+  .tb-btn .btn-text{display:none}
+  .tb-project-name{max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dash-header{flex-direction:column;gap:10px;align-items:flex-start}
+  .dash-grid{grid-template-columns:1fr}
+  .toast-container{bottom:70px}
 }

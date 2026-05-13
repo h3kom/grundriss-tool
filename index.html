@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Grundriss Tool</title>
   <link rel="icon" href="data:;base64,iVBORw0KGgo=" />
   <link rel="stylesheet" href="styles.css" />
@@ -81,13 +81,13 @@
     <!-- Top-Bar -->
     <div id="tb" class="tb">
       <div class="tb-left">
-        <button data-action="back-to-dashboard" class="tb-btn" title="Zurück">← Projekte</button>
+        <button data-action="back-to-dashboard" class="tb-btn" title="Zurück">← <span class="btn-text">Projekte</span></button>
         <span id="projectName" class="tb-project-name"></span>
       </div>
       <div class="tb-right">
         <span id="syncI"></span>
         <button id="btnOv" class="tb-btn" title="Übersicht">📊</button>
-        <button data-action="share-project" class="tb-btn" title="Teilen">👥 Teilen</button>
+        <button data-action="share-project" class="tb-btn" title="Teilen">👥 <span class="btn-text">Teilen</span></button>
         <button id="btnEdit" class="tb-btn" title="Bearbeiten">✏️</button>
       </div>
     </div>
@@ -127,6 +127,7 @@
 
       <!-- Sidebar -->
       <div id="sb" class="sb">
+        <button class="sb-toggle" id="sbToggle"><span class="arrow">▲</span> Details</button>
         <div id="sbH" class="sb-h">
           <h2>Details</h2>
           <button id="sbC" class="sb-c" title="Schließen">✕</button>
