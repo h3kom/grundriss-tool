@@ -14,16 +14,16 @@ window.GR = window.GR || {};
   var S = window.GR.state;
   var U = window.GR.utils;
 
-  /** @type {Array<{name: string, imageFile: File|null, imageUrl: string, nativeWidth: number}>} */
-  var _wizardFloors = [];
-  var _wizardStep = 1;
+  // Als Properties am OB-Objekt, damit app.js sie lesen/schreiben kann
+  OB._wizardFloors = [];
+  OB._wizardStep = 1;
 
   /**
    * Öffnet den Onboarding-Wizard.
    */
   OB.openWizard = function() {
-    _wizardStep = 1;
-    _wizardFloors = [];
+    OB._wizardStep = 1;
+    OB._wizardFloors = [];
     // Standard: 2 Stockwerke
     OB.addFloor('Erdgeschoss', '', 1000);
     OB.addFloor('Obergeschoss', '', 800);
@@ -38,7 +38,7 @@ window.GR = window.GR || {};
   OB.closeWizard = function() {
     var el = document.getElementById('onboarding');
     if (el) el.classList.remove('open');
-    _wizardFloors = [];
+    OB._wizardFloors = [];
   };
 
   /**
@@ -48,8 +48,8 @@ window.GR = window.GR || {};
    * @param {number} nativeWidth
    */
   OB.addFloor = function(name, imageUrl, nativeWidth) {
-    _wizardFloors.push({
-      name: name || 'Stockwerk ' + (_wizardFloors.length + 1),
+    OB._wizardFloors.push({
+      name: name || 'Stockwerk ' + (OB._wizardFloors.length + 1),
       imageFile: null,
       imageUrl: imageUrl || '',
       nativeWidth: nativeWidth || 1000
@@ -61,8 +61,8 @@ window.GR = window.GR || {};
    * @param {number} index
    */
   OB.removeFloor = function(index) {
-    if (_wizardFloors.length <= 1) return; // Mindestens 1 Stockwerk
-    _wizardFloors.splice(index, 1);
+    if (OB._wizardFloors.length <= 1) return; // Mindestens 1 Stockwerk
+    OB._wizardFloors.splice(index, 1);
     OB.renderFloorList();
   };
 
@@ -73,7 +73,7 @@ window.GR = window.GR || {};
     var body = document.getElementById('obBody');
     if (!body) return;
 
-    if (_wizardStep === 1) {
+    if (OB._wizardStep === 1) {
       OB.renderStep1(body);
     } else {
       OB.renderStep2(body);
@@ -135,15 +135,15 @@ window.GR = window.GR || {};
     if (!container) return;
 
     var html = '';
-    for (var i = 0; i < _wizardFloors.length; i++) {
-      var f = _wizardFloors[i];
+    for (var i = 0; i < OB._wizardFloors.length; i++) {
+      var f = OB._wizardFloors[i];
       var hasImage = f.imageFile || f.imageUrl;
       html +=
         '<div class="ob-floor-item" data-floor-index="' + i + '">' +
           '<div class="ob-floor-header">' +
             '<span class="ob-floor-num">' + (i + 1) + '</span>' +
             '<input type="text" class="ob-floor-name" data-floor-index="' + i + '" value="' + U.escAttr(f.name) + '" placeholder="Name des Stockwerks" />' +
-            (_wizardFloors.length > 1 ? '<button data-action="ob-remove-floor" data-floor-index="' + i + '" class="ob-btn-remove" title="Entfernen">✕</button>' : '') +
+            (OB._wizardFloors.length > 1 ? '<button data-action="ob-remove-floor" data-floor-index="' + i + '" class="ob-btn-remove" title="Entfernen">✕</button>' : '') +
           '</div>' +
           '<div class="ob-floor-upload">' +
             '<label class="ob-file-label' + (hasImage ? ' has-file' : '') + '">' +
@@ -161,7 +161,7 @@ window.GR = window.GR || {};
     container.querySelectorAll('.ob-floor-name').forEach(function(input) {
       input.addEventListener('input', function() {
         var idx = parseInt(this.dataset.floorIndex);
-        _wizardFloors[idx].name = this.value;
+        OB._wizardFloors[idx].name = this.value;
       });
     });
 
@@ -169,7 +169,7 @@ window.GR = window.GR || {};
     container.querySelectorAll('.ob-width-input').forEach(function(input) {
       input.addEventListener('input', function() {
         var idx = parseInt(this.dataset.floorIndex);
-        _wizardFloors[idx].nativeWidth = parseInt(this.value) || 1000;
+        OB._wizardFloors[idx].nativeWidth = parseInt(this.value) || 1000;
       });
     });
   };
@@ -180,8 +180,8 @@ window.GR = window.GR || {};
    * @param {File} file
    */
   OB.handleFloorUpload = function(index, file) {
-    if (index < 0 || index >= _wizardFloors.length) return;
-    _wizardFloors[index].imageFile = file;
+    if (index < 0 || index >= OB._wizardFloors.length) return;
+    OB._wizardFloors[index].imageFile = file;
     OB.renderFloorList();
   };
 
@@ -195,16 +195,16 @@ window.GR = window.GR || {};
     var nameInputs = document.querySelectorAll('.ob-floor-name');
     nameInputs.forEach(function(input) {
       var idx = parseInt(input.dataset.floorIndex);
-      if (idx >= 0 && idx < _wizardFloors.length) {
-        _wizardFloors[idx].name = input.value || 'Stockwerk ' + (idx + 1);
+      if (idx >= 0 && idx < OB._wizardFloors.length) {
+        OB._wizardFloors[idx].name = input.value || 'Stockwerk ' + (idx + 1);
       }
     });
 
     var widthInputs = document.querySelectorAll('.ob-width-input');
     widthInputs.forEach(function(input) {
       var idx = parseInt(input.dataset.floorIndex);
-      if (idx >= 0 && idx < _wizardFloors.length) {
-        _wizardFloors[idx].nativeWidth = parseInt(input.value) || 1000;
+      if (idx >= 0 && idx < OB._wizardFloors.length) {
+        OB._wizardFloors[idx].nativeWidth = parseInt(input.value) || 1000;
       }
     });
 
@@ -218,7 +218,7 @@ window.GR = window.GR || {};
       createBtn.textContent = '⏳ Erstelle...';
     }
 
-    var result = await Proj.createProject(projectName, _wizardFloors);
+    var result = await Proj.createProject(projectName, OB._wizardFloors);
 
     if (result.ok) {
       OB.closeWizard();
