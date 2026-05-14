@@ -191,6 +191,27 @@ window.GR = window.GR || {};
 
     document.querySelectorAll('.ro').forEach(function(el) { el.classList.toggle('em', enabled); });
 
+    // Raum-Typ-Legende im Edit-Modus anzeigen
+    var legend = document.getElementById('roomTypeLegend');
+    if (legend) {
+      if (enabled) {
+        var floor = S.get('activeFloor') || 'eg';
+        var html = '';
+        for (var typeKey of Object.keys(C.ROOM_TYPES)) {
+          var t = C.ROOM_TYPES[typeKey];
+          html += '<div class="room-type-legend-item" data-action="place-new-room" data-floor="' + floor + '" data-room-type="' + typeKey + '" style="cursor:pointer">' +
+            '<span class="room-type-legend-dot" style="background:' + t.color + '"></span>' +
+            t.label +
+          '</div>';
+        }
+        legend.innerHTML = html;
+        legend.style.display = '';
+      } else {
+        legend.style.display = 'none';
+        legend.innerHTML = '';
+      }
+    }
+
     if (enabled) {
       UI.closeSidebar();
     } else {
@@ -353,7 +374,7 @@ window.GR = window.GR || {};
           break;
         case 'place-new-room':
           var I = window.GR.interaction;
-          if (I && I.enablePlaceNewRoom) I.enablePlaceNewRoom(target.dataset.floor);
+          if (I && I.enablePlaceNewRoom) I.enablePlaceNewRoom(target.dataset.floor, target.dataset.roomType);
           break;
         case 'cancel-place':
           var PR = window.GR.placeRoom;

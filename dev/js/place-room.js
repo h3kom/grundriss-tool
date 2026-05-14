@@ -19,10 +19,11 @@ window.GR = window.GR || {};
    * Aktiviert den Platzierungs-Modus.
    * @param {string} floor - Etagen-Kürzel ('eg' | 'og')
    */
-  PR.enablePlaceNewRoom = function(floor) {
+  PR.enablePlaceNewRoom = function(floor, roomType) {
     if (!S.get('editMode')) return;
     S.set('isPlacing', true);
     S.set('placeFloor', floor);
+    S.set('placeRoomType', roomType || null);
     document.querySelectorAll('.pw').forEach(w => { w.style.cursor = 'crosshair'; });
     const UI = window.GR.ui;
     if (UI) UI.closeSidebar();
@@ -42,6 +43,7 @@ window.GR = window.GR || {};
     PR.removePlacePreview();
     S.set('isPlacing', false);
     S.set('placeFloor', null);
+    S.set('placeRoomType', null);
     S.set('placeState', null);
     document.querySelectorAll('.pw').forEach(w => { w.style.cursor = ''; });
     const sc = document.getElementById('sc');
@@ -203,9 +205,15 @@ window.GR = window.GR || {};
     const rooms = S.get('rooms');
     const key = U.generateKey(rooms);
 
-    // Create the room with a default name
+    // Determine room type and title
+    var placeRoomType = S.get('placeRoomType');
+    var typeInfo = placeRoomType ? C.ROOM_TYPES[placeRoomType] : null;
+    var roomTitle = typeInfo ? typeInfo.label : 'Neuer Raum';
+
+    // Create the room with type from legend selection
     rooms[key] = {
-      title: 'Neuer Raum',
+      title: roomTitle,
+      type: placeRoomType || C.ROOM_TYPE_DEFAULT,
       floor: ps.floor,
       tasks: [],
       done: {},
@@ -221,6 +229,7 @@ window.GR = window.GR || {};
     S.set('isPlacing', false);
     S.set('placeState', null);
     S.set('placeFloor', null);
+    S.set('placeRoomType', null);
     document.querySelectorAll('.pw').forEach(w => { w.style.cursor = ''; });
     S.notify(C.EVT_ROOMS_CHANGED);
 
