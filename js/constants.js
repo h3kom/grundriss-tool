@@ -89,6 +89,51 @@ window.GR = window.GR || {};
   /** @const {number} Debounce-Zeit für Sucheingabe in ms */
   C.SEARCH_DEBOUNCE = 200;
 
+  // ===================================================================
+  // Raum-Typen
+  // ===================================================================
+
+  /** @const {Object} Raum-Typen mit Farbzuordnung */
+  C.ROOM_TYPES = {
+    'buero':       { label: 'Büro',           color: '#3b82f6' },
+    'besprechung': { label: 'Besprechung',     color: '#8b5cf6' },
+    'flur':        { label: 'Flur',            color: '#94a3b8' },
+    'kueche':      { label: 'Küche',           color: '#f59e0b' },
+    'wc':          { label: 'WC / Bad',        color: '#06b6d4' },
+    'lager':       { label: 'Lager',           color: '#78716c' },
+    'serverraum':  { label: 'Serverraum',      color: '#64748b' },
+    'empfang':     { label: 'Empfang',         color: '#ec4899' },
+    'pause':       { label: 'Pausenraum',      color: '#22c55e' },
+    'sonstige':    { label: 'Sonstige',        color: '#a3a3a3' }
+  };
+
+  /** @const {string} Standard-Raum-Typ */
+  C.ROOM_TYPE_DEFAULT = 'sonstige';
+
+  // ===================================================================
+  // Magnetisches Snappen
+  // ===================================================================
+
+  /** @const {number} Snap-Distanz in Pixeln (skaliert) */
+  C.SNAP_DISTANCE = 8;
+
+  /** @const {boolean} Snappen aktiviert */
+  C.SNAP_ENABLED = true;
+
+  // ===================================================================
+  // Dark Mode
+  // ===================================================================
+
+  /** @const {string} localStorage Key für Dark Mode Preference */
+  C.DARK_MODE_KEY = 'gr_dark';
+
+  // ===================================================================
+  // Presence
+  // ===================================================================
+
+  /** @const {string} Event-Name bei Presence-Änderung */
+  C.EVT_PRESENCE_CHANGED = 'presenceChanged';
+
   /** @const {number} Schwellwerte für "Zuletzt bearbeitet"-Anzeige in ms */
   C.TIME_THRESHOLD_MINUTE = 60000;
   C.TIME_THRESHOLD_HOUR = 3600000;

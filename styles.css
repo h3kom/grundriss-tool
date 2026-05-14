@@ -374,4 +374,74 @@ img.pi{position:relative;width:100%;height:auto;display:block;pointer-events:non
   .dash-header{flex-direction:column;gap:10px;align-items:flex-start}
   .dash-grid{grid-template-columns:1fr}
   .toast-container{bottom:70px}
-}
+  }
+
+/* ================================================================== */
+/* DARK MODE                                                           */
+/* ================================================================== */
+.dark{--bg:#0f1117;--text:#e5e7eb;--card:#1a1d2e;--border:#2d3142;--sidebar:#1a1d2e;--input:#252840;--muted:#9ca3af}
+.dark .ro{border-color:rgba(59,130,246,0.6);background:rgba(59,130,246,0.08)}
+.dark .ro.sel{background:rgba(59,130,246,0.15)}
+.dark .t{background:#252840;border-color:#3b3f5c}
+
+/* ================================================================== */
+/* MAGNETIC SNAP LINES                                                 */
+/* ================================================================== */
+.snap-line{position:absolute;z-index:200;pointer-events:none}
+.snap-line-x{width:2px;background:var(--red);opacity:.6}
+.snap-line-y{height:2px;background:var(--red);opacity:.6}
+
+/* ================================================================== */
+/* SEARCH HIGHLIGHT                                                    */
+/* ================================================================== */
+.ro.search-highlight{box-shadow:0 0 0 3px var(--yellow),0 0 12px rgba(217,119,6,0.4);z-index:15}
+
+/* ================================================================== */
+/* ROOM TYPE BADGE & SELECT                                            */
+/* ================================================================== */
+.room-type-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border:2px solid;border-radius:999px;font-size:13px;font-weight:600}
+.room-type-dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.room-type-select{width:100%;background:var(--input);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:var(--rm);font-size:14px;min-height:44px;outline:none;cursor:pointer}
+.room-type-select:focus{border-color:var(--blue)}
+.room-type-legend{display:flex;flex-wrap:wrap;gap:4px;padding:6px 14px;border-bottom:1px solid var(--border)}
+.room-type-legend-item{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);padding:2px 6px;border-radius:var(--rs);background:var(--input)}
+.room-type-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* ================================================================== */
+/* SIDEBAR SEARCH                                                      */
+/* ================================================================== */
+.sb-search{padding:0 14px 6px}
+.sb-search-input{width:100%;background:var(--input);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:var(--rs);font-size:13px;min-height:38px;outline:none}
+.sb-search-input:focus{border-color:var(--blue)}
+
+/* ================================================================== */
+/* PRESENCE INDICATOR                                                  */
+/* ================================================================== */
+.presence-indicator{display:none;align-items:center;gap:-4px}
+.presence-avatar{width:26px;height:26px;border-radius:50%;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--card);margin-left:-6px}
+.presence-avatar:first-child{margin-left:0}
+.presence-more{font-size:10px;color:var(--muted);margin-left:4px;font-weight:600}
+
+/* ================================================================== */
+/* FLOOR TAB ADD BUTTON                                                */
+/* ================================================================== */
+.ft-add{background:transparent;border:1px dashed var(--border);color:var(--muted);padding:0 12px;border-radius:calc(var(--rs) - 1px);cursor:pointer;font-size:18px;font-weight:400;transition:all .15s;flex-shrink:0}
+.ft-add:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-light)}
+
+/* ================================================================== */
+/* PROJECT RENAME INPUT                                                */
+/* ================================================================== */
+.tb-rename-input{background:var(--input);border:1px solid var(--blue);color:var(--text);padding:4px 8px;border-radius:var(--rs);font-size:14px;font-weight:700;outline:none;min-height:28px;width:160px}
+.tb-btn-sm{background:var(--input);border:1px solid var(--border);color:var(--text);padding:2px 8px;border-radius:var(--rs);cursor:pointer;font-size:14px;min-height:28px;line-height:1}
+.tb-btn-sm:hover{background:var(--blue-light)}
+
+/* ================================================================== */
+/* DUPLICATE BUTTON                                                    */
+/* ================================================================== */
+.dup-btn{background:var(--blue);color:#fff;border:none;padding:10px 24px;border-radius:var(--rm);cursor:pointer;font-size:14px;font-weight:600;min-height:44px;display:inline-flex;align-items:center;gap:4px}
+.dup-btn:hover{background:var(--blue-hover)}
+
+/* ================================================================== */
+/* SNAP BUTTON ACTIVE STATE                                            */
+/* ================================================================== */
+#btnSnap.active{background:var(--blue);color:#fff;border-color:var(--blue)}
