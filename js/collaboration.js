@@ -235,6 +235,19 @@ window.GR = window.GR || {};
   };
 
   /**
+   * Teilen-Modal für ein Projekt vom Dashboard aus (ohne currentProject).
+   * @param {string} projectId
+   */
+  Collab.showShareModalForProject = async function(projectId) {
+    // Temporär currentProject setzen, damit showShareModal funktioniert
+    var prev = S.get('currentProject');
+    S.set('currentProject', { id: projectId });
+    await Collab.showShareModal();
+    // Nach dem Anzeigen wiederherstellen (wenn vorher gesetzt)
+    if (!prev) S.set('currentProject', null);
+  };
+
+  /**
    * Schließt das Teilen-Modal.
    */
   Collab.closeShareModal = function() {

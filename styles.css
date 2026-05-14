@@ -241,8 +241,12 @@ img.pi{position:relative;width:100%;height:auto;display:block;pointer-events:non
 .dash-card-name{font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dash-card-date{font-size:12px;color:var(--muted);margin-top:2px}
 .dash-card-actions{flex-shrink:0}
-.dash-card-delete{background:none;border:none;cursor:pointer;font-size:16px;padding:4px;opacity:.4;transition:opacity .15s}
+.dash-card-delete{background:none;border:none;cursor:pointer;font-size:16px;padding:4px;opacity:.6;transition:opacity .15s}
 .dash-card-delete:hover{opacity:1}
+
+/* Project Context Menu */
+#projectContextMenu [data-action]{transition:background .1s}
+#projectContextMenu [data-action]:hover{background:var(--input)}
 .dash-loading{text-align:center;padding:40px;color:var(--muted);font-size:14px}
 .dash-empty{text-align:center;padding:60px 20px;color:var(--muted)}
 .dash-empty-icon{font-size:48px;margin-bottom:12px}

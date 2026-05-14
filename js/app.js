@@ -88,7 +88,7 @@ window.GR = window.GR || {};
               '<div class="dash-card-date">' + dateStr + '</div>' +
             '</div>' +
             '<div class="dash-card-actions">' +
-              '<button data-action="delete-project" data-project-id="' + U.escAttr(p.id) + '" class="dash-card-delete" title="Löschen">🗑️</button>' +
+              '<button data-action="project-menu" data-project-id="' + U.escAttr(p.id) + '" class="dash-card-delete" title="Mehr">⋯</button>' +
             '</div>' +
           '</div>';
       }
@@ -486,6 +486,23 @@ window.GR = window.GR || {};
           e.stopPropagation();
           App.handleDeleteProject(target.dataset.projectId);
           break;
+        case 'project-menu':
+          e.stopPropagation();
+          e.preventDefault();
+          App.showProjectMenu(target.dataset.projectId, target);
+          break;
+        case 'project-rename':
+          App.handleDashboardRename(target.dataset.projectId);
+          break;
+        case 'project-share':
+          App.handleDashboardShare(target.dataset.projectId);
+          break;
+        case 'project-delete':
+          App.handleDeleteProject(target.dataset.projectId);
+          break;
+        case 'close-project-menu':
+          App.closeProjectMenu();
+          break;
         case 'logout': App.handleLogout(); break;
 
         case 'back-to-dashboard':
@@ -624,10 +641,12 @@ window.GR = window.GR || {};
       }
     });
 
-    // Edit-Mode: Rename-Button ein-/ausblenden
-    S.subscribe(C.EVT_EDIT_MODE_CHANGED, function(enabled) {
-      var renameBtn = document.getElementById('btnRenameProject');
-      if (renameBtn) renameBtn.style.display = enabled ? '' : 'none';
+    // Details-Toggle: Sidebar öffnen/schließen
+    document.addEventListener('click', function(e) {
+      if (e.target.closest('#sbToggle')) {
+        var _UI = window.GR.ui;
+        if (_UI && _UI.toggleSidebar) _UI.toggleSidebar();
+      }
     });
   };
 
@@ -756,6 +775,72 @@ window.GR = window.GR || {};
     var result = await Collab.removeMember(project.id, memberId);
     if (result.ok) { Collab.showShareModal(); }
   };
+
+  // ===================================================================
+  // Project Context Menu (Dashboard "⋯")
+  // ===================================================================
+
+  App.showProjectMenu = function(projectId, btnEl) {
+    App.closeProjectMenu();
+    var rect = btnEl.getBoundingClientRect();
+    var menu = document.createElement('div');
+    menu.id = 'projectContextMenu';
+    menu.style.cssText = 'position:fixed;z-index:300;background:var(--card);border:1px solid var(--border);border-radius:var(--rm);box-shadow:0 8px 24px rgba(0,0,0,.15);padding:4px 0;min-width:180px';
+    menu.style.top = rect.bottom + 4 + 'px';
+    menu.style.right = (window.innerWidth - rect.right) + 'px';
+    menu.innerHTML =
+      '<div data-action="project-rename" data-project-id="' + U.escAttr(projectId) + '" style="padding:10px 16px;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:8px">✏️ Umbenennen</div>' +
+      '<div data-action="project-share" data-project-id="' + U.escAttr(projectId) + '" style="padding:10px 16px;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:8px">👥 Teilen</div>' +
+      '<div style="border-top:1px solid var(--border);margin:4px 0"></div>' +
+      '<div data-action="project-delete" data-project-id="' + U.escAttr(projectId) + '" style="padding:10px 16px;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:8px;color:var(--red)">🗑️ Löschen</div>';
+    document.body.appendChild(menu);
+    setTimeout(function() {
+      document.addEventListener('click', App._closeMenuOnOutside);
+    }, 10);
+  };
+
+  App.closeProjectMenu = function() {
+    var menu = document.getElementById('projectContextMenu');
+    if (menu) menu.remove();
+    document.removeEventListener('click', App._closeMenuOnOutside);
+  };
+
+  App._closeMenuOnOutside = function(e) {
+    var menu = document.getElementById('projectContextMenu');
+    if (menu && !menu.contains(e.target)) App.closeProjectMenu();
+  };
+
+  App.handleDashboardRename = async function(projectId) {
+    App.closeProjectMenu();
+    var newName = prompt('Neuer Projektname:');
+    if (!newName || !newName.trim()) return;
+    if (Proj && Proj.updateProjectName) {
+      await Proj.updateProjectName(projectId, newName.trim());
+    }
+    var proj = S.get('currentProject');
+    if (proj && proj.id === projectId) {
+      proj.name = newName.trim();
+      S.set('currentProject', proj);
+      var nameEl = document.getElementById('projectName');
+      if (nameEl) nameEl.textContent = newName.trim();
+    }
+    App.renderDashboard();
+    var UI = window.GR.ui;
+    if (UI && UI.toast) UI.toast('✅ Umbenannt', 'success', 1500);
+  };
+
+  App.handleDashboardShare = function(projectId) {
+    App.closeProjectMenu();
+    var Collab = window.GR.collaboration;
+    if (Collab && Collab.showShareModalForProject) {
+      Collab.showShareModalForProject(projectId);
+    } else if (Collab && Collab.showShareModal) {
+      Collab.showShareModal();
+    }
+  };
+
+  // Details-Toggle: Klick auf #sbToggle öffnet/schließt Sidebar
+  App._detailToggleInit = false;
 
   // ===================================================================
   // Auto-Init bei DOM Ready
