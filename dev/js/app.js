@@ -506,14 +506,6 @@ window.GR = window.GR || {};
         case 'manage-floor': App.showFloorMenu(target.dataset.floorId); break;
         case 'rename-floor': App.handleRenameFloor(target.dataset.floorId); break;
         case 'delete-floor': App.handleDeleteFloor(target.dataset.floorId); break;
-        case 'export-project':
-          var Exp = window.GR.exportMod;
-          if (Exp && Exp.exportProject) Exp.exportProject();
-          break;
-        case 'import-project':
-          var Imp = window.GR.exportMod;
-          if (Imp && Imp.importProject) Imp.importProject();
-          break;
         case 'duplicate-room':
           if (selectedRoom) App.duplicateRoom(selectedRoom);
           break;
