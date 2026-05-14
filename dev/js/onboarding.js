@@ -232,30 +232,40 @@ window.GR = window.GR || {};
       createBtn.textContent = '⏳ Erstelle...';
     }
 
-    var result = await Proj.createProject(projectName, OB._wizardFloors);
+    try {
+      var result = await Proj.createProject(projectName, OB._wizardFloors);
 
-    if (result.ok) {
-      OB.closeWizard();
-      var UI = window.GR.ui;
-      if (UI && UI.toast) UI.toast('✅ Projekt "' + projectName + '" erstellt!', 'success', 3000);
+      if (result.ok) {
+        OB.closeWizard();
+        var UI = window.GR.ui;
+        if (UI && UI.toast) UI.toast('✅ Projekt "' + projectName + '" erstellt!', 'success', 3000);
 
-      // Projekt öffnen
-      await Proj.openProject(result.projectId);
+        // Projekt öffnen
+        await Proj.openProject(result.projectId);
 
-      // Projektname in Top-Bar setzen
-      var nameEl = document.getElementById('projectName');
-      if (nameEl) nameEl.textContent = projectName;
+        // Projektname in Top-Bar setzen
+        var nameEl = document.getElementById('projectName');
+        if (nameEl) nameEl.textContent = projectName;
 
-      // View wechseln zum Editor
-      var App = window.GR.app;
-      if (App && App.showView) App.showView('editor');
-    } else {
+        // View wechseln zum Editor
+        var App = window.GR.app;
+        if (App && App.showView) App.showView('editor');
+      } else {
+        if (createBtn) {
+          createBtn.disabled = false;
+          createBtn.textContent = 'Projekt erstellen ✨';
+        }
+        var UI = window.GR.ui;
+        if (UI && UI.toast) UI.toast('❌ Fehler: ' + (result.error || 'Unbekannt'), 'error', 4000);
+      }
+    } catch (e) {
+      console.error('[onboarding] createProject error:', e);
       if (createBtn) {
         createBtn.disabled = false;
         createBtn.textContent = 'Projekt erstellen ✨';
       }
-      var UI = window.GR.ui;
-      if (UI && UI.toast) UI.toast('❌ Fehler: ' + (result.error || 'Unbekannt'), 'error', 4000);
+      var UI2 = window.GR.ui;
+      if (UI2 && UI2.toast) UI2.toast('❌ Unerwarteter Fehler: ' + (e.message || 'Unbekannt'), 'error', 4000);
     }
   };
 

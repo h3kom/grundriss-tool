@@ -92,7 +92,13 @@ window.GR = window.GR || {};
 
     if (rooms) {
       U.ensureAllRooms(rooms);
-      S.migrateRooms(rooms);
+      var hadMigration = S.migrateRooms(rooms);
+      // Persist migrated rooms back to localStorage so migration doesn't get lost
+      if (hadMigration) {
+        try {
+          localStorage.setItem(C.LOCAL_STORAGE_KEY, JSON.stringify(rooms));
+        } catch (e) { /* noop */ }
+      }
     }
 
     return rooms;
