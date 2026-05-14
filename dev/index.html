@@ -91,6 +91,9 @@
         <button id="btnOv" class="tb-btn" title="Übersicht">📊</button>
         <button data-action="share-project" class="tb-btn" title="Teilen">👥 <span class="btn-text">Teilen</span></button>
         <button id="btnEdit" class="tb-btn" title="Bearbeiten">✏️</button>
+        <button data-action="export-project" class="tb-btn" title="Als JSON exportieren">💾</button>
+        <button data-action="import-project" class="tb-btn" title="JSON importieren">📂</button>
+        <button data-action="open-project-settings" class="tb-btn" title="Projekteinstellungen">⚙️</button>
       </div>
     </div>
 
@@ -188,6 +191,36 @@
   </div>
 
   <!-- ============================================================ -->
+  <!-- PROJECT SETTINGS MODAL                                        -->
+  <!-- ============================================================ -->
+  <div id="projectSettingsModal" class="modal">
+    <div class="modal-backdrop" data-action="close-project-settings"></div>
+    <div class="modal-content project-settings-modal">
+      <div class="project-settings-header">
+        <h3>⚙️ Projekteinstellungen</h3>
+        <button data-action="close-project-settings" class="sb-c" title="Schließen">✕</button>
+      </div>
+      <div class="project-settings-body">
+        <div class="ps-section">
+          <h4>📦 JSON Import / Export</h4>
+          <p class="ps-hint">Lade eine JSON-Datei hoch, um alle Räume und Stockwerke zu importieren. <strong>Achtung:</strong> Bestehende Räume werden überschrieben!</p>
+          <div id="psDropZone" class="ps-dropzone" data-action="ps-dropzone-click">
+            <div class="ps-dropzone-icon">📂</div>
+            <div class="ps-dropzone-text">JSON-Datei hier ablegen oder klicken</div>
+            <div class="ps-dropzone-sub">oder exportiere das aktuelle Projekt</div>
+          </div>
+          <input type="file" id="psFileInput" accept=".json,application/json" style="display:none" />
+          <div id="psPreview" class="ps-preview" style="display:none"></div>
+          <div class="ps-actions">
+            <button data-action="ps-do-import" class="ps-btn ps-btn-primary" id="psImportBtn" disabled>⬆️ Importieren</button>
+            <button data-action="ps-do-export" class="ps-btn ps-btn-secondary">💾 Aktuelles Projekt exportieren</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
   <!-- TOAST Container                                               -->
   <!-- ============================================================ -->
   <div id="toasts" class="toast-container"></div>
@@ -232,6 +265,7 @@
   <script src="js/collaboration.js"></script>
   <script src="js/migration.js"></script>
   <script src="js/presence.js"></script>
+  <script src="js/export.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

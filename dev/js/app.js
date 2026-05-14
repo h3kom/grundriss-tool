@@ -500,8 +500,36 @@ window.GR = window.GR || {};
         case 'manage-floor': App.showFloorMenu(target.dataset.floorId); break;
         case 'rename-floor': App.handleRenameFloor(target.dataset.floorId); break;
         case 'delete-floor': App.handleDeleteFloor(target.dataset.floorId); break;
+        case 'export-project':
+          var Exp = window.GR.exportMod;
+          if (Exp && Exp.exportProject) Exp.exportProject();
+          break;
+        case 'import-project':
+          var Imp = window.GR.exportMod;
+          if (Imp && Imp.importProject) Imp.importProject();
+          break;
         case 'duplicate-room':
           if (selectedRoom) App.duplicateRoom(selectedRoom);
+          break;
+
+        case 'open-project-settings':
+          var ExpPS = window.GR.exportMod;
+          if (ExpPS && ExpPS.openProjectSettings) ExpPS.openProjectSettings();
+          break;
+        case 'close-project-settings':
+          var ExpCS = window.GR.exportMod;
+          if (ExpCS && ExpCS.closeProjectSettings) ExpCS.closeProjectSettings();
+          break;
+        case 'ps-dropzone-click':
+          // Handled by export.js event listeners (drag & drop + click)
+          break;
+        case 'ps-do-import':
+          var ExpImp = window.GR.exportMod;
+          if (ExpImp && ExpImp.doProjectSettingsImport) ExpImp.doProjectSettingsImport();
+          break;
+        case 'ps-do-export':
+          var ExpExp = window.GR.exportMod;
+          if (ExpExp && ExpExp.exportProject) ExpExp.exportProject();
           break;
 
         case 'ob-cancel':
