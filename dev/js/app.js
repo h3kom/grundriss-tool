@@ -322,31 +322,6 @@ window.GR = window.GR || {};
   };
 
   // ===================================================================
-  // Raum-Suche
-  // ===================================================================
-
-  App.handleRoomSearch = function(query) {
-    var rooms = S.get('rooms');
-    if (!rooms) return;
-
-    document.querySelectorAll('.ro.search-highlight').forEach(function(el) {
-      el.classList.remove('search-highlight');
-    });
-
-    query = (query || '').trim().toLowerCase();
-    if (!query) return;
-
-    for (var key of Object.keys(rooms)) {
-      var room = rooms[key];
-      var match = (room.title || '').toLowerCase().indexOf(query) !== -1;
-      if (match) {
-        var el = document.querySelector('.ro[data-key="' + key + '"]');
-        if (el) el.classList.add('search-highlight');
-      }
-    }
-  };
-
-  // ===================================================================
   // Stockwerke verwalten
   // ===================================================================
 
@@ -617,11 +592,6 @@ window.GR = window.GR || {};
         var R = window.GR.rooms;
         if (R && R.deleteRoom) R.deleteRoom(selectedRoom);
       }
-    });
-
-    // Raum-Suche
-    document.addEventListener('input', function(e) {
-      if (e.target.id === 'roomSearch') App.handleRoomSearch(e.target.value);
     });
 
     // Klick auf Grundriss-Hintergrund schließt Details
