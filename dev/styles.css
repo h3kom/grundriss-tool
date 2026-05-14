@@ -385,11 +385,8 @@ img.pi{position:relative;width:100%;height:auto;display:block;pointer-events:non
 .dark .t{background:#252840;border-color:#3b3f5c}
 
 /* ================================================================== */
-/* MAGNETIC SNAP LINES                                                 */
+/* MAGNETIC SNAP LINES (removed)                                       */
 /* ================================================================== */
-.snap-line{position:absolute;z-index:200;pointer-events:none}
-.snap-line-x{width:2px;background:var(--red);opacity:.6}
-.snap-line-y{height:2px;background:var(--red);opacity:.6}
 
 /* ================================================================== */
 /* SEARCH HIGHLIGHT                                                    */
