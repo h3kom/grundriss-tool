@@ -63,11 +63,28 @@ window.GR = window.GR || {};
 
     _channel.subscribe(async function(status) {
       if (status === 'SUBSCRIBED') {
-        await _channel.track({
-          name: user.displayName || user.email || 'User',
-          userId: user.id,
-          online_at: new Date().toISOString()
-        });
+        try {
+          await _channel.track({
+            name: user.displayName || user.email || 'User',
+            userId: user.id,
+            online_at: new Date().toISOString()
+          });
+        } catch (e) {
+          console.warn('[presence] track error:', e.message);
+        }
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        console.warn('[presence] channel status:', status);
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          setTimeout(function() {
+            if (_channel) {
+              _channel.track({
+                name: user.displayName || user.email || 'User',
+                userId: user.id,
+                online_at: new Date().toISOString()
+              }).catch(function(e) { console.warn('[presence] re-track error:', e.message); });
+            }
+          }, 3000);
+        }
       }
     });
   };
@@ -117,7 +134,8 @@ window.GR = window.GR || {};
     for (var i = 0; i < Math.min(otherUsers.length, 4); i++) {
       var u = _onlineUsers[otherUsers[i]];
       var initial = u.name ? u.name.charAt(0).toUpperCase() : '?';
-      html += '<span class="presence-avatar" style="background:' + u.color + '" title="' + (u.name || 'Unbekannt') + '">' + initial + '</span>';
+      var U = window.GR.utils;
+      html += '<span class="presence-avatar" style="background:' + u.color + '" title="' + U.escAttr(u.name || 'Unbekannt') + '">' + U.escHtml(initial) + '</span>';
     }
     if (otherUsers.length > 4) {
       html += '<span class="presence-more">+' + (otherUsers.length - 4) + '</span>';
