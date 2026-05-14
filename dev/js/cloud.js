@@ -22,6 +22,8 @@ window.GR = window.GR || {};
     var sb = Auth ? Auth.getSupabase() : null;
     if (!sb) return { ok: false, error: 'Supabase nicht verfügbar' };
 
+    if (!rooms || typeof rooms !== 'object') return { ok: false, error: 'Ungültige Raumdaten' };
+
     var project = S.get('currentProject');
     if (!project) return { ok: false, error: 'Kein Projekt ausgewählt' };
     if (!project.roomsRowId) return { ok: false, error: 'Keine Room-Row-ID' };
@@ -63,6 +65,7 @@ window.GR = window.GR || {};
         .limit(1);
 
       if (result.error) {
+        console.warn('[cloud] Load error:', result.error.message);
         return { ok: false, error: result.error.message };
       }
 
@@ -76,6 +79,7 @@ window.GR = window.GR || {};
 
       return { ok: true, rooms: {} };
     } catch (e) {
+      console.warn('[cloud] Load exception:', e.message);
       return { ok: false, error: e.message };
     }
   };

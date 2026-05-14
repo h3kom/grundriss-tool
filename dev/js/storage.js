@@ -34,7 +34,15 @@ window.GR = window.GR || {};
       const rooms = S.get('rooms');
       localStorage.setItem(C.LOCAL_STORAGE_KEY, JSON.stringify(rooms));
     } catch (e) {
-      if (St.toast) St.toast('Speichern fehlgeschlagen', 'error', 2000);
+      if (e.name === 'QuotaExceededError' || (e.code === 22) || (e.message && e.message.indexOf('quota') !== -1)) {
+        console.warn('[storage] localStorage quota exceeded — cloud save still active');
+        var UI = window.GR.ui;
+        if (UI && UI.toast) UI.toast('⚠️ Lokaler Speicher voll. Daten werden nur in der Cloud gespeichert.', 'warning', 4000);
+      } else {
+        console.error('[storage] saveToLocal error:', e);
+        var UI2 = window.GR.ui;
+        if (UI2 && UI2.toast) UI2.toast('Speichern fehlgeschlagen', 'error', 2000);
+      }
     }
   };
 
