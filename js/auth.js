@@ -30,6 +30,9 @@ window.GR = window.GR || {};
     _sb.auth.onAuthStateChange(function(event, session) {
       if (event === 'SIGNED_IN' && session) {
         Auth.onSignIn(session.user);
+      } else if (event === 'TOKEN_REFRESHED' && session) {
+        // Update user state on token refresh to prevent session expiry
+        Auth.onSignIn(session.user);
       } else if (event === 'SIGNED_OUT') {
         Auth.onSignOut();
       }
