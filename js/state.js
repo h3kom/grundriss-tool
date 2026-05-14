@@ -28,10 +28,10 @@ window.GR = window.GR || {};
    * @param {Object<string,Object>} rooms
    */
   function migrateRooms(rooms) {
-    if (!rooms || typeof rooms !== 'object') return;
+    if (!rooms || typeof rooms !== 'object') return false;
     // Prüfe, ob Migration überhaupt nötig ist
     const storedVersion = parseInt(localStorage.getItem(DATA_VERSION_KEY) || '0', 10);
-    if (storedVersion >= DATA_VERSION) return;
+    if (storedVersion >= DATA_VERSION) return false;
     for (const key of Object.keys(rooms)) {
       const room = rooms[key];
       if (!room.comments) room.comments = [];
@@ -39,6 +39,7 @@ window.GR = window.GR || {};
     }
     // Version persistieren, damit Migration nicht bei jedem Laden läuft
     try { localStorage.setItem(DATA_VERSION_KEY, String(DATA_VERSION)); } catch (e) { /* noop */ }
+    return true;
   }
 
   const _state = {

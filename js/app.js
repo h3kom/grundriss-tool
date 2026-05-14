@@ -81,14 +81,14 @@ window.GR = window.GR || {};
         var p = result.owned[i];
         var dateStr = new Date(p.updated_at || p.created_at).toLocaleDateString('de-DE');
         html +=
-          '<div class="dash-card" data-action="open-project" data-project-id="' + p.id + '">' +
+          '<div class="dash-card" data-action="open-project" data-project-id="' + U.escAttr(p.id) + '">' +
             '<div class="dash-card-icon">🏢</div>' +
             '<div class="dash-card-info">' +
               '<div class="dash-card-name">' + U.escHtml(p.name) + '</div>' +
               '<div class="dash-card-date">' + dateStr + '</div>' +
             '</div>' +
             '<div class="dash-card-actions">' +
-              '<button data-action="delete-project" data-project-id="' + p.id + '" class="dash-card-delete" title="Löschen">🗑️</button>' +
+              '<button data-action="delete-project" data-project-id="' + U.escAttr(p.id) + '" class="dash-card-delete" title="Löschen">🗑️</button>' +
             '</div>' +
           '</div>';
       }
@@ -102,7 +102,7 @@ window.GR = window.GR || {};
         var s = result.shared[j];
         var dateStr2 = new Date(s.updated_at || s.created_at).toLocaleDateString('de-DE');
         html +=
-          '<div class="dash-card" data-action="open-project" data-project-id="' + s.id + '">' +
+          '<div class="dash-card" data-action="open-project" data-project-id="' + U.escAttr(s.id) + '">' +
             '<div class="dash-card-icon">🤝</div>' +
             '<div class="dash-card-info">' +
               '<div class="dash-card-name">' + U.escHtml(s.name) + '</div>' +
@@ -254,7 +254,7 @@ window.GR = window.GR || {};
     var nameEl = document.getElementById('projectName');
     if (!nameEl) return;
 
-    nameEl.innerHTML = '<input type="text" id="renameProjectInput" class="tb-rename-input" value="' + (proj.name || '').replace(/"/g, '"') + '" />' +
+    nameEl.innerHTML = '<input type="text" id="renameProjectInput" class="tb-rename-input" value="' + U.escAttr(proj.name || '') + '" />' +
       '<button data-action="confirm-rename-project" class="tb-btn-sm" title="Speichern">✅</button>' +
       '<button data-action="cancel-rename-project" class="tb-btn-sm" title="Abbrechen">❌</button>';
 
@@ -303,7 +303,7 @@ window.GR = window.GR || {};
     var rooms = S.get('rooms');
     if (!rooms || !rooms[key]) return;
     var room = rooms[key];
-    var newKey = U.generateKey();
+    var newKey = U.generateKey(rooms);
     var offset = 30;
 
     rooms[newKey] = JSON.parse(JSON.stringify(room));
