@@ -3,6 +3,7 @@
  * =====================================================================
  * @module export
  * @description Exportiert Projektdaten als JSON und importiert sie wieder.
+ * Floor-IDs werden beim Import automatisch auf das Zielprojekt gemappt.
  */
 window.GR = window.GR || {};
 
@@ -19,10 +20,6 @@ window.GR = window.GR || {};
   // Export
   // ===================================================================
 
-  /**
-   * Exportiert das aktuelle Projekt als JSON-Datei.
-   * Sammelt Projekt-Metadaten, Stockwerke und Räume.
-   */
   Exp.exportProject = function() {
     var proj = S.get('currentProject');
     var floors = S.get('currentProjectFloors') || [];
@@ -41,13 +38,7 @@ window.GR = window.GR || {};
       project: {
         name: proj.name || 'Unbenanntes Projekt',
         floors: floors.map(function(f) {
-          return {
-            id: f.id,
-            name: f.name,
-            imageUrl: f.imageUrl,
-            nativeWidth: f.nativeWidth,
-            sortOrder: f.sortOrder
-          };
+          return { id: f.id, name: f.name, sortOrder: f.sortOrder };
         }),
         rooms: JSON.parse(JSON.stringify(rooms))
       }
@@ -57,7 +48,6 @@ window.GR = window.GR || {};
     var blob = new Blob([json], { type: 'application/json' });
     var url = URL.createObjectURL(blob);
 
-    // Dateinamen aus Projektnamen ableiten (sicher machen)
     var safeName = (proj.name || 'grundriss')
       .replace(/[^a-zA-Z0-9äöüÄÖÜß\s\-_]/g, '')
       .replace(/\s+/g, '_')
@@ -72,7 +62,6 @@ window.GR = window.GR || {};
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    // Zusammenfassung
     var roomCount = Object.keys(rooms).length;
     var floorCount = floors.length;
     var UI2 = window.GR.ui;
@@ -82,101 +71,71 @@ window.GR = window.GR || {};
   };
 
   // ===================================================================
-  // Import
+  // Import: Floor-ID Mapping
   // ===================================================================
 
-  /** Referenz auf das versteckte File-Input-Element */
-  var _fileInput = null;
-
   /**
-   * Öffnet den Datei-Dialog zum Importieren einer JSON-Datei.
+   * Mappt Floor-IDs aus dem Import auf die tatsächlichen Floor-IDs des Projekts.
+   * JSON hat z.B. floor:"eg", Cloud-Projekt nutzt UUIDs.
+   * Strategie: nach sortOrder (Position im Array).
    */
-  Exp.importProject = function() {
-    if (!_fileInput) {
-      _fileInput = document.createElement('input');
-      _fileInput.type = 'file';
-      _fileInput.accept = '.json,application/json';
-      _fileInput.style.display = 'none';
-      document.body.appendChild(_fileInput);
-      _fileInput.addEventListener('change', Exp._handleFileSelect);
-    }
-    _fileInput.value = '';
-    _fileInput.click();
-  };
+  Exp._mapFloorIds = function(importedRooms, importedFloors) {
+    var currentFloors = S.get('currentProjectFloors') || [];
+    if (currentFloors.length === 0) return importedRooms;
 
-  /**
-   * Verarbeitet die ausgewählte JSON-Datei.
-   * @param {Event} e - Change-Event des File-Inputs
-   */
-  Exp._handleFileSelect = function(e) {
-    var file = e.target.files && e.target.files[0];
-    if (!file) return;
+    var floorMap = {};
 
-    var reader = new FileReader();
-    reader.onload = function(ev) {
-      try {
-        var data = JSON.parse(ev.target.result);
-        Exp._processImport(data);
-      } catch (err) {
-        var UI = window.GR.ui;
-        if (UI && UI.toast) UI.toast('❌ Ungültige JSON-Datei: ' + err.message, 'error', 4000);
+    if (importedFloors && importedFloors.length > 0) {
+      var sortedImported = importedFloors.slice().sort(function(a, b) {
+        return (a.sortOrder || 0) - (b.sortOrder || 0);
+      });
+      var sortedCurrent = currentFloors.slice().sort(function(a, b) {
+        return (a.sortOrder || 0) - (b.sortOrder || 0);
+      });
+      for (var i = 0; i < sortedImported.length && i < sortedCurrent.length; i++) {
+        floorMap[sortedImported[i].id] = sortedCurrent[i].id;
       }
-    };
-    reader.onerror = function() {
-      var UI2 = window.GR.ui;
-      if (UI2 && UI2.toast) UI2.toast('❌ Fehler beim Lesen der Datei', 'error', 3000);
-    };
-    reader.readAsText(file);
+    } else {
+      // Kein Floor-Info im Import → Räume auf Floor 1 des Projekts setzen
+      if (currentFloors.length > 0) {
+        var allFloorIds = Object.keys(importedRooms).map(function(k) { return importedRooms[k].floor; });
+        var uniqueFloors = [];
+        allFloorIds.forEach(function(f) { if (f && uniqueFloors.indexOf(f) === -1) uniqueFloors.push(f); });
+        uniqueFloors.sort();
+        for (var j = 0; j < uniqueFloors.length && j < currentFloors.length; j++) {
+          floorMap[uniqueFloors[j]] = currentFloors[j].id;
+        }
+      }
+    }
+
+    // Floor-IDs in Räumen umschreiben
+    var mappedRooms = JSON.parse(JSON.stringify(importedRooms));
+    var keys = Object.keys(mappedRooms);
+    for (var k = 0; k < keys.length; k++) {
+      var room = mappedRooms[keys[k]];
+      if (room.floor && floorMap[room.floor]) {
+        room.floor = floorMap[room.floor];
+      } else if (!room.floor || !floorMap[room.floor]) {
+        // Fallback: ersten Floor setzen
+        if (currentFloors.length > 0) room.floor = currentFloors[0].id;
+      }
+    }
+
+    return mappedRooms;
   };
 
   /**
-   * Verarbeitet die importierten Daten und wendet sie auf das aktuelle Projekt an.
-   * @param {Object} data - Die geparsten JSON-Daten
+   * Zentrale Import-Funktion: Mappt Floors, setzt Räume, speichert, rendert.
    */
-  Exp._processImport = function(data) {
-    var UI = window.GR.ui;
-    var toast = UI && UI.toast ? UI.toast : function() {};
-
-    // Validierung
-    if (!data || !data.project || typeof data.project !== 'object') {
-      toast('❌ Ungültiges Export-Format: "project" fehlt', 'error', 4000);
-      return;
-    }
-    if (!data.project.rooms || typeof data.project.rooms !== 'object') {
-      toast('❌ Ungültiges Export-Format: "rooms" fehlt', 'error', 4000);
-      return;
-    }
-
-    var proj = S.get('currentProject');
-    if (!proj) {
-      toast('❌ Kein Projekt geöffnet', 'error', 2000);
-      return;
-    }
-
-    // Bestätigung einholen
+  Exp._applyImport = async function(data, toast) {
     var roomCount = Object.keys(data.project.rooms).length;
-    var floorInfo = '';
-    if (data.project.floors && data.project.floors.length > 0) {
-      floorInfo = data.project.floors.length + ' Stockwerk(e)';
-    }
-    var confirmMsg = 'Daten aus "' + (data.project.name || 'Unbekannt') + '" importieren?\n\n';
-    confirmMsg += roomCount + ' Raum/Räume';
-    if (floorInfo) confirmMsg += ', ' + floorInfo;
-    confirmMsg += '\n\nAchtung: Bestehende Räume werden ersetzt!';
+    var mappedRooms = Exp._mapFloorIds(data.project.rooms, data.project.floors);
 
-    if (!confirm(confirmMsg)) return;
+    S.set('rooms', mappedRooms);
 
-    // Räume importieren
-    var importedRooms = data.project.rooms;
-
-    // Nur Räume importieren – Stockwerke und Bilder bleiben erhalten!
-    S.set('rooms', importedRooms);
-
-    // Speichern
     var St = window.GR.storage;
-    if (St && St.saveData) St.saveData();
+    if (St && St.saveData) await St.saveData();
 
-    // Neu rendern
     var Rdr = window.GR.renderer;
     if (Rdr && Rdr.render) Rdr.render();
 
@@ -187,21 +146,41 @@ window.GR = window.GR || {};
   };
 
   // ===================================================================
-  // Project Settings Modal
+  // Validierung
   // ===================================================================
 
-  /** Parsed data awaiting import confirmation */
+  Exp._validateImportData = function(data) {
+    if (!data || typeof data !== 'object') {
+      return { valid: false, error: 'Datei ist leer oder kein JSON-Objekt' };
+    }
+    if (!data.project || typeof data.project !== 'object') {
+      return { valid: false, error: '"project" Objekt fehlt' };
+    }
+    if (!data.project.rooms || typeof data.project.rooms !== 'object') {
+      return { valid: false, error: '"project.rooms" Objekt fehlt' };
+    }
+    var roomKeys = Object.keys(data.project.rooms);
+    if (roomKeys.length === 0) {
+      return { valid: false, error: 'Keine Räume in der Datei enthalten' };
+    }
+    var sampleRoom = data.project.rooms[roomKeys[0]];
+    if (!sampleRoom || typeof sampleRoom.title === 'undefined') {
+      return { valid: false, error: 'Raum-Objekte haben nicht das erwartete Format' };
+    }
+    return { valid: true };
+  };
+
+  // ===================================================================
+  // Project Settings Modal (Drag & Drop Import)
+  // ===================================================================
+
   var _pendingImport = null;
 
-  /**
-   * Öffnet das Projekteinstellungs-Modal.
-   */
   Exp.openProjectSettings = function() {
     _pendingImport = null;
     var modal = document.getElementById('projectSettingsModal');
     if (!modal) return;
 
-    // Reset UI
     var dropZone = document.getElementById('psDropZone');
     var preview = document.getElementById('psPreview');
     var importBtn = document.getElementById('psImportBtn');
@@ -217,7 +196,6 @@ window.GR = window.GR || {};
     if (preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
     if (importBtn) importBtn.disabled = true;
 
-    // Setup drag & drop (only once)
     if (!Exp._psInit) {
       Exp._setupProjectSettingsEvents();
       Exp._psInit = true;
@@ -226,68 +204,43 @@ window.GR = window.GR || {};
     modal.classList.add('open');
   };
 
-  /**
-   * Schließt das Projekteinstellungs-Modal.
-   */
   Exp.closeProjectSettings = function() {
     var modal = document.getElementById('projectSettingsModal');
     if (modal) modal.classList.remove('open');
     _pendingImport = null;
   };
 
-  /**
-   * Setup für Drag & Drop und File-Input-Events (einmalig).
-   */
   Exp._setupProjectSettingsEvents = function() {
     var dropZone = document.getElementById('psDropZone');
     var fileInput = document.getElementById('psFileInput');
-
     if (!dropZone || !fileInput) return;
 
-    // Drag & Drop
     dropZone.addEventListener('dragover', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
+      e.preventDefault(); e.stopPropagation();
       dropZone.classList.add('dragover');
     });
-
     dropZone.addEventListener('dragleave', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
+      e.preventDefault(); e.stopPropagation();
       dropZone.classList.remove('dragover');
     });
-
     dropZone.addEventListener('drop', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
+      e.preventDefault(); e.stopPropagation();
       dropZone.classList.remove('dragover');
       var files = e.dataTransfer && e.dataTransfer.files;
-      if (files && files.length > 0) {
-        Exp._handlePsFile(files[0]);
-      }
+      if (files && files.length > 0) Exp._handlePsFile(files[0]);
     });
-
-    // Click opens file dialog
     dropZone.addEventListener('click', function(e) {
       e.preventDefault();
       fileInput.value = '';
       fileInput.click();
     });
-
-    // File input change
     fileInput.addEventListener('change', function() {
-      if (fileInput.files && fileInput.files.length > 0) {
-        Exp._handlePsFile(fileInput.files[0]);
-      }
+      if (fileInput.files && fileInput.files.length > 0) Exp._handlePsFile(fileInput.files[0]);
     });
   };
 
-  /**
-   * Verarbeitet eine ausgewählte Datei im Projekt-Settings-Modal.
-   */
   Exp._handlePsFile = function(file) {
     if (!file) return;
-
     var dropZone = document.getElementById('psDropZone');
     var preview = document.getElementById('psPreview');
     var importBtn = document.getElementById('psImportBtn');
@@ -300,27 +253,19 @@ window.GR = window.GR || {};
 
         if (validation.valid) {
           _pendingImport = data;
-
-          // Update dropzone
           if (dropZone) {
             dropZone.classList.add('has-file');
             var icon = dropZone.querySelector('.ps-dropzone-icon');
-            var text = dropZone.querySelector('.ps-dropzone-text');
+            var textEl = dropZone.querySelector('.ps-dropzone-text');
             var sub = dropZone.querySelector('.ps-dropzone-sub');
             if (icon) icon.textContent = '✅';
-            if (text) text.textContent = file.name;
+            if (textEl) textEl.textContent = file.name;
             if (sub) sub.style.display = 'none';
           }
-
-          // Show preview
           if (preview) {
             var roomCount = Object.keys(data.project.rooms).length;
             var floorCount = data.project.floors ? data.project.floors.length : 0;
-            var floorNames = '';
-            if (data.project.floors) {
-              floorNames = data.project.floors.map(function(f) { return f.name; }).join(', ');
-            }
-
+            var floorNames = data.project.floors ? data.project.floors.map(function(f) { return f.name; }).join(', ') : '';
             var html = '<div class="ps-preview-title">📋 ' + U.escHtml(data.project.name || 'Unbenanntes Projekt') + '</div>';
             html += '<div class="ps-preview-info">';
             html += 'Räume: <span>' + roomCount + '</span><br>';
@@ -330,12 +275,9 @@ window.GR = window.GR || {};
             preview.innerHTML = html;
             preview.style.display = '';
           }
-
           if (importBtn) importBtn.disabled = false;
         } else {
           _pendingImport = null;
-
-          // Show error in preview
           if (preview) {
             preview.innerHTML = '<div class="ps-preview-error">❌ ' + U.escHtml(validation.error) + '</div>';
             preview.style.display = '';
@@ -345,7 +287,7 @@ window.GR = window.GR || {};
       } catch (err) {
         _pendingImport = null;
         if (preview) {
-          preview.innerHTML = '<div class="ps-preview-error">❌ Ungültige JSON-Datei: ' + U.escHtml(err.message) + '</div>';
+          preview.innerHTML = '<div class="ps-preview-error">❌ Ungültige JSON: ' + U.escHtml(err.message) + '</div>';
           preview.style.display = '';
         }
         if (importBtn) importBtn.disabled = true;
@@ -354,36 +296,7 @@ window.GR = window.GR || {};
     reader.readAsText(file);
   };
 
-  /**
-   * Validiert die Import-Daten.
-   * @returns {{ valid: boolean, error?: string }}
-   */
-  Exp._validateImportData = function(data) {
-    if (!data || typeof data !== 'object') {
-      return { valid: false, error: 'Datei ist leer oder kein JSON-Objekt' };
-    }
-    if (!data.project || typeof data.project !== 'object') {
-      return { valid: false, error: '"project" Objekt fehlt' };
-    }
-    if (!data.project.rooms || typeof data.project.rooms !== 'object') {
-      return { valid: false, error: '"project.rooms" Objekt fehlt' };
-    }
-    // Check at least one room has required fields
-    var roomKeys = Object.keys(data.project.rooms);
-    if (roomKeys.length === 0) {
-      return { valid: false, error: 'Keine Räume in der Datei enthalten' };
-    }
-    var sampleRoom = data.project.rooms[roomKeys[0]];
-    if (!sampleRoom || typeof sampleRoom.title === 'undefined') {
-      return { valid: false, error: 'Raum-Objekte haben nicht das erwartete Format' };
-    }
-    return { valid: true };
-  };
-
-  /**
-   * Führt den Import aus (wird vom "Importieren"-Button aufgerufen).
-   */
-  Exp.doProjectSettingsImport = function() {
+  Exp.doProjectSettingsImport = async function() {
     if (!_pendingImport) {
       var UI = window.GR.ui;
       if (UI && UI.toast) UI.toast('❌ Keine Datei ausgewählt', 'error', 2000);
@@ -398,43 +311,20 @@ window.GR = window.GR || {};
       return;
     }
 
-    // Bestätigung
     var roomCount = Object.keys(data.project.rooms).length;
     var confirmMsg = 'Alle bestehenden Räume überschreiben?\n\n';
-    confirmMsg += roomCount + ' Raum/Räume';
-    confirmMsg += '\n\nStockwerke und Grundriss-Bilder bleiben erhalten.';
+    confirmMsg += roomCount + ' Raum/Räume\n';
+    confirmMsg += '\nStockwerke und Grundriss-Bilder bleiben erhalten.';
     confirmMsg += '\n\nDieser Vorgang kann nicht rückgängig gemacht werden!';
 
     if (!confirm(confirmMsg)) return;
 
-    // Nur Räume importieren – Stockwerke und Bilder bleiben erhalten!
-    S.set('rooms', data.project.rooms);
+    var UI3 = window.GR.ui;
+    var toast = UI3 && UI3.toast ? UI3.toast : function() {};
 
-    // Speichern
-    var St = window.GR.storage;
-    if (St && St.saveData) St.saveData();
+    await Exp._applyImport(data, toast);
 
-    // Neu rendern
-    var Rdr = window.GR.renderer;
-    if (Rdr && Rdr.render) Rdr.render();
-
-    var Sync = window.GR.sync;
-    if (Sync && Sync.updateTabBadges) Sync.updateTabBadges();
-
-    // Floor auf erstes Stockwerk setzen
-    var floors = S.get('currentProjectFloors') || [];
-    if (floors.length > 0) {
-      var UI3 = window.GR.ui;
-      if (UI3 && UI3.switchFloor) UI3.switchFloor(floors[0].id);
-      else S.set('activeFloor', floors[0].id);
-    }
-
-    // Modal schließen
     Exp.closeProjectSettings();
-
-    var UI4 = window.GR.ui;
-    if (UI4 && UI4.toast) UI4.toast('✅ Import erfolgreich! ' + roomCount + ' Raum/Räume importiert', 'success', 3000);
-
     _pendingImport = null;
   };
 
