@@ -83,16 +83,15 @@
       <div class="tb-left">
         <button data-action="back-to-dashboard" class="tb-btn" title="Zurück">← <span class="btn-text">Projekte</span></button>
         <span id="projectName" class="tb-project-name"></span>
-        <button data-action="rename-project" class="tb-btn-sm" title="Projekt umbenennen">✏️</button>
+        <button id="btnRenameProject" data-action="rename-project" class="tb-btn-sm" title="Projekt umbenennen" style="display:none">✏️</button>
       </div>
       <div class="tb-right">
         <span id="syncI"></span>
         <span id="presenceIndicator" class="presence-indicator"></span>
-        <button id="btnSnap" class="tb-btn" title="Magnetisches Snappen">🧲</button>
         <button id="btnOv" class="tb-btn" title="Übersicht">📊</button>
         <button data-action="share-project" class="tb-btn" title="Teilen">👥 <span class="btn-text">Teilen</span></button>
-        <button id="btnDark" class="tb-btn" title="Dark Mode">🌙</button>
         <button id="btnEdit" class="tb-btn" title="Bearbeiten">✏️</button>
+        <button data-action="open-settings" class="tb-btn" title="Einstellungen">⚙️</button>
       </div>
     </div>
 
@@ -135,7 +134,6 @@
         <button class="sb-toggle" id="sbToggle"><span class="arrow">▲</span> Details</button>
         <div id="sbH" class="sb-h">
           <h2>Details</h2>
-          <button id="sbC" class="sb-c" title="Schließen">✕</button>
         </div>
         <!-- Raum-Suche -->
         <div class="sb-search">
@@ -170,6 +168,29 @@
         <button data-action="close-share" class="sb-c" title="Schließen">✕</button>
       </div>
       <div id="shareBody" class="share-body"></div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SETTINGS MODAL                                                -->
+  <!-- ============================================================ -->
+  <div id="settingsModal" class="modal">
+    <div class="modal-backdrop" data-action="close-settings"></div>
+    <div class="modal-content settings-modal">
+      <div class="settings-header">
+        <h3>⚙️ Einstellungen</h3>
+        <button data-action="close-settings" class="sb-c" title="Schließen">✕</button>
+      </div>
+      <div class="settings-body">
+        <div class="settings-item">
+          <span class="settings-label">🌙 Dark Mode</span>
+          <button id="settingsDarkToggle" data-action="toggle-dark-mode" class="settings-toggle">Aus</button>
+        </div>
+        <div class="settings-item">
+          <span class="settings-label">ℹ️ Über</span>
+          <span class="settings-value">Grundriss Tool v1.0</span>
+        </div>
+      </div>
     </div>
   </div>
 

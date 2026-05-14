@@ -261,7 +261,7 @@ img.pi{position:relative;width:100%;height:auto;display:block;pointer-events:non
 
 .mc{flex:1;overflow-y:auto;overflow-x:hidden}
 
-.ft{display:flex;gap:0;background:var(--input);border-radius:var(--rm);padding:3px;border:1px solid var(--border);margin:10px 10px 0}
+.ft{display:flex;gap:0;background:var(--input);border-radius:var(--rm);padding:3px;border:1px solid var(--border);margin:10px 10px 0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
 .ft-tab{flex:1;padding:10px;border:none;background:transparent;color:var(--muted);font-size:14px;font-weight:600;border-radius:calc(var(--rs) - 1px);cursor:pointer;min-height:42px;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px}
 .ft-tab.active{background:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(59,130,246,0.25)}
 .ft-badge{display:inline-block;background:rgba(255,255,255,0.2);padding:0 7px;border-radius:999px;font-size:11px}
@@ -442,6 +442,19 @@ img.pi{position:relative;width:100%;height:auto;display:block;pointer-events:non
 .dup-btn:hover{background:var(--blue-hover)}
 
 /* ================================================================== */
-/* SNAP BUTTON ACTIVE STATE                                            */
+/* SETTINGS MODAL                                                      */
 /* ================================================================== */
-#btnSnap.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.settings-modal{max-width:400px}
+.settings-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.settings-header h3{margin:0;font-size:18px;font-weight:700}
+.settings-item{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
+.settings-item:last-child{border-bottom:none}
+.settings-label{font-size:14px;font-weight:500}
+.settings-value{font-size:13px;color:var(--muted)}
+.settings-toggle{background:var(--input);border:1px solid var(--border);color:var(--text);padding:6px 16px;border-radius:999px;cursor:pointer;font-size:13px;font-weight:500;transition:all .15s}
+.settings-toggle.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+
+/* ================================================================== */
+/* COMMENT TEXT                                                        */
+/* ================================================================== */
+.ci .ct{font-size:13px;line-height:1.4;margin-top:2px}

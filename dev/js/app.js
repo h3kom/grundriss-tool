@@ -210,8 +210,16 @@ window.GR = window.GR || {};
   App.toggleDarkMode = function() {
     var isDark = document.documentElement.classList.toggle('dark');
     localStorage.setItem(C.DARK_MODE_KEY, isDark ? '1' : '0');
-    var btn = document.getElementById('btnDark');
-    if (btn) btn.textContent = isDark ? '☀️' : '🌙';
+    App.updateDarkModeToggle();
+  };
+
+  App.updateDarkModeToggle = function() {
+    var isDark = document.documentElement.classList.contains('dark');
+    var toggle = document.getElementById('settingsDarkToggle');
+    if (toggle) {
+      toggle.textContent = isDark ? 'An' : 'Aus';
+      toggle.classList.toggle('active', isDark);
+    }
   };
 
   App.initDarkMode = function() {
@@ -220,22 +228,19 @@ window.GR = window.GR || {};
     var isDark = saved !== null ? saved === '1' : prefersDark;
     if (isDark) {
       document.documentElement.classList.add('dark');
-      var btn = document.getElementById('btnDark');
-      if (btn) btn.textContent = '☀️';
     }
+    App.updateDarkModeToggle();
   };
 
-  // ===================================================================
-  // Snap Toggle
-  // ===================================================================
+  App.openSettings = function() {
+    App.updateDarkModeToggle();
+    var modal = document.getElementById('settingsModal');
+    if (modal) modal.classList.add('open');
+  };
 
-  App.toggleSnap = function() {
-    var enabled = !S.get('snapEnabled');
-    S.set('snapEnabled', enabled);
-    var btn = document.getElementById('btnSnap');
-    if (btn) btn.classList.toggle('active', enabled);
-    var UI = window.GR.ui;
-    if (UI && UI.toast) UI.toast(enabled ? '🧲 Snappen aktiviert' : '🧲 Snappen deaktiviert', 'info', 1500);
+  App.closeSettings = function() {
+    var modal = document.getElementById('settingsModal');
+    if (modal) modal.classList.remove('open');
   };
 
   // ===================================================================
@@ -243,6 +248,7 @@ window.GR = window.GR || {};
   // ===================================================================
 
   App.handleRenameProject = function() {
+    if (!S.get('editMode')) return;
     var proj = S.get('currentProject');
     if (!proj) return;
     var nameEl = document.getElementById('projectName');
@@ -496,7 +502,8 @@ window.GR = window.GR || {};
           break;
 
         case 'toggle-dark-mode': App.toggleDarkMode(); break;
-        case 'toggle-snap': App.toggleSnap(); break;
+        case 'open-settings': App.openSettings(); break;
+        case 'close-settings': App.closeSettings(); break;
         case 'rename-project': App.handleRenameProject(); break;
         case 'confirm-rename-project': App.confirmRenameProject(); break;
         case 'cancel-rename-project': App.cancelRenameProject(); break;
@@ -603,10 +610,24 @@ window.GR = window.GR || {};
       if (e.target.id === 'roomSearch') App.handleRoomSearch(e.target.value);
     });
 
-    // Snap & Dark Button
+    // Klick auf Grundriss-Hintergrund schließt Details
     document.addEventListener('click', function(e) {
-      if (e.target.closest('#btnSnap')) App.toggleSnap();
-      if (e.target.closest('#btnDark')) App.toggleDarkMode();
+      var planEl = e.target.closest('.pw');
+      if (planEl && !e.target.closest('.ro') && !e.target.closest('.rh')) {
+        var UI = window.GR.ui;
+        if (UI) {
+          S.set('selectedRoom', null);
+          UI.closeSidebar();
+          var sc = document.getElementById('sc');
+          if (sc) sc.innerHTML = '<p class="hint">\uD83D\uDC46 Raum antippen</p>';
+        }
+      }
+    });
+
+    // Edit-Mode: Rename-Button ein-/ausblenden
+    S.subscribe(C.EVT_EDIT_MODE_CHANGED, function(enabled) {
+      var renameBtn = document.getElementById('btnRenameProject');
+      if (renameBtn) renameBtn.style.display = enabled ? '' : 'none';
     });
   };
 

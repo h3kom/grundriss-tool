@@ -72,7 +72,7 @@ window.GR = window.GR || {};
     html += '</div>';
     html += OR.buildLastEditInfo();
 
-    document.getElementById('sbBody').innerHTML = html;
+    document.getElementById('sc').innerHTML = html;
   };
 
   /**

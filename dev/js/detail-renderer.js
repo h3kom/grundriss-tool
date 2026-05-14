@@ -44,9 +44,9 @@ window.GR = window.GR || {};
    */
   DR.buildDetailHeader = function(key, room) {
     return '<div class="rdh">' +
-      '<button class="bb" data-action="show-overview">\u2190</button>' +
+      '<button class="bb" data-action="close-sidebar">\u2190</button>' +
       '<h3>' + U.escHtml(room.title) + '</h3>' +
-      '<button class="rb" data-action="open-rename" data-key="' + U.escAttr(key) + '" title="Umbenennen">\u270F\uFE0F</button>' +
+      (S.get('editMode') ? '<button class="rb" data-action="open-rename" data-key="' + U.escAttr(key) + '" title="Umbenennen">\u270F\uFE0F</button>' : '') +
       '<span class="rk">' + U.escHtml(key) + '</span>' +
     '</div>';
   };
@@ -142,13 +142,15 @@ window.GR = window.GR || {};
 
     if (room.comments && room.comments.length > 0) {
       for (var i = 0; i < room.comments.length; i++) {
-        var timeStr = room.comments[i].time
-          ? new Date(room.comments[i].time).toLocaleString('de-DE')
+        var c = room.comments[i];
+        var timeStr = c.time
+          ? new Date(c.time).toLocaleString('de-DE')
           : '';
+        var userName = c.user || 'Unbekannt';
         html += '<div class="ci">' +
           (S.get('editMode') ? '<button class="cd" data-action="delete-comment" data-key="' + safeKey + '" data-idx="' + i + '">\u00D7</button>' : '') +
-          '<div class="cm">' + U.escHtml(timeStr) + '</div>' +
-          U.escHtml(room.comments[i].text) +
+          '<div class="cm"><strong>' + U.escHtml(userName) + '</strong> · ' + U.escHtml(timeStr) + '</div>' +
+          '<div class="ct">' + U.escHtml(c.text) + '</div>' +
         '</div>';
       }
     } else {
