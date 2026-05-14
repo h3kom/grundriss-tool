@@ -191,27 +191,6 @@ window.GR = window.GR || {};
 
     document.querySelectorAll('.ro').forEach(function(el) { el.classList.toggle('em', enabled); });
 
-    // Raum-Typ-Legende im Edit-Modus anzeigen
-    var legend = document.getElementById('roomTypeLegend');
-    if (legend) {
-      if (enabled) {
-        var floor = S.get('activeFloor') || 'eg';
-        var html = '';
-        for (var typeKey of Object.keys(C.ROOM_TYPES)) {
-          var t = C.ROOM_TYPES[typeKey];
-          html += '<div class="room-type-legend-item" data-action="place-new-room" data-floor="' + floor + '" data-room-type="' + typeKey + '" style="cursor:pointer">' +
-            '<span class="room-type-legend-dot" style="background:' + t.color + '"></span>' +
-            t.label +
-          '</div>';
-        }
-        legend.innerHTML = html;
-        legend.style.display = '';
-      } else {
-        legend.style.display = 'none';
-        legend.innerHTML = '';
-      }
-    }
-
     if (enabled) {
       UI.closeSidebar();
     } else {
@@ -357,6 +336,16 @@ window.GR = window.GR || {};
   // Event Delegation (data-action)
   // ===================================================================
 
+  /**
+   * Aktualisiert Detail-Panel und Raum-Label nach Datenänderung.
+   */
+  function _refreshDetail(key) {
+    var DetailRdr = window.GR.detailRenderer;
+    var Rdr = window.GR.renderer;
+    if (DetailRdr && key) DetailRdr.renderDetail(key);
+    if (Rdr && Rdr.render) Rdr.render();
+  }
+
   function setupEventDelegation() {
     // Click-Event-Delegation
     document.addEventListener('click', function(e) {
@@ -421,16 +410,28 @@ window.GR = window.GR || {};
           UI.openRenameModal(target.dataset.key);
           break;
         case 'delete-task':
-          if (R && target.dataset.key) R.deleteTask(target.dataset.key, parseInt(target.dataset.idx));
+          if (R && target.dataset.key) {
+            R.deleteTask(target.dataset.key, parseInt(target.dataset.idx));
+            _refreshDetail(target.dataset.key);
+          }
           break;
         case 'add-task':
-          if (R && target.dataset.key) R.addTask(target.dataset.key);
+          if (R && target.dataset.key) {
+            R.addTask(target.dataset.key);
+            _refreshDetail(target.dataset.key);
+          }
           break;
         case 'delete-comment':
-          if (R && target.dataset.key) R.deleteComment(target.dataset.key, parseInt(target.dataset.idx));
+          if (R && target.dataset.key) {
+            R.deleteComment(target.dataset.key, parseInt(target.dataset.idx));
+            _refreshDetail(target.dataset.key);
+          }
           break;
         case 'add-comment':
-          if (R && target.dataset.key) R.addComment(target.dataset.key);
+          if (R && target.dataset.key) {
+            R.addComment(target.dataset.key);
+            _refreshDetail(target.dataset.key);
+          }
           break;
         case 'delete-room':
           if (R && target.dataset.key) R.deleteRoom(target.dataset.key);
@@ -459,10 +460,16 @@ window.GR = window.GR || {};
 
       switch (action) {
         case 'add-task':
-          if (R && key) R.addTask(key);
+          if (R && key) {
+            R.addTask(key);
+            _refreshDetail(key);
+          }
           break;
         case 'add-comment':
-          if (R && key) R.addComment(key);
+          if (R && key) {
+            R.addComment(key);
+            _refreshDetail(key);
+          }
           break;
         case 'search-overview':
           var OR = window.GR.overviewRenderer;
@@ -483,23 +490,13 @@ window.GR = window.GR || {};
 
       switch (action) {
         case 'toggle-task':
-          if (R && key && idx !== undefined) R.toggleTask(key, idx, target.checked);
+          if (R && key && idx !== undefined) {
+            R.toggleTask(key, idx, target.checked);
+            _refreshDetail(key);
+          }
           break;
         case 'save-note':
           if (R && key) R.saveNote(key, target.value);
-          break;
-        case 'change-room-type':
-          if (key) {
-            var rooms = S.get('rooms');
-            if (rooms && rooms[key]) {
-              rooms[key].type = target.value;
-              St.saveData();
-              var Rdr = window.GR.renderer;
-              if (Rdr && Rdr.render) Rdr.render();
-              var DetailRdr = window.GR.detailRenderer;
-              if (DetailRdr && DetailRdr.renderDetail) DetailRdr.renderDetail(key);
-            }
-          }
           break;
       }
     });

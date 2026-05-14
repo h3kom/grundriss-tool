@@ -70,14 +70,6 @@ window.GR = window.GR || {};
         element.classList.toggle('sel', isSelected);
         element.classList.toggle('em', editMode);
 
-        // Raum-Typ Farbe aktualisieren
-        var rt = room.type || C.ROOM_TYPE_DEFAULT;
-        var ti = C.ROOM_TYPES[rt] || C.ROOM_TYPES[C.ROOM_TYPE_DEFAULT];
-        if (ti && ti.color) {
-          element.style.backgroundColor = ti.color + '33';
-          element.style.borderColor = ti.color;
-          element.setAttribute('data-type', rt);
-        }
 
         const progress = U.taskProgress(room);
         const existingLabel = element.querySelector('.rl');
@@ -104,26 +96,15 @@ window.GR = window.GR || {};
     const isSelected = S.get('selectedRoom') === key;
     const editMode = S.get('editMode');
 
-    // Raum-Typ
-    var roomType = room.type || C.ROOM_TYPE_DEFAULT;
-    var typeInfo = C.ROOM_TYPES[roomType] || C.ROOM_TYPES[C.ROOM_TYPE_DEFAULT];
-
     div.className = 'ro' + (isSelected ? ' sel' : '') + (editMode ? ' em' : '');
     div.style.left = Math.round(room.left * scale) + 'px';
     div.style.top = Math.round(room.top * scale) + 'px';
     div.style.width = Math.round(room.width * scale) + 'px';
     div.style.height = Math.round(room.height * scale) + 'px';
     div.setAttribute('data-key', key);
-    div.setAttribute('data-type', roomType);
     div.setAttribute('tabindex', '0');
     div.setAttribute('role', 'button');
     div.setAttribute('aria-label', 'Raum: ' + room.title);
-
-    // Raum-Typ Hintergrundfarbe
-    if (typeInfo && typeInfo.color) {
-      div.style.backgroundColor = typeInfo.color + '33';
-      div.style.borderColor = typeInfo.color;
-    }
 
     // Click: select or show
     div.addEventListener('click', function(e) {

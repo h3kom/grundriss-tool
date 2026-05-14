@@ -339,9 +339,6 @@ window.GR = window.GR || {};
     for (var key of Object.keys(rooms)) {
       var room = rooms[key];
       var match = (room.title || '').toLowerCase().indexOf(query) !== -1;
-      var roomType = room.type || C.ROOM_TYPE_DEFAULT;
-      var typeInfo = C.ROOM_TYPES[roomType];
-      if (typeInfo && typeInfo.label.toLowerCase().indexOf(query) !== -1) match = true;
       if (match) {
         var el = document.querySelector('.ro[data-key="' + key + '"]');
         if (el) el.classList.add('search-highlight');
