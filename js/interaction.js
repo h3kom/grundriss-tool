@@ -29,7 +29,7 @@ window.GR = window.GR || {};
   I.onResizeEnd = function() { var r = RS(); if (r) r.onResizeEnd(); };
   I.onResizeEndTouch = function() { var r = RS(); if (r) r.onResizeEndTouch(); };
 
-  I.enablePlaceNewRoom = function(floor) { var p = PR(); if (p) p.enablePlaceNewRoom(floor); };
+  I.enablePlaceNewRoom = function(floor, roomType) { var p = PR(); if (p) p.enablePlaceNewRoom(floor, roomType); };
   I.cancelPlaceNewRoom = function() { var p = PR(); if (p) p.cancelPlaceNewRoom(); };
   I.removePlacePreview = function() { var p = PR(); if (p) p.removePlacePreview(); };
   I.startPlaceDraw = function(e) { var p = PR(); if (p) p.startPlaceDraw(e); };

@@ -91,7 +91,7 @@ window.GR = window.GR || {};
         '<div class="ob-icon">🏗️</div>' +
         '<h3>Neues Projekt erstellen</h3>' +
         '<p>Wie heißt das Gebäude?</p>' +
-        '<input type="text" id="obProjectName" placeholder="z.B. Bürogebäude München" class="ob-input" />' +
+        '<input type="text" id="obProjectName" placeholder="z.B. Bürogebäude München" class="ob-input" value="' + U.escAttr(OB._projectName || '') + '" />' +
         '<div class="ob-actions">' +
           '<button data-action="ob-cancel" class="ob-btn-cancel">Abbrechen</button>' +
           '<button data-action="ob-next" class="ob-btn-primary">Weiter →</button>' +
@@ -203,7 +203,16 @@ window.GR = window.GR || {};
    * Erstellt das Projekt aus den Wizard-Daten.
    */
   OB.createProjectFromWizard = async function() {
-    var projectName = OB._projectName && OB._projectName.trim() ? OB._projectName.trim() : 'Unbenanntes Projekt';
+    // Projektname – mehrstufiger Fallback: OB._projectName → DOM → Default
+    var projectName = (OB._projectName && OB._projectName.trim()) ? OB._projectName.trim() : '';
+    if (!projectName) {
+      var domInput = document.getElementById('obProjectName');
+      if (domInput && domInput.value && domInput.value.trim()) {
+        projectName = domInput.value.trim();
+        OB._projectName = projectName;
+      }
+    }
+    if (!projectName) projectName = 'Unbenanntes Projekt';
 
     // Floor-Namen aus Inputs lesen (falls zwischenzeitlich geändert)
     var nameInputs = document.querySelectorAll('.ob-floor-name');

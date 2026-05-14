@@ -541,7 +541,7 @@ window.GR = window.GR || {};
           if (OB3) {
             // Projektname aus Input lesen BEVOR Step 2 gerendert wird (DOM wird zerstört)
             var nameInput = document.getElementById('obProjectName');
-            if (nameInput) OB3._projectName = nameInput.value.trim();
+            if (nameInput && nameInput.value.trim()) OB3._projectName = nameInput.value.trim();
             OB3._wizardStep = 2;
             OB3.renderWizard();
           }
