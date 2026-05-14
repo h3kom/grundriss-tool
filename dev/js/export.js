@@ -169,30 +169,7 @@ window.GR = window.GR || {};
     // Räume importieren
     var importedRooms = data.project.rooms;
 
-    // Stockwerke importieren – bestehende Bilder beibehalten!
-    if (data.project.floors && data.project.floors.length > 0 && proj.id !== 'legacy') {
-      var existingFloors = S.get('currentProjectFloors') || [];
-      var existingMap = {};
-      for (var fi = 0; fi < existingFloors.length; fi++) {
-        existingMap[existingFloors[fi].id] = existingFloors[fi];
-      }
-      var importedFloors = data.project.floors.map(function(f) {
-        var existing = existingMap[f.id];
-        return {
-          id: f.id,
-          name: f.name || 'Stockwerk',
-          imageUrl: (existing && existing.imageUrl) ? existing.imageUrl : (f.imageUrl || ''),
-          nativeWidth: (existing && existing.nativeWidth) ? existing.nativeWidth : (f.nativeWidth || 1000),
-          sortOrder: f.sortOrder || 0
-        };
-      });
-      S.set('currentProjectFloors', importedFloors);
-
-      var Proj = window.GR.projects;
-      if (Proj && Proj.buildFloorUI) Proj.buildFloorUI(importedFloors);
-    }
-
-    // Räume setzen
+    // Nur Räume importieren – Stockwerke und Bilder bleiben erhalten!
     S.set('rooms', importedRooms);
 
     // Speichern
@@ -205,14 +182,6 @@ window.GR = window.GR || {};
 
     var Sync = window.GR.sync;
     if (Sync && Sync.updateTabBadges) Sync.updateTabBadges();
-
-    // Floor auf erstes Stockwerk setzen
-    var floors = S.get('currentProjectFloors') || [];
-    if (floors.length > 0) {
-      var UI2 = window.GR.ui;
-      if (UI2 && UI2.switchFloor) UI2.switchFloor(floors[0].id);
-      else S.set('activeFloor', floors[0].id);
-    }
 
     toast('✅ Import erfolgreich! ' + roomCount + ' Raum/Räume importiert', 'success', 3000);
   };
@@ -431,42 +400,15 @@ window.GR = window.GR || {};
 
     // Bestätigung
     var roomCount = Object.keys(data.project.rooms).length;
-    var floorCount = data.project.floors ? data.project.floors.length : 0;
-    var confirmMsg = 'Alle bestehenden Räume und Stockwerke überschreiben?\n\n';
+    var confirmMsg = 'Alle bestehenden Räume überschreiben?\n\n';
     confirmMsg += roomCount + ' Raum/Räume';
-    if (floorCount) confirmMsg += ', ' + floorCount + ' Stockwerk(e)';
+    confirmMsg += '\n\nStockwerke und Grundriss-Bilder bleiben erhalten.';
     confirmMsg += '\n\nDieser Vorgang kann nicht rückgängig gemacht werden!';
 
     if (!confirm(confirmMsg)) return;
 
-    // Import ausführen (bestehende _processImport Logik)
-    var importedRooms = data.project.rooms;
-
-    // Stockwerke importieren – bestehende Bilder beibehalten!
-    if (data.project.floors && data.project.floors.length > 0 && proj.id !== 'legacy') {
-      var existingFloors = S.get('currentProjectFloors') || [];
-      var existingMap = {};
-      for (var fi = 0; fi < existingFloors.length; fi++) {
-        existingMap[existingFloors[fi].id] = existingFloors[fi];
-      }
-      var importedFloors = data.project.floors.map(function(f) {
-        var existing = existingMap[f.id];
-        return {
-          id: f.id,
-          name: f.name || 'Stockwerk',
-          imageUrl: (existing && existing.imageUrl) ? existing.imageUrl : (f.imageUrl || ''),
-          nativeWidth: (existing && existing.nativeWidth) ? existing.nativeWidth : (f.nativeWidth || 1000),
-          sortOrder: f.sortOrder || 0
-        };
-      });
-      S.set('currentProjectFloors', importedFloors);
-
-      var Proj = window.GR.projects;
-      if (Proj && Proj.buildFloorUI) Proj.buildFloorUI(importedFloors);
-    }
-
-    // Räume setzen
-    S.set('rooms', importedRooms);
+    // Nur Räume importieren – Stockwerke und Bilder bleiben erhalten!
+    S.set('rooms', data.project.rooms);
 
     // Speichern
     var St = window.GR.storage;
