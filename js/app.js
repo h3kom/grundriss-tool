@@ -472,6 +472,12 @@ window.GR = window.GR || {};
         case 'project-delete':
           App.handleDeleteProject(target.dataset.projectId);
           break;
+        case 'project-export':
+          App.handleDashboardExport(target.dataset.projectId);
+          break;
+        case 'project-import':
+          App.handleDashboardImport(target.dataset.projectId);
+          break;
         case 'close-project-menu':
           App.closeProjectMenu();
           break;
@@ -787,6 +793,9 @@ window.GR = window.GR || {};
       '<div data-action="project-rename" data-project-id="' + U.escAttr(projectId) + '" style="padding:10px 16px;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:8px">✏️ Umbenennen</div>' +
       '<div data-action="project-share" data-project-id="' + U.escAttr(projectId) + '" style="padding:10px 16px;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:8px">👥 Teilen</div>' +
       '<div style="border-top:1px solid var(--border);margin:4px 0"></div>' +
+      '<div data-action="project-export" data-project-id="' + U.escAttr(projectId) + '" style="padding:10px 16px;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:8px">💾 Als JSON exportieren</div>' +
+      '<div data-action="project-import" data-project-id="' + U.escAttr(projectId) + '" style="padding:10px 16px;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:8px">📂 JSON importieren</div>' +
+      '<div style="border-top:1px solid var(--border);margin:4px 0"></div>' +
       '<div data-action="project-delete" data-project-id="' + U.escAttr(projectId) + '" style="padding:10px 16px;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:8px;color:var(--red)">🗑️ Löschen</div>';
     document.body.appendChild(menu);
     setTimeout(function() {
@@ -832,6 +841,38 @@ window.GR = window.GR || {};
     } else if (Collab && Collab.showShareModal) {
       Collab.showShareModal();
     }
+  };
+
+  App.handleDashboardExport = async function(projectId) {
+    App.closeProjectMenu();
+    var success = await Proj.openProject(projectId);
+    if (!success) {
+      var UI = window.GR.ui;
+      if (UI && UI.toast) UI.toast('❌ Projekt konnte nicht geladen werden', 'error', 3000);
+      return;
+    }
+    var Exp = window.GR.exportMod;
+    if (Exp && Exp.exportProject) Exp.exportProject();
+    App.showView('dashboard');
+  };
+
+  App.handleDashboardImport = async function(projectId) {
+    App.closeProjectMenu();
+    var success = await Proj.openProject(projectId);
+    if (!success) {
+      var UI = window.GR.ui;
+      if (UI && UI.toast) UI.toast('❌ Projekt konnte nicht geladen werden', 'error', 3000);
+      return;
+    }
+    var proj = S.get('currentProject');
+    var nameEl = document.getElementById('projectName');
+    if (nameEl && proj) nameEl.textContent = proj.name || '';
+    App.showView('editor');
+    var Rdr = window.GR.renderer;
+    if (Rdr && Rdr.render) Rdr.render();
+    Sync.updateTabBadges();
+    var ExpPS = window.GR.exportMod;
+    if (ExpPS && ExpPS.openProjectSettings) ExpPS.openProjectSettings();
   };
 
   // Details-Toggle: Klick auf #sbToggle öffnet/schließt Sidebar

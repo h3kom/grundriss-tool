@@ -169,14 +169,20 @@ window.GR = window.GR || {};
     // Räume importieren
     var importedRooms = data.project.rooms;
 
-    // Stockwerke importieren (falls vorhanden und kein Legacy-Projekt)
+    // Stockwerke importieren – bestehende Bilder beibehalten!
     if (data.project.floors && data.project.floors.length > 0 && proj.id !== 'legacy') {
+      var existingFloors = S.get('currentProjectFloors') || [];
+      var existingMap = {};
+      for (var fi = 0; fi < existingFloors.length; fi++) {
+        existingMap[existingFloors[fi].id] = existingFloors[fi];
+      }
       var importedFloors = data.project.floors.map(function(f) {
+        var existing = existingMap[f.id];
         return {
           id: f.id,
           name: f.name || 'Stockwerk',
-          imageUrl: f.imageUrl || '',
-          nativeWidth: f.nativeWidth || 1000,
+          imageUrl: (existing && existing.imageUrl) ? existing.imageUrl : (f.imageUrl || ''),
+          nativeWidth: (existing && existing.nativeWidth) ? existing.nativeWidth : (f.nativeWidth || 1000),
           sortOrder: f.sortOrder || 0
         };
       });
@@ -436,14 +442,20 @@ window.GR = window.GR || {};
     // Import ausführen (bestehende _processImport Logik)
     var importedRooms = data.project.rooms;
 
-    // Stockwerke importieren
+    // Stockwerke importieren – bestehende Bilder beibehalten!
     if (data.project.floors && data.project.floors.length > 0 && proj.id !== 'legacy') {
+      var existingFloors = S.get('currentProjectFloors') || [];
+      var existingMap = {};
+      for (var fi = 0; fi < existingFloors.length; fi++) {
+        existingMap[existingFloors[fi].id] = existingFloors[fi];
+      }
       var importedFloors = data.project.floors.map(function(f) {
+        var existing = existingMap[f.id];
         return {
           id: f.id,
           name: f.name || 'Stockwerk',
-          imageUrl: f.imageUrl || '',
-          nativeWidth: f.nativeWidth || 1000,
+          imageUrl: (existing && existing.imageUrl) ? existing.imageUrl : (f.imageUrl || ''),
+          nativeWidth: (existing && existing.nativeWidth) ? existing.nativeWidth : (f.nativeWidth || 1000),
           sortOrder: f.sortOrder || 0
         };
       });
