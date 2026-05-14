@@ -450,7 +450,7 @@ window.GR = window.GR || {};
       }
     });
 
-    // Change für Checkboxen und Textareas
+      // Change für Checkboxen, Textareas und Selects
     document.addEventListener('change', function(e) {
       var target = e.target;
       var action = target.dataset.actionChange;
@@ -466,6 +466,19 @@ window.GR = window.GR || {};
           break;
         case 'save-note':
           if (R && key) R.saveNote(key, target.value);
+          break;
+        case 'change-room-type':
+          if (key) {
+            var rooms = S.get('rooms');
+            if (rooms && rooms[key]) {
+              rooms[key].type = target.value;
+              St.saveData();
+              var Rdr = window.GR.renderer;
+              if (Rdr && Rdr.render) Rdr.render();
+              var DetailRdr = window.GR.detailRenderer;
+              if (DetailRdr && DetailRdr.renderDetail) DetailRdr.renderDetail(key);
+            }
+          }
           break;
       }
     });

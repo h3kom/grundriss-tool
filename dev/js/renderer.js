@@ -20,9 +20,6 @@ window.GR = window.GR || {};
   // Main Render
   // ===================================================================
 
-  /**
-   * Rendert alle Etagen neu (dynamisch basierend auf Projekt-Floors).
-   */
   Rdr.render = function() {
     Sync.updateTabBadges();
     var floors = S.get('currentProjectFloors');
@@ -31,36 +28,27 @@ window.GR = window.GR || {};
         Rdr.renderFloor(floors[i].id);
       }
     } else {
-      // Legacy fallback
       Rdr.renderFloor('eg');
       Rdr.renderFloor('og');
     }
   };
 
-  /**
-   * Rendert eine einzelne Etage mit DOM-Diffing.
-   * Bestehende DOM-Elemente werden wiederverwendet, nur neue/entfernte
-   * Räume führen zu DOM-Operationen.
-   * @param {string} floor - Etagen-Kürzel ('eg' | 'og')
-   */
   Rdr.renderFloor = function(floor) {
-    const container = document.getElementById(`${floor}-r`);
+    const container = document.getElementById(floor + '-r');
     if (!container) return;
 
-    const wrapper = document.getElementById(`${floor}-w`);
+    const wrapper = document.getElementById(floor + '-w');
     const scale = U.getScale(wrapper);
     const rooms = S.get('rooms');
     const selectedKey = S.get('selectedRoom');
     const editMode = S.get('editMode');
 
-    // Bestehende Raum-Elemente erfassen
     const existingElements = new Map();
     for (const child of container.children) {
       const key = child.getAttribute('data-key');
       if (key) existingElements.set(key, child);
     }
 
-    // Neue Räume hinzufügen, bestehende aktualisieren
     const processedKeys = new Set();
     for (const key of Object.keys(rooms)) {
       const room = rooms[key];
@@ -70,27 +58,32 @@ window.GR = window.GR || {};
       let element = existingElements.get(key);
 
       if (!element) {
-        // Neuen Raum erstellen
         element = Rdr.createRoomElement(key, room, scale);
         container.appendChild(element);
       } else {
-        // Bestehenden Raum aktualisieren (nur bei Änderungen)
-        element.style.left = `${Math.round(room.left * scale)}px`;
-        element.style.top = `${Math.round(room.top * scale)}px`;
-        element.style.width = `${Math.round(room.width * scale)}px`;
-        element.style.height = `${Math.round(room.height * scale)}px`;
+        element.style.left = Math.round(room.left * scale) + 'px';
+        element.style.top = Math.round(room.top * scale) + 'px';
+        element.style.width = Math.round(room.width * scale) + 'px';
+        element.style.height = Math.round(room.height * scale) + 'px';
 
-        // Selection-Status aktualisieren
         const isSelected = selectedKey === key;
         element.classList.toggle('sel', isSelected);
         element.classList.toggle('em', editMode);
 
-        // Label aktualisieren (progress)
+        // Raum-Typ Farbe aktualisieren
+        var rt = room.type || C.ROOM_TYPE_DEFAULT;
+        var ti = C.ROOM_TYPES[rt] || C.ROOM_TYPES[C.ROOM_TYPE_DEFAULT];
+        if (ti && ti.color) {
+          element.style.backgroundColor = ti.color + '33';
+          element.style.borderColor = ti.color;
+          element.setAttribute('data-type', rt);
+        }
+
         const progress = U.taskProgress(room);
         const existingLabel = element.querySelector('.rl');
         if (existingLabel) {
           const newHtml = progress.total > 0
-            ? `${U.escHtml(room.title)}<span class="pm">${progress.percent}%</span>`
+            ? U.escHtml(room.title) + '<span class="pm">' + progress.percent + '%</span>'
             : U.escHtml(room.title);
           if (existingLabel.innerHTML !== newHtml) {
             existingLabel.innerHTML = newHtml;
@@ -99,7 +92,6 @@ window.GR = window.GR || {};
       }
     }
 
-    // Entfernte Räume löschen
     for (const [key, element] of existingElements) {
       if (!processedKeys.has(key)) {
         element.remove();
@@ -107,30 +99,34 @@ window.GR = window.GR || {};
     }
   };
 
-  /**
-   * Erzeugt ein DOM-Element für einen Raum.
-   * @param {string} key - Raumschlüssel
-   * @param {Object} room - Raum-Daten
-   * @param {number} scale - Skalierungsfaktor
-   * @returns {HTMLElement}
-   */
   Rdr.createRoomElement = function(key, room, scale) {
     const div = document.createElement('div');
     const isSelected = S.get('selectedRoom') === key;
     const editMode = S.get('editMode');
 
-    div.className = `ro${isSelected ? ' sel' : ''}${editMode ? ' em' : ''}`;
-    div.style.left = `${Math.round(room.left * scale)}px`;
-    div.style.top = `${Math.round(room.top * scale)}px`;
-    div.style.width = `${Math.round(room.width * scale)}px`;
-    div.style.height = `${Math.round(room.height * scale)}px`;
+    // Raum-Typ
+    var roomType = room.type || C.ROOM_TYPE_DEFAULT;
+    var typeInfo = C.ROOM_TYPES[roomType] || C.ROOM_TYPES[C.ROOM_TYPE_DEFAULT];
+
+    div.className = 'ro' + (isSelected ? ' sel' : '') + (editMode ? ' em' : '');
+    div.style.left = Math.round(room.left * scale) + 'px';
+    div.style.top = Math.round(room.top * scale) + 'px';
+    div.style.width = Math.round(room.width * scale) + 'px';
+    div.style.height = Math.round(room.height * scale) + 'px';
     div.setAttribute('data-key', key);
+    div.setAttribute('data-type', roomType);
     div.setAttribute('tabindex', '0');
     div.setAttribute('role', 'button');
-    div.setAttribute('aria-label', `Raum: ${room.title}`);
+    div.setAttribute('aria-label', 'Raum: ' + room.title);
+
+    // Raum-Typ Hintergrundfarbe
+    if (typeInfo && typeInfo.color) {
+      div.style.backgroundColor = typeInfo.color + '33';
+      div.style.borderColor = typeInfo.color;
+    }
 
     // Click: select or show
-    div.addEventListener('click', (e) => {
+    div.addEventListener('click', function(e) {
       if (e.currentTarget._wasDragged) return;
       if (editMode) {
         Rdr.selectRoomEdit(key);
@@ -143,24 +139,21 @@ window.GR = window.GR || {};
       }
     });
 
-    // Keyboard-Navigation: Enter/Leertaste zum Auswählen
-    div.addEventListener('keydown', (e) => {
+    // Keyboard-Navigation
+    div.addEventListener('keydown', function(e) {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        if (editMode) {
-          Rdr.selectRoomEdit(key);
-        } else {
-          Rdr.showRoom(key);
-        }
+        if (editMode) { Rdr.selectRoomEdit(key); }
+        else { Rdr.showRoom(key); }
       }
     });
 
     // Drag start
     const I = window.GR.interaction;
-    div.addEventListener('mousedown', (e) => {
+    div.addEventListener('mousedown', function(e) {
       if (I && I.startDrag) I.startDrag(e, key);
     });
-    div.addEventListener('touchstart', (e) => {
+    div.addEventListener('touchstart', function(e) {
       if (I && I.startDrag) I.startDrag(e, key);
     }, { passive: true });
 
@@ -169,7 +162,7 @@ window.GR = window.GR || {};
     label.className = 'rl';
     const progress = U.taskProgress(room);
     label.innerHTML = progress.total > 0
-      ? `${U.escHtml(room.title)}<span class="pm">${progress.percent}%</span>`
+      ? U.escHtml(room.title) + '<span class="pm">' + progress.percent + '%</span>'
       : U.escHtml(room.title);
     div.appendChild(label);
 
@@ -184,24 +177,19 @@ window.GR = window.GR || {};
     return div;
   };
 
-  /**
-   * Erzeugt die 8 Resize-Griffe für ein Raum-Element.
-   * @param {HTMLElement} element - Raum-DOM-Element
-   * @param {string} key - Raumschlüssel
-   */
   Rdr.createResizeHandles = function(element, key) {
     const handleNames = C.HANDLE_DIRECTIONS;
     for (const handle of handleNames) {
       const hdl = document.createElement('div');
-      hdl.className = `rh ${handle}`;
+      hdl.className = 'rh ' + handle;
       const I = window.GR.interaction;
-      hdl.addEventListener('mousedown', (ev) => {
+      hdl.addEventListener('mousedown', function(ev) {
         if (I && I.startResize) I.startResize(ev, key, handle);
       });
-      hdl.addEventListener('touchstart', (ev) => {
+      hdl.addEventListener('touchstart', function(ev) {
         if (I && I.startResize) I.startResize(ev, key, handle);
       }, { passive: false });
-      hdl.addEventListener('click', (ev) => ev.stopPropagation());
+      hdl.addEventListener('click', function(ev) { ev.stopPropagation(); });
       element.appendChild(hdl);
     }
   };
@@ -210,10 +198,6 @@ window.GR = window.GR || {};
   // Navigation / Selection
   // ===================================================================
 
-  /**
-   * Zeigt einen Raum an (selektiert + Detail-Panel).
-   * @param {string} key - Raumschlüssel
-   */
   Rdr.showRoom = function(key) {
     const room = S.get('rooms')[key];
     if (!room) return;
@@ -222,8 +206,8 @@ window.GR = window.GR || {};
       if (UI && UI.switchFloor) UI.switchFloor(room.floor);
     }
     S.set('overview', false);
-    document.getElementById('btnOv')?.classList.remove('active');
-    // selectedRoom setzen triggert EVT_SELECTION_CHANGED → render() automatisch
+    var btnOv = document.getElementById('btnOv');
+    if (btnOv) btnOv.classList.remove('active');
     S.set('selectedRoom', key);
     const DetailRdr = window.GR.detailRenderer;
     if (DetailRdr) DetailRdr.renderDetail(key);
@@ -234,14 +218,10 @@ window.GR = window.GR || {};
     }
   };
 
-  /**
-   * Scrollt zu einem Raum auf dem Grundriss.
-   * @param {string} key - Raumschlüssel
-   */
   Rdr.scrollToRoom = function(key) {
-    const el = document.querySelector(`.ro[data-key="${key}"]`);
+    const el = document.querySelector('.ro[data-key="' + key + '"]');
     if (!el) return;
-    setTimeout(() => {
+    setTimeout(function() {
       const wrapper = el.closest('.pw');
       if (wrapper) {
         const mc = document.getElementById('mc');
@@ -256,10 +236,6 @@ window.GR = window.GR || {};
     }, 100);
   };
 
-  /**
-   * Selektiert einen Raum im Edit-Mode.
-   * @param {string} key - Raumschlüssel
-   */
   Rdr.selectRoomEdit = function(key) {
     S.set('selectedRoom', key);
     Rdr.render();
@@ -288,7 +264,6 @@ window.GR = window.GR || {};
     }
   });
 
-  // Expose helpers for interaction modules
   Rdr.getScale = U.getScale;
   Rdr.detectFloorId = U.detectFloorId;
 })(window.GR.renderer = window.GR.renderer || {});

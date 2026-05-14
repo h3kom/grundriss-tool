@@ -13,6 +13,7 @@ window.GR = window.GR || {};
   const S = window.GR.state;
   const St = window.GR.storage;
   const U = window.GR.utils;
+  const C = window.GR.constants;
 
   /**
    * Rendert die Detail-Ansicht eines Raums in der Sidebar.
@@ -27,11 +28,12 @@ window.GR = window.GR || {};
     if (!sc) return;
 
     var html = DR.buildDetailHeader(key, room);
+    html += DR.buildRoomTypeSelector(key, room);
     html += DR.buildProgressBar(progress);
     html += DR.buildTaskSection(key, room, progress);
     html += DR.buildNoteSection(key, room);
     html += DR.buildCommentSection(key, room);
-    if (S.get('editMode')) html += DR.buildDeleteSection(key);
+    if (S.get('editMode')) html += DR.buildActionButtons(key);
     html += DR.buildLastEditInfo();
 
     sc.innerHTML = html;
@@ -39,9 +41,6 @@ window.GR = window.GR || {};
 
   /**
    * Baut den Header des Detail-Panels.
-   * @param {string} key - Raumschlüssel
-   * @param {Object} room - Raum-Daten
-   * @returns {string} HTML
    */
   DR.buildDetailHeader = function(key, room) {
     return '<div class="rdh">' +
@@ -53,10 +52,35 @@ window.GR = window.GR || {};
   };
 
   /**
-   * Baut die Fortschrittsanzeige.
-   * @param {{done:number,total:number,percent:number}} progress
-   * @returns {string} HTML
+   * Baut den Raum-Typ Selektor.
    */
+  DR.buildRoomTypeSelector = function(key, room) {
+    var safeKey = U.escAttr(key);
+    var currentType = room.type || C.ROOM_TYPE_DEFAULT;
+    var html = '<div class="is"><h4>Raumtyp</h4>';
+
+    if (S.get('editMode')) {
+      html += '<select class="room-type-select" data-action-change="change-room-type" data-key="' + safeKey + '">';
+      for (var typeKey of Object.keys(C.ROOM_TYPES)) {
+        var t = C.ROOM_TYPES[typeKey];
+        var selected = typeKey === currentType ? ' selected' : '';
+        html += '<option value="' + typeKey + '"' + selected + '>' + U.escHtml(t.label) + '</option>';
+      }
+      html += '</select>';
+    } else {
+      var typeInfo = C.ROOM_TYPES[currentType];
+      var color = typeInfo ? typeInfo.color : '#a3a3a3';
+      var label = typeInfo ? typeInfo.label : 'Sonstige';
+      html += '<div class="room-type-badge" style="border-color:' + color + ';color:' + color + '">' +
+        '<span class="room-type-dot" style="background:' + color + '"></span>' +
+        U.escHtml(label) +
+      '</div>';
+    }
+
+    html += '</div>';
+    return html;
+  };
+
   DR.buildProgressBar = function(progress) {
     if (progress.total === 0) return '';
     return '<div style="font-size:13px;color:var(--muted);margin-bottom:2px;">' +
@@ -65,13 +89,6 @@ window.GR = window.GR || {};
     '<div class="pbw"><div class="pbf" style="width:' + progress.percent + '%"></div></div>';
   };
 
-  /**
-   * Baut die Aufgaben-Sektion.
-   * @param {string} key - Raumschlüssel
-   * @param {Object} room - Raum-Daten
-   * @param {{done:number,total:number,percent:number}} progress
-   * @returns {string} HTML
-   */
   DR.buildTaskSection = function(key, room, progress) {
     var safeKey = U.escAttr(key);
     var html = '<div class="is">' +
@@ -104,12 +121,6 @@ window.GR = window.GR || {};
     return html;
   };
 
-  /**
-   * Baut die Notiz-Sektion.
-   * @param {string} key - Raumschlüssel
-   * @param {Object} room - Raum-Daten
-   * @returns {string} HTML
-   */
   DR.buildNoteSection = function(key, room) {
     var safeKey = U.escAttr(key);
     var html = '<div class="is"><h4>Notiz</h4>';
@@ -122,12 +133,6 @@ window.GR = window.GR || {};
     return html;
   };
 
-  /**
-   * Baut die Kommentar-Sektion.
-   * @param {string} key - Raumschlüssel
-   * @param {Object} room - Raum-Daten
-   * @returns {string} HTML
-   */
   DR.buildCommentSection = function(key, room) {
     var safeKey = U.escAttr(key);
     var commentCount = room.comments ? room.comments.length : 0;
@@ -161,18 +166,19 @@ window.GR = window.GR || {};
   };
 
   /**
-   * Baut den Löschen-Button (nur im Edit-Mode).
-   * @param {string} key - Raumschlüssel
-   * @returns {string} HTML
+   * Baut Aktions-Buttons (Duplizieren + Löschen).
    */
-  DR.buildDeleteSection = function(key) {
-    return '<div class="is"><button class="drb" data-action="delete-room" data-key="' + U.escAttr(key) + '">\uD83D\uDDD1 L\u00F6schen</button></div>';
+  DR.buildActionButtons = function(key) {
+    return '<div class="is" style="display:flex;gap:8px;">' +
+      '<button class="dup-btn" data-action="duplicate-room" style="flex:1;">📋 Duplizieren</button>' +
+      '<button class="drb" data-action="delete-room" data-key="' + U.escAttr(key) + '" style="flex:1;">🗑️ Löschen</button>' +
+    '</div>';
   };
 
-  /**
-   * Baut die "Zuletzt bearbeitet"-Info.
-   * @returns {string} HTML
-   */
+  DR.buildDeleteSection = function(key) {
+    return '<div class="is"><button class="drb" data-action="delete-room" data-key="' + U.escAttr(key) + '">🗑️ Löschen</button></div>';
+  };
+
   DR.buildLastEditInfo = function() {
     var text = U.formatLastEdit(S.get('lastSaveTs'));
     return text
