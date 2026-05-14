@@ -205,15 +205,10 @@ window.GR = window.GR || {};
     const rooms = S.get('rooms');
     const key = U.generateKey(rooms);
 
-    // Determine room type and title
-    var placeRoomType = S.get('placeRoomType');
-    var typeInfo = placeRoomType ? C.ROOM_TYPES[placeRoomType] : null;
-    var roomTitle = typeInfo ? typeInfo.label : 'Neuer Raum';
-
-    // Create the room with type from legend selection
+    // Create the new room
     rooms[key] = {
-      title: roomTitle,
-      type: placeRoomType || C.ROOM_TYPE_DEFAULT,
+      title: 'Neuer Raum',
+      type: C.ROOM_TYPE_DEFAULT,
       floor: ps.floor,
       tasks: [],
       done: {},

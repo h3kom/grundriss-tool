@@ -28,7 +28,6 @@ window.GR = window.GR || {};
     if (!sc) return;
 
     var html = DR.buildDetailHeader(key, room);
-    html += DR.buildRoomTypeSelector(key, room);
     html += DR.buildProgressBar(progress);
     html += DR.buildTaskSection(key, room, progress);
     html += DR.buildNoteSection(key, room);
@@ -49,36 +48,6 @@ window.GR = window.GR || {};
       (S.get('editMode') ? '<button class="rb" data-action="open-rename" data-key="' + U.escAttr(key) + '" title="Umbenennen">\u270F\uFE0F</button>' : '') +
       '<span class="rk">' + U.escHtml(key) + '</span>' +
     '</div>';
-  };
-
-  /**
-   * Baut den Raum-Typ Selektor.
-   */
-  DR.buildRoomTypeSelector = function(key, room) {
-    var safeKey = U.escAttr(key);
-    var currentType = room.type || C.ROOM_TYPE_DEFAULT;
-    var html = '<div class="is"><h4>Raumtyp</h4>';
-
-    if (S.get('editMode')) {
-      html += '<select class="room-type-select" data-action-change="change-room-type" data-key="' + safeKey + '">';
-      for (var typeKey of Object.keys(C.ROOM_TYPES)) {
-        var t = C.ROOM_TYPES[typeKey];
-        var selected = typeKey === currentType ? ' selected' : '';
-        html += '<option value="' + typeKey + '"' + selected + '>' + U.escHtml(t.label) + '</option>';
-      }
-      html += '</select>';
-    } else {
-      var typeInfo = C.ROOM_TYPES[currentType];
-      var color = typeInfo ? typeInfo.color : '#a3a3a3';
-      var label = typeInfo ? typeInfo.label : 'Sonstige';
-      html += '<div class="room-type-badge" style="border-color:' + color + ';color:' + color + '">' +
-        '<span class="room-type-dot" style="background:' + color + '"></span>' +
-        U.escHtml(label) +
-      '</div>';
-    }
-
-    html += '</div>';
-    return html;
   };
 
   DR.buildProgressBar = function(progress) {
@@ -127,7 +96,7 @@ window.GR = window.GR || {};
     if (S.get('editMode')) {
       html += '<textarea class="rne" data-action-change="save-note" data-key="' + safeKey + '">' + U.escHtml(room.note || '') + '</textarea>';
     } else {
-      html += '<p style="margin:0;font-size:14px;">' + U.escHtml(room.note || 'Keine Notiz.') + '</p>';
+      html += '<p style="margin:0;font-size:14px;text-align:left;">' + U.escHtml(room.note || 'Keine Notiz.') + '</p>';
     }
     html += '</div>';
     return html;
