@@ -100,7 +100,7 @@ img.pi{position:relative;width:100%;height:auto;display:block;pointer-events:non
 .atr button,.acr button{background:var(--blue);color:#fff;border:none;padding:10px 18px;border-radius:var(--rm);cursor:pointer;font-size:14px;min-height:44px;font-weight:600}
 .rne{width:100%;background:var(--input);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:var(--rm);font-size:14px;font-family:inherit;resize:vertical;min-height:60px;outline:none;text-align:left}
 .cl{margin-bottom:4px}
-.ci{background:var(--input);padding:8px 10px;border-radius:var(--rm);margin-bottom:4px;font-size:13px;animation:fi .2s ease}
+.ci{background:var(--input);padding:8px 10px;border-radius:var(--rm);margin-bottom:4px;font-size:13px;animation:fi .2s ease;text-align:left}
 .ci .cm{font-size:11px;color:var(--muted);margin-bottom:2px}
 .ci .cd{float:right;cursor:pointer;color:var(--red);font-weight:700;background:none;border:none;font-size:16px;line-height:1;padding:0 4px}
 .drb{background:var(--red);color:#fff;border:none;padding:10px 24px;border-radius:var(--rm);cursor:pointer;font-size:14px;font-weight:600;min-height:44px;display:inline-flex;align-items:center;gap:4px}
