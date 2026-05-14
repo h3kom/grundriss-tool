@@ -393,18 +393,6 @@ img.pi{position:relative;width:100%;height:auto;display:block;pointer-events:non
 /* ================================================================== */
 
 /* ================================================================== */
-/* SEARCH HIGHLIGHT                                                    */
-/* ================================================================== */
-.ro.search-highlight{box-shadow:0 0 0 3px var(--yellow),0 0 12px rgba(217,119,6,0.4);z-index:15}
-
-/* ================================================================== */
-/* SIDEBAR SEARCH                                                      */
-/* ================================================================== */
-.sb-search{padding:0 14px 6px}
-.sb-search-input{width:100%;background:var(--input);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:var(--rs);font-size:13px;min-height:38px;outline:none}
-.sb-search-input:focus{border-color:var(--blue)}
-
-/* ================================================================== */
 /* PRESENCE INDICATOR                                                  */
 /* ================================================================== */
 .presence-indicator{display:none;align-items:center;gap:-4px}
