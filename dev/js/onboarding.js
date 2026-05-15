@@ -1,0 +1,273 @@
+/**
+ * Grundriss Tool – Onboarding-Wizard
+ * =====================================================================
+ * @module onboarding
+ * @description Wizard zum Erstellen neuer Projekte: Name, Stockwerke,
+ * Grundriss-Upload, flexible Benennung.
+ */import { ROOM_TYPES } from './constants.js';
+import * as S from './state.js';
+// Uses window.GR.storage, window.GR.rooms (lazy)
+
+// Als Properties am OB-Objekt, damit app.js sie lesen/schreiben kann
+  _wizardFloors = [];
+  _wizardStep = 1;
+  _projectName = '';
+
+  /**
+   * Öffnet den Onboarding-Wizard.
+   */
+  export function openWizard() {
+    _wizardStep = 1;
+    _wizardFloors = [];
+    _projectName = '';
+    // Standard: 2 Stockwerke
+    addFloor('Erdgeschoss', '', 1000);
+    addFloor('Obergeschoss', '', 800);
+    renderWizard();
+    var el = document.getElementById('onboarding');
+    if (el) el.classList.add('open');
+  };
+
+  /**
+   * Schließt den Wizard.
+   */
+  export function closeWizard() {
+    var el = document.getElementById('onboarding');
+    if (el) el.classList.remove('open');
+    _wizardFloors = [];
+  };
+
+  /**
+   * Fügt ein Stockwerk zum Wizard hinzu.
+   * @param {string} name
+   * @param {string} imageUrl
+   * @param {number} nativeWidth
+   */
+  export function addFloor(name, imageUrl, nativeWidth) {
+    _wizardFloors.push({
+      name: name || 'Stockwerk ' + (_wizardFloors.length + 1),
+      imageFile: null,
+      imageUrl: imageUrl || '',
+      nativeWidth: nativeWidth || 1000
+    });
+  };
+
+  /**
+   * Entfernt ein Stockwerk aus dem Wizard.
+   * @param {number} index
+   */
+  export function removeFloor(index) {
+    if (_wizardFloors.length <= 1) return; // Mindestens 1 Stockwerk
+    _wizardFloors.splice(index, 1);
+    renderFloorList();
+  };
+
+  /**
+   * Rendert den Wizard-Inhalt.
+   */
+  export function renderWizard() {
+    var body = document.getElementById('obBody');
+    if (!body) return;
+
+    if (_wizardStep === 1) {
+      renderStep1(body);
+    } else {
+      renderStep2(body);
+    }
+  };
+
+  /**
+   * Schritt 1: Projektname.
+   */
+  export function renderStep1(body) {
+    body.innerHTML =
+      '<div class="ob-step">' +
+        '<div class="ob-icon">🏗️</div>' +
+        '<h3>Neues Projekt erstellen</h3>' +
+        '<p>Wie heißt das Gebäude?</p>' +
+        '<input type="text" id="obProjectName" placeholder="z.B. Bürogebäude München" class="ob-input" value="' + U.escAttr(_projectName || '') + '" />' +
+        '<div class="ob-actions">' +
+          '<button data-action="ob-cancel" class="ob-btn-cancel">Abbrechen</button>' +
+          '<button data-action="ob-next" class="ob-btn-primary">Weiter →</button>' +
+        '</div>' +
+      '</div>';
+
+    setTimeout(function() {
+      var input = document.getElementById('obProjectName');
+      if (input) {
+        input.focus();
+        // Projektname bei jeder Eingabe direkt speichern
+        input.addEventListener('input', function() {
+          _projectName = this.value.trim();
+        });
+      }
+    }, 100);
+  };
+
+  /**
+   * Schritt 2: Stockwerke konfigurieren.
+   */
+  export function renderStep2(body) {
+    // Projektname aus Step 1 lesen und merken (Input wird bei renderStep2 zerstört)
+    // Fallback: falls der input-Listener nicht gefeuert hat, hier aus DOM lesen
+    if (!_projectName) {
+      var nameInput = document.getElementById('obProjectName');
+      _projectName = (nameInput ? nameInput.value : '').trim();
+    }
+    var projectName = _projectName && _projectName.trim() ? _projectName.trim() : 'Unbenanntes Projekt';
+
+    body.innerHTML =
+      '<div class="ob-step">' +
+        '<div class="ob-step-header">' +
+          '<button data-action="ob-back" class="ob-btn-back">← Zurück</button>' +
+          '<h3>Stockwerke</h3>' +
+        '</div>' +
+        '<p class="ob-subtitle">Für "' + U.escHtml(projectName) + '"</p>' +
+        '<div id="obFloorList" class="ob-floor-list"></div>' +
+        '<button data-action="ob-add-floor" class="ob-btn-add">+ Stockwerk hinzufügen</button>' +
+        '<p class="ob-hint">ℹ️ Du kannst Grundriss-Bilder hochladen oder das Projekt zuerst ohne Bilder erstellen.</p>' +
+        '<div class="ob-actions">' +
+          '<button data-action="ob-cancel" class="ob-btn-cancel">Abbrechen</button>' +
+          '<button data-action="ob-create" class="ob-btn-primary">Projekt erstellen ✨</button>' +
+        '</div>' +
+      '</div>';
+
+    renderFloorList();
+  };
+
+  /**
+   * Rendert die Liste der Stockwerke.
+   */
+  export function renderFloorList() {
+    var container = document.getElementById('obFloorList');
+    if (!container) return;
+
+    var html = '';
+    for (var i = 0; i < _wizardFloors.length; i++) {
+      var f = _wizardFloors[i];
+      var hasImage = f.imageFile || f.imageUrl;
+      html +=
+        '<div class="ob-floor-item" data-floor-index="' + i + '">' +
+          '<div class="ob-floor-header">' +
+            '<span class="ob-floor-num">' + (i + 1) + '</span>' +
+            '<input type="text" class="ob-floor-name" data-floor-index="' + i + '" value="' + U.escAttr(f.name) + '" placeholder="Name des Stockwerks" />' +
+            (_wizardFloors.length > 1 ? '<button data-action="ob-remove-floor" data-floor-index="' + i + '" class="ob-btn-remove" title="Entfernen">✕</button>' : '') +
+          '</div>' +
+          '<div class="ob-floor-upload">' +
+            '<label class="ob-file-label' + (hasImage ? ' has-file' : '') + '">' +
+              '<input type="file" accept="image/*" data-action-change="ob-upload-floor" data-floor-index="' + i + '" class="ob-file-input" />' +
+              '<span>' + (hasImage ? '✅ Bild ausgewählt' : '📁 Grundriss hochladen') + '</span>' +
+            '</label>' +
+            '<input type="number" class="ob-width-input" data-floor-index="' + i + '" value="' + (f.nativeWidth || 1000) + '" placeholder="Breite (px)" min="100" max="5000" />' +
+            '<span class="ob-width-label">px Breite</span>' +
+          '</div>' +
+        '</div>';
+    }
+    container.innerHTML = html;
+
+    // Event: Floor-Name ändern
+    container.querySelectorAll('.ob-floor-name').forEach(function(input) {
+      input.addEventListener('input', function() {
+        var idx = parseInt(this.dataset.floorIndex);
+        _wizardFloors[idx].name = this.value;
+      });
+    });
+
+    // Event: Breite ändern
+    container.querySelectorAll('.ob-width-input').forEach(function(input) {
+      input.addEventListener('input', function() {
+        var idx = parseInt(this.dataset.floorIndex);
+        _wizardFloors[idx].nativeWidth = parseInt(this.value) || 1000;
+      });
+    });
+  };
+
+  /**
+   * Verarbeitet den Datei-Upload für ein Stockwerk.
+   * @param {number} index
+   * @param {File} file
+   */
+  export function handleFloorUpload(index, file) {
+    if (index < 0 || index >= _wizardFloors.length) return;
+    _wizardFloors[index].imageFile = file;
+    renderFloorList();
+  };
+
+  /**
+   * Erstellt das Projekt aus den Wizard-Daten.
+   */
+export async function createProjectFromWizard() {
+    // Projektname – mehrstufiger Fallback: _projectName → DOM → Default
+    var projectName = (_projectName && _projectName.trim()) ? _projectName.trim() : '';
+    if (!projectName) {
+      var domInput = document.getElementById('obProjectName');
+      if (domInput && domInput.value && domInput.value.trim()) {
+        projectName = domInput.value.trim();
+        _projectName = projectName;
+      }
+    }
+    if (!projectName) projectName = 'Unbenanntes Projekt';
+
+    // Floor-Namen aus Inputs lesen (falls zwischenzeitlich geändert)
+    var nameInputs = document.querySelectorAll('.ob-floor-name');
+    nameInputs.forEach(function(input) {
+      var idx = parseInt(input.dataset.floorIndex);
+      if (idx >= 0 && idx < _wizardFloors.length) {
+        _wizardFloors[idx].name = input.value || 'Stockwerk ' + (idx + 1);
+      }
+    });
+
+    var widthInputs = document.querySelectorAll('.ob-width-input');
+    widthInputs.forEach(function(input) {
+      var idx = parseInt(input.dataset.floorIndex);
+      if (idx >= 0 && idx < _wizardFloors.length) {
+        _wizardFloors[idx].nativeWidth = parseInt(input.value) || 1000;
+      }
+    });
+
+    var Proj = window.GR.projects;
+    if (!Proj) return;
+
+    // Button disablen
+    var createBtn = document.querySelector('[data-action="ob-create"]');
+    if (createBtn) {
+      createBtn.disabled = true;
+      createBtn.textContent = '⏳ Erstelle...';
+    }
+
+    try {
+      var result = await Proj.createProject(projectName, _wizardFloors);
+
+      if (result.ok) {
+        closeWizard();
+        var UI = window.GR.ui;
+        if (UI && UI.toast) UI.toast('✅ Projekt "' + projectName + '" erstellt!', 'success', 3000);
+
+        // Projekt öffnen
+        await Proj.openProject(result.projectId);
+
+        // Projektname in Top-Bar setzen
+        var nameEl = document.getElementById('projectName');
+        if (nameEl) nameEl.textContent = projectName;
+
+        // View wechseln zum Editor
+        var App = window.GR.app;
+        if (App && App.showView) App.showView('editor');
+      } else {
+        if (createBtn) {
+          createBtn.disabled = false;
+          createBtn.textContent = 'Projekt erstellen ✨';
+        }
+        var UI = window.GR.ui;
+        if (UI && UI.toast) UI.toast('❌ Fehler: ' + (result.error || 'Unbekannt'), 'error', 4000);
+      }
+    } catch (e) {
+      console.error('[onboarding] createProject error:', e);
+      if (createBtn) {
+        createBtn.disabled = false;
+        createBtn.textContent = 'Projekt erstellen ✨';
+      }
+      var UI2 = window.GR.ui;
+      if (UI2 && UI2.toast) UI2.toast('❌ Unerwarteter Fehler: ' + (e.message || 'Unbekannt'), 'error', 4000);
+    }
+  };
