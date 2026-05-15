@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
@@ -80,17 +80,17 @@
   <div id="editorView" class="view editor-view" style="display:none">
 
     <!-- Top-Bar -->
-    <div id="tb" class="tb">
+    <div id="tb" class="tb" role="toolbar" aria-label="Werkzeugleiste">
       <div class="tb-left">
-        <button data-action="back-to-dashboard" class="tb-btn" title="Zurück">← <span class="btn-text">Projekte</span></button>
-        <span id="projectName" class="tb-project-name"></span>
+        <button data-action="back-to-dashboard" class="tb-btn" title="Zurück" aria-label="Zurück zu Projekten">← <span class="btn-text">Projekte</span></button>
+        <span id="projectName" class="tb-project-name" role="heading" aria-level="1"></span>
       </div>
       <div class="tb-right">
-        <span id="syncI"></span>
-        <span id="presenceIndicator" class="presence-indicator"></span>
-        <button id="btnOv" class="tb-btn" title="Übersicht">📊</button>
-        <button data-action="share-project" class="tb-btn" title="Teilen">👥 <span class="btn-text">Teilen</span></button>
-        <button id="btnEdit" class="tb-btn" title="Bearbeiten">✏️</button>
+        <span id="syncI" role="status" aria-live="polite"></span>
+        <span id="presenceIndicator" class="presence-indicator" aria-label="Aktive Bearbeiter"></span>
+        <button id="btnOv" class="tb-btn" title="Übersicht" aria-label="Raumübersicht" aria-pressed="false">📊</button>
+        <button data-action="share-project" class="tb-btn" title="Teilen" aria-label="Projekt teilen">👥 <span class="btn-text">Teilen</span></button>
+        <button id="btnEdit" class="tb-btn" title="Bearbeiten" aria-label="Bearbeitungsmodus" aria-pressed="false">✏️</button>
       </div>
     </div>
 
@@ -98,20 +98,20 @@
     <div id="mc" class="mc">
 
       <!-- Floor-Tabs -->
-      <div id="ft" class="ft">
-        <button id="tab-eg" class="ft-tab active" data-floor="eg">
+      <div id="ft" class="ft" role="tablist" aria-label="Stockwerke">
+        <button id="tab-eg" class="ft-tab active" data-floor="eg" role="tab" aria-selected="true" aria-controls="eg-w">
           <span class="ft-label">Erdgeschoss</span>
           <span id="badge-eg" class="ft-badge">0</span>
         </button>
-        <button id="tab-og" class="ft-tab" data-floor="og">
+        <button id="tab-og" class="ft-tab" data-floor="og" role="tab" aria-selected="false" aria-controls="og-w">
           <span class="ft-label">Obergeschoss</span>
           <span id="badge-og" class="ft-badge">0</span>
         </button>
-        <button data-action="add-floor" class="ft-add" title="Stockwerk hinzufügen">+</button>
+        <button data-action="add-floor" class="ft-add" title="Stockwerk hinzufügen" aria-label="Stockwerk hinzufügen">+</button>
       </div>
 
       <!-- Plan-Wrapper EG -->
-      <div id="eg-w" class="pw" data-floor="eg">
+      <div id="eg-w" class="pw" data-floor="eg" role="tabpanel" aria-label="Erdgeschoss Grundriss">
         <div class="plan-nav">
           <span id="cnt-eg" class="cnt"></span>
         </div>
@@ -120,7 +120,7 @@
       </div>
 
       <!-- Plan-Wrapper OG -->
-      <div id="og-w" class="pw" data-floor="og">
+      <div id="og-w" class="pw" data-floor="og" role="tabpanel" aria-label="Obergeschoss Grundriss">
         <div class="plan-nav">
           <span id="cnt-og" class="cnt"></span>
         </div>
@@ -129,12 +129,12 @@
       </div>
 
       <!-- Sidebar -->
-      <div id="sb" class="sb">
-        <button class="sb-toggle" id="sbToggle"><span class="arrow">▲</span> Details</button>
+      <div id="sb" class="sb" role="complementary" aria-label="Raumdetails">
+        <button class="sb-toggle" id="sbToggle" aria-expanded="false" aria-controls="sc"><span class="arrow">▲</span> Details</button>
         <div id="sbH" class="sb-h">
           <h2>Details</h2>
         </div>
-        <div id="sc" class="sc"></div>
+        <div id="sc" class="sc" role="region" aria-live="polite"></div>
       </div>
 
     </div>
@@ -220,7 +220,7 @@
   <!-- ============================================================ -->
   <!-- TOAST Container                                               -->
   <!-- ============================================================ -->
-  <div id="toasts" class="toast-container"></div>
+  <div id="toasts" class="toast-container" role="alert" aria-live="assertive" aria-atomic="true"></div>
 
   <!-- ============================================================ -->
   <!-- INTRO Modal                                                   -->
@@ -238,6 +238,7 @@
   <!-- ============================================================ -->
   <!-- Scripts (Reihenfolge wichtig!)                                -->
   <!-- ============================================================ -->
+  <script src="js/error-handler.js"></script>
   <script src="js/constants.js"></script>
   <script src="js/config.js"></script>
   <script src="js/state.js"></script>

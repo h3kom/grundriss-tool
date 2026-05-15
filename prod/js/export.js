@@ -115,8 +115,8 @@ window.GR = window.GR || {};
       var room = mappedRooms[keys[k]];
       if (room.floor && floorMap[room.floor]) {
         room.floor = floorMap[room.floor];
-      } else if (!room.floor || !floorMap[room.floor]) {
-        // Fallback: ersten Floor setzen
+      } else {
+        // Fallback: Floor-ID nicht im Mapping → ersten Floor setzen
         if (currentFloors.length > 0) room.floor = currentFloors[0].id;
       }
     }
@@ -159,13 +159,51 @@ window.GR = window.GR || {};
     if (!data.project.rooms || typeof data.project.rooms !== 'object') {
       return { valid: false, error: '"project.rooms" Objekt fehlt' };
     }
+    if (Array.isArray(data.project.rooms)) {
+      return { valid: false, error: '"project.rooms" muss ein Objekt sein, kein Array' };
+    }
     var roomKeys = Object.keys(data.project.rooms);
     if (roomKeys.length === 0) {
       return { valid: false, error: 'Keine Räume in der Datei enthalten' };
     }
-    var sampleRoom = data.project.rooms[roomKeys[0]];
-    if (!sampleRoom || typeof sampleRoom.title === 'undefined') {
-      return { valid: false, error: 'Raum-Objekte haben nicht das erwartete Format' };
+    if (roomKeys.length > 500) {
+      return { valid: false, error: 'Zu viele Räume (max. 500). Datei: ' + roomKeys.length };
+    }
+    // Validate each room has required properties with correct types
+    var requiredProps = ['title', 'left', 'top', 'width', 'height', 'floor'];
+    for (var i = 0; i < roomKeys.length; i++) {
+      var room = data.project.rooms[roomKeys[i]];
+      if (!room || typeof room !== 'object') {
+        return { valid: false, error: 'Raum "' + roomKeys[i] + '" ist kein gültiges Objekt' };
+      }
+      for (var j = 0; j < requiredProps.length; j++) {
+        var prop = requiredProps[j];
+        if (!(prop in room)) {
+          return { valid: false, error: 'Raum "' + roomKeys[i] + '" fehlt Eigenschaft "' + prop + '"' };
+        }
+      }
+      if (typeof room.title !== 'string') {
+        return { valid: false, error: 'Raum "' + roomKeys[i] + '": title muss ein String sein' };
+      }
+      if (typeof room.left !== 'number' || typeof room.top !== 'number' ||
+          typeof room.width !== 'number' || typeof room.height !== 'number') {
+        return { valid: false, error: 'Raum "' + roomKeys[i] + '": Position/Größe müssen Zahlen sein' };
+      }
+      if (room.width <= 0 || room.height <= 0) {
+        return { valid: false, error: 'Raum "' + roomKeys[i] + '": Breite/Höhe müssen > 0 sein' };
+      }
+    }
+    // Validate floors array if present
+    if (data.project.floors) {
+      if (!Array.isArray(data.project.floors)) {
+        return { valid: false, error: '"project.floors" muss ein Array sein' };
+      }
+      for (var f = 0; f < data.project.floors.length; f++) {
+        var floor = data.project.floors[f];
+        if (!floor || typeof floor !== 'object' || !floor.id) {
+          return { valid: false, error: 'Floor-Eintrag ' + f + ' fehlt "id"' };
+        }
+      }
     }
     return { valid: true };
   };
@@ -296,6 +334,8 @@ window.GR = window.GR || {};
     reader.readAsText(file);
   };
 
+  var _importConfirmed = false;
+
   Exp.doProjectSettingsImport = async function() {
     if (!_pendingImport) {
       var UI = window.GR.ui;
@@ -311,13 +351,32 @@ window.GR = window.GR || {};
       return;
     }
 
-    var roomCount = Object.keys(data.project.rooms).length;
-    var confirmMsg = 'Alle bestehenden Räume überschreiben?\n\n';
-    confirmMsg += roomCount + ' Raum/Räume\n';
-    confirmMsg += '\nStockwerke und Grundriss-Bilder bleiben erhalten.';
-    confirmMsg += '\n\nDieser Vorgang kann nicht rückgängig gemacht werden!';
+    // Two-step confirmation instead of native confirm()
+    var importBtn = document.getElementById('psImportBtn');
+    if (!_importConfirmed) {
+      _importConfirmed = true;
+      var roomCount = Object.keys(data.project.rooms).length;
+      if (importBtn) {
+        importBtn.textContent = '⚠️ Bestätigen: ' + roomCount + ' Räume überschreiben';
+        importBtn.classList.add('confirm-warn');
+      }
+      // Auto-reset after 5 seconds if not confirmed
+      setTimeout(function() {
+        _importConfirmed = false;
+        if (importBtn) {
+          importBtn.textContent = '📥 Importieren';
+          importBtn.classList.remove('confirm-warn');
+        }
+      }, 5000);
+      return;
+    }
 
-    if (!confirm(confirmMsg)) return;
+    // Second click – execute import
+    _importConfirmed = false;
+    if (importBtn) {
+      importBtn.textContent = '📥 Importieren';
+      importBtn.classList.remove('confirm-warn');
+    }
 
     var UI3 = window.GR.ui;
     var toast = UI3 && UI3.toast ? UI3.toast : function() {};

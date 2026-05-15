@@ -14,11 +14,18 @@ window.GR = window.GR || {};
   const St = window.GR.storage;
   const U = window.GR.utils;
 
+  // Shared options object for touch event listeners – must be same reference for add/remove
+  D._touchOptions = { passive: false };
+
+  // rAF throttle for smooth drag rendering
+  var _dragRafPending = false;
+
   D.startDrag = function(e, key) {
     if (!S.get('editMode')) return;
     const raw = D.getPointerPos(e);
     const wrapper = e.currentTarget.closest('.pw');
     const rooms = S.get('rooms');
+    if (!rooms[key]) return;
 
     S.set('dragState', {
       key: key,
@@ -36,8 +43,21 @@ window.GR = window.GR || {};
 
     document.addEventListener('mousemove', D.onDragMove);
     document.addEventListener('mouseup', D.onDragEnd);
-    document.addEventListener('touchmove', D.onDragMoveTouch, { passive: false });
-    document.addEventListener('touchend', D.onDragEndTouch, { passive: false });
+    document.addEventListener('touchmove', D.onDragMoveTouch, D._touchOptions);
+    document.addEventListener('touchend', D.onDragEndTouch, D._touchOptions);
+  };
+
+  D._doDragUpdate = function(e) {
+    _dragRafPending = false;
+    const ds = S.get('dragState');
+    if (!ds || !ds.isDragging) return;
+
+    const el = ds.element;
+    if (el && ds.currentLeft !== undefined) {
+      const scale = U.getScale(ds.wrapper);
+      el.style.left = Math.round(ds.currentLeft * scale) + 'px';
+      el.style.top = Math.round(ds.currentTop * scale) + 'px';
+    }
   };
 
   D.onDragMove = function(e) {
@@ -59,14 +79,15 @@ window.GR = window.GR || {};
       e.preventDefault();
     }
 
-    const el = ds.element;
-    if (el) {
-      const scale = U.getScale(ds.wrapper);
-      var newX = ds.origLeft + dx / scale;
-      var newY = ds.origTop + dy / scale;
+    // Calculate new position (cheap – runs every event)
+    const scale = U.getScale(ds.wrapper);
+    ds.currentLeft = ds.origLeft + dx / scale;
+    ds.currentTop = ds.origTop + dy / scale;
 
-      el.style.left = Math.round(newX * scale) + 'px';
-      el.style.top = Math.round(newY * scale) + 'px';
+    // Throttle DOM writes to rAF (max once per frame)
+    if (!_dragRafPending) {
+      _dragRafPending = true;
+      requestAnimationFrame(function() { D._doDragUpdate(e); });
     }
   };
 
@@ -77,12 +98,15 @@ window.GR = window.GR || {};
   };
 
   function onDragEndCleanup() {
+    // Flush any pending rAF update
+    _dragRafPending = false;
+
     const ds = S.get('dragState');
     if (!ds) return;
     document.removeEventListener('mousemove', D.onDragMove);
     document.removeEventListener('mouseup', D.onDragEnd);
-    document.removeEventListener('touchmove', D.onDragMoveTouch);
-    document.removeEventListener('touchend', D.onDragEndTouch);
+    document.removeEventListener('touchmove', D.onDragMoveTouch, D._touchOptions);
+    document.removeEventListener('touchend', D.onDragEndTouch, D._touchOptions);
 
     if (ds.element) ds.element.classList.remove('dg');
 
@@ -97,9 +121,9 @@ window.GR = window.GR || {};
       return;
     }
 
-    const scale = U.getScale(ds.wrapper);
-    var newLeft = Math.round(parseInt(el.style.left, 10) / scale);
-    var newTop = Math.round(parseInt(el.style.top, 10) / scale);
+    // Use raw values from dragState (not CSS-parsed) to avoid rounding drift
+    var newLeft = Math.round(ds.currentLeft !== undefined ? ds.currentLeft : ds.origLeft);
+    var newTop = Math.round(ds.currentTop !== undefined ? ds.currentTop : ds.origTop);
 
     const rooms = S.get('rooms');
     if (newLeft !== ds.origLeft || newTop !== ds.origTop) {

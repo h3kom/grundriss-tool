@@ -40,6 +40,11 @@ window.GR = window.GR || {};
     const input = document.getElementById(`nti-${key}`);
     const text = input?.value?.trim();
     if (!text) return;
+    if (text.length > 200) {
+      var UI = window.GR.ui;
+      if (UI && UI.toast) UI.toast('Aufgabe zu lang (max. 200 Zeichen)', 'error', 2000);
+      return;
+    }
     const rooms = S.get('rooms');
     if (!rooms[key].tasks) rooms[key].tasks = [];
     rooms[key].tasks.push(text);
@@ -95,6 +100,11 @@ window.GR = window.GR || {};
     const input = document.getElementById(`nci-${key}`);
     const text = input?.value?.trim();
     if (!text) return;
+    if (text.length > 1000) {
+      var UI = window.GR.ui;
+      if (UI && UI.toast) UI.toast('Kommentar zu lang (max. 1000 Zeichen)', 'error', 2000);
+      return;
+    }
     const rooms = S.get('rooms');
     if (!rooms[key].comments) rooms[key].comments = [];
     var currentUser = S.get('currentUser');
