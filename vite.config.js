@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  base: '/grundriss-tool/',
+  base: '/grundriss-tool/dev/',
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
