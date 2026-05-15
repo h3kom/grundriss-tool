@@ -4,22 +4,16 @@
  * @module detailRenderer
  * @description Rendert das Detail-Panel in der Sidebar für einen selektierten Raum.
  * Verwendet data-action/data-actionEnter/data-actionChange für Event Delegation.
- */
-window.GR = window.GR || {};
+ */import { ROOM_TYPES } from './constants.js';
+import * as S from './state.js';
+import { escHtml, escAttr, taskProgress, formatLastEdit } from './utils.js';
+// Uses window.GR.rooms (lazy)
 
-(function(DR) {
-  'use strict';
-
-  const S = window.GR.state;
-  const St = window.GR.storage;
-  const U = window.GR.utils;
-  const C = window.GR.constants;
-
-  /**
+/**
    * Rendert die Detail-Ansicht eines Raums in der Sidebar.
    * @param {string} key - Raumschlüssel
    */
-  DR.renderDetail = function(key) {
+  export function renderDetail(key) {
     var room = S.get('rooms')[key];
     if (!room) return;
 
@@ -27,13 +21,13 @@ window.GR = window.GR || {};
     var sc = document.getElementById('sc');
     if (!sc) return;
 
-    var html = DR.buildDetailHeader(key, room);
-    html += DR.buildProgressBar(progress);
-    html += DR.buildTaskSection(key, room, progress);
-    html += DR.buildNoteSection(key, room);
-    html += DR.buildCommentSection(key, room);
-    if (S.get('editMode')) html += DR.buildActionButtons(key);
-    html += DR.buildLastEditInfo();
+    var html = buildDetailHeader(key, room);
+    html += buildProgressBar(progress);
+    html += buildTaskSection(key, room, progress);
+    html += buildNoteSection(key, room);
+    html += buildCommentSection(key, room);
+    if (S.get('editMode')) html += buildActionButtons(key);
+    html += buildLastEditInfo();
 
     sc.innerHTML = html;
   };
@@ -41,7 +35,7 @@ window.GR = window.GR || {};
   /**
    * Baut den Header des Detail-Panels.
    */
-  DR.buildDetailHeader = function(key, room) {
+  export function buildDetailHeader(key, room) {
     return '<div class="rdh">' +
       '<button class="bb" data-action="close-sidebar">\u2190</button>' +
       '<h3>' + U.escHtml(room.title) + '</h3>' +
@@ -50,7 +44,7 @@ window.GR = window.GR || {};
     '</div>';
   };
 
-  DR.buildProgressBar = function(progress) {
+  export function buildProgressBar(progress) {
     if (progress.total === 0) return '';
     return '<div style="font-size:13px;color:var(--muted);margin-bottom:2px;">' +
       progress.done + '/' + progress.total + ' Aufgaben (' + progress.percent + '%)' +
@@ -58,7 +52,7 @@ window.GR = window.GR || {};
     '<div class="pbw"><div class="pbf" style="width:' + progress.percent + '%"></div></div>';
   };
 
-  DR.buildTaskSection = function(key, room, progress) {
+  export function buildTaskSection(key, room, progress) {
     var safeKey = U.escAttr(key);
     var html = '<div class="is">' +
       '<h4>Aufgaben' + (progress.total > 0 ? ' <span class="cnt">' + progress.done + '/' + progress.total + '</span>' : '') + '</h4>';
@@ -90,7 +84,7 @@ window.GR = window.GR || {};
     return html;
   };
 
-  DR.buildNoteSection = function(key, room) {
+  export function buildNoteSection(key, room) {
     var safeKey = U.escAttr(key);
     var html = '<div class="is"><h4>Notiz</h4>';
     if (S.get('editMode')) {
@@ -102,7 +96,7 @@ window.GR = window.GR || {};
     return html;
   };
 
-  DR.buildCommentSection = function(key, room) {
+  export function buildCommentSection(key, room) {
     var safeKey = U.escAttr(key);
     var commentCount = room.comments ? room.comments.length : 0;
     var html = '<div class="is">' +
@@ -139,21 +133,20 @@ window.GR = window.GR || {};
   /**
    * Baut Aktions-Buttons (Duplizieren + Löschen).
    */
-  DR.buildActionButtons = function(key) {
+  export function buildActionButtons(key) {
     return '<div class="is" style="display:flex;gap:8px;">' +
       '<button class="dup-btn" data-action="duplicate-room" style="flex:1;">📋 Duplizieren</button>' +
       '<button class="drb" data-action="delete-room" data-key="' + U.escAttr(key) + '" style="flex:1;">🗑️ Löschen</button>' +
     '</div>';
   };
 
-  DR.buildDeleteSection = function(key) {
+  export function buildDeleteSection(key) {
     return '<div class="is"><button class="drb" data-action="delete-room" data-key="' + U.escAttr(key) + '">🗑️ Löschen</button></div>';
   };
 
-  DR.buildLastEditInfo = function() {
+  export function buildLastEditInfo() {
     var text = U.formatLastEdit(S.get('lastSaveTs'));
     return text
       ? '<div style="margin-top:10px;font-size:11px;color:var(--muted);text-align:center;">' + U.escHtml(text) + '</div>'
       : '';
   };
-})(window.GR.detailRenderer = window.GR.detailRenderer || {});

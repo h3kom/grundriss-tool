@@ -3,36 +3,29 @@
  * =====================================================================
  * @module storage
  * @description localStorage als Cache, cloudSync als optionaler Hintergrund-Sync.
- */
-window.GR = window.GR || {};
+ */import { LOCAL_STORAGE_KEY, CLOUD_SYNC_DEBOUNCE } from './constants.js';
+import * as S from './state.js';
+// Uses window.GR.cloud (lazy)
 
-(function(St) {
-  'use strict';
-
-  const C = window.GR.constants;
-  const S = window.GR.state;
-  const Cloud = window.GR.cloud;
-  const U = window.GR.utils;
-
-  /** @type {number} Debounce-Timer für Cloud-Save */
+/** @type {number} Debounce-Timer für Cloud-Save */
   var _saveTimer = null;
 
   /**
    * Speichert Daten: sofort lokal, debounced in die Cloud.
    */
-  St.saveData = function() {
-    St.saveToLocal();
-    St.debouncedCloudSave();
+  export function saveData() {
+    saveToLocal();
+    debouncedCloudSave();
     S.set('lastSaveTs', Date.now());
   };
 
   /**
    * Speichert Raumdaten in localStorage (synchron).
    */
-  St.saveToLocal = function() {
+  export function saveToLocal() {
     try {
       const rooms = S.get('rooms');
-      localStorage.setItem(C.LOCAL_STORAGE_KEY, JSON.stringify(rooms));
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(rooms));
     } catch (e) {
       if (e.name === 'QuotaExceededError' || (e.code === 22) || (e.message && e.message.indexOf('quota') !== -1)) {
         console.warn('[storage] localStorage quota exceeded — cloud save still active');
@@ -49,11 +42,11 @@ window.GR = window.GR || {};
   /**
    * Debounced Cloud-Save – sammelt schnelle Änderungen.
    */
-  St.debouncedCloudSave = function() {
+  export function debouncedCloudSave() {
     if (_saveTimer) clearTimeout(_saveTimer);
     _saveTimer = setTimeout(function() {
-      St.cloudSave();
-    }, C.CLOUD_SYNC_DEBOUNCE);
+      cloudSave();
+    }, CLOUD_SYNC_DEBOUNCE);
   };
 
   /** @type {string|null} Timestamp der letzten erfolgreich geladenen Cloud-Daten */
@@ -63,8 +56,7 @@ window.GR = window.GR || {};
    * Speichert Raumdaten asynchron in die Cloud.
    * Prüft vorher auf neuere Remote-Daten (einfache Konfliktauflösung).
    */
-  St.cloudSave = async function() {
-    var Auth = window.GR.auth;
+export async function cloudSave() {
     var isAuthenticated = S.get('isAuthenticated');
     var project = S.get('currentProject');
 
@@ -108,7 +100,7 @@ window.GR = window.GR || {};
    * @param {boolean} [forceLocal=false] - Nur lokal laden
    * @returns {Object|null} Raumdaten oder null
    */
-  St.loadData = async function(forceLocal) {
+export async function loadData(forceLocal) {
     var rooms = null;
 
     // Versuche Cloud-Laden (wenn eingeloggt und Projekt ausgewählt)
@@ -122,7 +114,7 @@ window.GR = window.GR || {};
 
     // Fallback: localStorage
     if (!rooms) {
-      rooms = St.loadFromLocal();
+      rooms = loadFromLocal();
     }
 
     if (rooms) {
@@ -131,7 +123,7 @@ window.GR = window.GR || {};
       // Persist migrated rooms back to localStorage so migration doesn't get lost
       if (hadMigration) {
         try {
-          localStorage.setItem(C.LOCAL_STORAGE_KEY, JSON.stringify(rooms));
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(rooms));
         } catch (e) { /* noop */ }
       }
     }
@@ -143,9 +135,9 @@ window.GR = window.GR || {};
    * Lädt Raumdaten aus localStorage (synchron).
    * @returns {Object|null}
    */
-  St.loadFromLocal = function() {
+  export function loadFromLocal() {
     try {
-      const raw = localStorage.getItem(C.LOCAL_STORAGE_KEY);
+      const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (!raw) return null;
       const data = JSON.parse(raw);
       if (data && typeof data === 'object' && Object.keys(data).length > 0) return data;
@@ -156,13 +148,10 @@ window.GR = window.GR || {};
   /**
    * Löscht lokale Daten.
    */
-  St.clearLocal = function() {
+  export function clearLocal() {
     try {
-      localStorage.removeItem(C.LOCAL_STORAGE_KEY);
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
     } catch (e) { /* noop */ }
   };
 
   // Toast-Stub (wird von ui.js überschrieben)
-  St.toast = null;
-
-})(window.GR.storage = window.GR.storage || {});

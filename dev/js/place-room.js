@@ -4,22 +4,16 @@
  * @module placeRoom
  * @description Ermöglicht das interaktive Platzieren neuer Räume per
  * Maus-/Touch-Draw auf dem Grundriss.
- */
-window.GR = window.GR || {};
+ */import { MIN_ROOM_SIZE, FLOORS, ROOM_TYPE_DEFAULT, EVT_ROOMS_CHANGED } from './constants.js';
+import * as S from './state.js';
+import { saveData } from './storage.js';
+// Uses window.GR.ui, window.GR.renderer (lazy)
 
-(function(PR) {
-  'use strict';
-
-  const C = window.GR.constants;
-  const S = window.GR.state;
-  const St = window.GR.storage;
-  const U = window.GR.utils;
-
-  /**
+/**
    * Aktiviert den Platzierungs-Modus.
    * @param {string} floor - Etagen-Kürzel ('eg' | 'og')
    */
-  PR.enablePlaceNewRoom = function(floor, roomType) {
+  export function enablePlaceNewRoom(floor, roomType) {
     if (!S.get('editMode')) return;
     S.set('isPlacing', true);
     S.set('placeFloor', floor);
@@ -39,8 +33,8 @@ window.GR = window.GR || {};
   /**
    * Bricht den Platzierungs-Modus ab.
    */
-  PR.cancelPlaceNewRoom = function() {
-    PR.removePlacePreview();
+  export function cancelPlaceNewRoom() {
+    removePlacePreview();
     S.set('isPlacing', false);
     S.set('placeFloor', null);
     S.set('placeRoomType', null);
@@ -53,7 +47,7 @@ window.GR = window.GR || {};
   /**
    * Entfernt die Platzierungs-Vorschau.
    */
-  PR.removePlacePreview = function() {
+  export function removePlacePreview() {
     const prev = document.getElementById('place-preview');
     if (prev) prev.remove();
   };
@@ -62,11 +56,11 @@ window.GR = window.GR || {};
    * Startet das Zeichnen eines neuen Raums.
    * @param {Event} e - Mouse-/Touch-Event
    */
-  PR.startPlaceDraw = function(e) {
+  export function startPlaceDraw(e) {
     if (!S.get('isPlacing')) return;
     e.preventDefault();
 
-    const raw = PR.getPointerPos(e);
+    const raw = getPointerPos(e);
     const wrapper = e.currentTarget.closest('.pw');
     if (!wrapper) return;
 
@@ -88,7 +82,7 @@ window.GR = window.GR || {};
     });
 
     // Create a visual preview rectangle
-    PR.removePlacePreview();
+    removePlacePreview();
     const preview = document.createElement('div');
     preview.id = 'place-preview';
     preview.style.cssText = 'position:absolute;border:2px dashed var(--blue);background:rgba(59,130,246,0.12);z-index:100;pointer-events:none;border-radius:4px;';
@@ -108,12 +102,12 @@ window.GR = window.GR || {};
    * Bewegt die Zeichnung während des Draw-Vorgangs.
    * @param {Event} e
    */
-  PR.onPlaceDrawMove = function(e) {
+  export function onPlaceDrawMove(e) {
     const ps = S.get('placeState');
     if (!ps) return;
     e.preventDefault();
 
-    const raw = PR.getPointerPos(e);
+    const raw = getPointerPos(e);
     const piRect = ps.pi.getBoundingClientRect();
     const relX = raw.x - piRect.left;
     const relY = raw.y - piRect.top;
@@ -144,8 +138,8 @@ window.GR = window.GR || {};
    * Touch-Variante von onPlaceDrawMove.
    * @param {Event} e
    */
-  PR.onPlaceDrawMoveTouch = function(e) {
-    PR.onPlaceDrawMove(e);
+  export function onPlaceDrawMoveTouch(e) {
+    onPlaceDrawMove(e);
   };
 
   /**
@@ -160,13 +154,13 @@ window.GR = window.GR || {};
     document.removeEventListener('touchend', PR.onPlaceDrawEndTouch);
   }
 
-  PR.onPlaceDrawEnd = function() { onPlaceDrawEndCleanup(); PR.finishPlaceDraw(); };
-  PR.onPlaceDrawEndTouch = function() { onPlaceDrawEndCleanup(); PR.finishPlaceDraw(); };
+  export function onPlaceDrawEnd() { onPlaceDrawEndCleanup(); finishPlaceDraw(); };
+  export function onPlaceDrawEndTouch() { onPlaceDrawEndCleanup(); finishPlaceDraw(); };
 
   /**
    * Schließt die Platzierung ab und erstellt den neuen Raum.
    */
-  PR.finishPlaceDraw = function() {
+  export function finishPlaceDraw() {
     const ps = S.get('placeState');
     if (!ps) return;
 
@@ -180,8 +174,8 @@ window.GR = window.GR || {};
     if (preview) {
       finalLeft = parseFloat(preview.style.left) || ps.relStartX;
       finalTop = parseFloat(preview.style.top) || ps.relStartY;
-      finalWidth = Math.max(C.MIN_ROOM_SIZE, parseFloat(preview.style.width) || 1);
-      finalHeight = Math.max(C.MIN_ROOM_SIZE, parseFloat(preview.style.height) || 1);
+      finalWidth = Math.max(MIN_ROOM_SIZE, parseFloat(preview.style.width) || 1);
+      finalHeight = Math.max(MIN_ROOM_SIZE, parseFloat(preview.style.height) || 1);
       preview.remove();
     } else if (ps.relEndX !== null) {
       const sx = ps.relStartX;
@@ -190,8 +184,8 @@ window.GR = window.GR || {};
       const ey = ps.relEndY;
       finalLeft = Math.min(sx, ex);
       finalTop = Math.min(sy, ey);
-      finalWidth = Math.max(C.MIN_ROOM_SIZE, Math.abs(ex - sx));
-      finalHeight = Math.max(C.MIN_ROOM_SIZE, Math.abs(ey - sy));
+      finalWidth = Math.max(MIN_ROOM_SIZE, Math.abs(ex - sx));
+      finalHeight = Math.max(MIN_ROOM_SIZE, Math.abs(ey - sy));
     }
 
     // Convert display pixels to native coordinates
@@ -208,7 +202,7 @@ window.GR = window.GR || {};
     // Create the new room
     rooms[key] = {
       title: 'Neuer Raum',
-      type: C.ROOM_TYPE_DEFAULT,
+      type: ROOM_TYPE_DEFAULT,
       floor: ps.floor,
       tasks: [],
       done: {},
@@ -216,17 +210,17 @@ window.GR = window.GR || {};
       comments: [],
       left: Math.max(0, nativeLeft),
       top: Math.max(0, nativeTop),
-      width: Math.max(C.MIN_ROOM_SIZE, nativeWidth),
-      height: Math.max(C.MIN_ROOM_SIZE, nativeHeight)
+      width: Math.max(MIN_ROOM_SIZE, nativeWidth),
+      height: Math.max(MIN_ROOM_SIZE, nativeHeight)
     };
 
-    St.saveData();
+    saveData();
     S.set('isPlacing', false);
     S.set('placeState', null);
     S.set('placeFloor', null);
     S.set('placeRoomType', null);
     document.querySelectorAll('.pw').forEach(w => { w.style.cursor = ''; });
-    S.notify(C.EVT_ROOMS_CHANGED);
+    S.notify(EVT_ROOMS_CHANGED);
 
     // Open rename popup so the user can name the room right away
     const UI = window.GR.ui;
@@ -238,7 +232,3 @@ window.GR = window.GR || {};
    * @param {Event} e
    * @returns {{x:number, y:number}}
    */
-  PR.getPointerPos = function(e) {
-    return U.getPointerPos(e);
-  };
-})(window.GR.placeRoom = window.GR.placeRoom || {});

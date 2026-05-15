@@ -3,22 +3,16 @@
  * =====================================================================
  * @module collaboration
  * @description Teilen von Projekten, Einladungen, Rollen-Verwaltung.
- */
-window.GR = window.GR || {};
+ */import { SUPABASE_URL, SUPABASE_ANON_KEY } from './constants.js';
+import * as S from './state.js';
+// Uses window.GR.auth, window.GR.ui, window.GR.projects (lazy)
 
-(function(Collab) {
-  'use strict';
-
-  var C = window.GR.constants;
-  var S = window.GR.state;
-  var Auth = window.GR.auth;
-
-  /**
+/**
    * Lädt die Mitglieder eines Projekts.
    * @param {string} projectId
    * @returns {Promise<Array>}
    */
-  Collab.loadMembers = async function(projectId) {
+export async function loadMembers(projectId) {
     var sb = Auth.getSupabase();
     if (!sb) return [];
 
@@ -53,7 +47,7 @@ window.GR = window.GR || {};
    * @param {string} email
    * @returns {Promise<Object|null>}
    */
-  Collab.findUserByEmail = async function(email) {
+export async function findUserByEmail(email) {
     var sb = Auth.getSupabase();
     if (!sb) return null;
 
@@ -76,7 +70,7 @@ window.GR = window.GR || {};
    * @param {string} role - 'editor' | 'viewer'
    * @returns {Promise<{ok: boolean, error?: string}>}
    */
-  Collab.inviteMember = async function(projectId, email, role) {
+export async function inviteMember(projectId, email, role) {
     var sb = Auth.getSupabase();
     if (!sb) return { ok: false, error: 'Verbindung fehlgeschlagen' };
 
@@ -85,7 +79,7 @@ window.GR = window.GR || {};
 
     try {
       // User per E-Mail finden
-      var userProfile = await Collab.findUserByEmail(email);
+      var userProfile = await findUserByEmail(email);
       if (!userProfile) {
         return { ok: false, error: 'Benutzer mit dieser E-Mail nicht gefunden' };
       }
@@ -151,7 +145,7 @@ window.GR = window.GR || {};
    * @param {string} memberId - project_members.id
    * @returns {Promise<{ok: boolean, error?: string}>}
    */
-  Collab.removeMember = async function(projectId, memberId) {
+export async function removeMember(projectId, memberId) {
     var sb = Auth.getSupabase();
     if (!sb) return { ok: false, error: 'Verbindung fehlgeschlagen' };
 
@@ -182,7 +176,7 @@ window.GR = window.GR || {};
    * @param {string} newRole - 'editor' | 'viewer'
    * @returns {Promise<{ok: boolean, error?: string}>}
    */
-  Collab.changeRole = async function(projectId, memberId, newRole) {
+export async function changeRole(projectId, memberId, newRole) {
     var sb = Auth.getSupabase();
     if (!sb) return { ok: false, error: 'Verbindung fehlgeschlagen' };
 
@@ -214,13 +208,11 @@ window.GR = window.GR || {};
   /**
    * Rendert das Teilen-Modal.
    */
-  Collab.showShareModal = async function() {
+export async function showShareModal() {
     var project = S.get('currentProject');
     if (!project) return;
 
     var sb = Auth.getSupabase();
-    var U = window.GR.utils;
-
     // Modal anzeigen
     var modal = document.getElementById('shareModal');
     if (!modal) return;
@@ -231,7 +223,7 @@ window.GR = window.GR || {};
 
     body.innerHTML = '<p class="hint">⏳ Lade Mitglieder...</p>';
 
-    var members = await Collab.loadMembers(project.id);
+    var members = await loadMembers(project.id);
 
     var html =
       '<div class="share-section">' +
@@ -285,12 +277,12 @@ window.GR = window.GR || {};
    * Teilen-Modal für ein Projekt vom Dashboard aus (ohne currentProject).
    * @param {string} projectId
    */
-  Collab.showShareModalForProject = async function(projectId) {
+export async function showShareModalForProject(projectId) {
     // Temporär currentProject setzen, damit showShareModal funktioniert
     var prev = S.get('currentProject');
     S.set('currentProject', { id: projectId });
     try {
-      await Collab.showShareModal();
+      await showShareModal();
     } finally {
       // Immer wiederherstellen – verhindert State-Korruption
       S.set('currentProject', prev);
@@ -300,7 +292,7 @@ window.GR = window.GR || {};
   /**
    * Schließt das Teilen-Modal.
    */
-  Collab.closeShareModal = function() {
+  export function closeShareModal() {
     var modal = document.getElementById('shareModal');
     if (modal) modal.classList.remove('open');
   };
@@ -308,7 +300,7 @@ window.GR = window.GR || {};
   /**
    * Sendet eine Einladung aus dem Modal.
    */
-  Collab.sendInviteFromModal = async function() {
+export async function sendInviteFromModal() {
     var project = S.get('currentProject');
     if (!project) return;
 
@@ -333,13 +325,13 @@ window.GR = window.GR || {};
     }
 
     try {
-      var result = await Collab.inviteMember(project.id, email, role);
+      var result = await inviteMember(project.id, email, role);
       var UI = window.GR.ui;
       if (result.ok) {
         if (UI && UI.toast) UI.toast('✅ ' + (result.displayName || email) + ' eingeladen!', 'success', 3000);
         emailInput.value = '';
         // Member-Liste aktualisieren (await um Race-Condition zu vermeiden)
-        await Collab.showShareModal();
+        await showShareModal();
       } else {
         if (UI && UI.toast) UI.toast('❌ ' + result.error, 'error', 3000);
       }
@@ -351,5 +343,3 @@ window.GR = window.GR || {};
       }
     }
   };
-
-})(window.GR.collaboration = window.GR.collaboration || {});

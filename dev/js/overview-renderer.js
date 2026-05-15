@@ -4,35 +4,29 @@
  * @module overviewRenderer
  * @description Rendert die Übersichts-Ansicht mit Suchfunktion in der Sidebar.
  * Verwendet data-action für Event Delegation.
- */
-window.GR = window.GR || {};
+ */import { ROOM_TYPES, ROOM_TYPE_DEFAULT, EVT_ROOMS_CHANGED, SEARCH_DEBOUNCE } from './constants.js';
+import * as S from './state.js';
+import { escHtml, taskProgress, formatLastEdit } from './utils.js';
 
-(function(OR) {
-  'use strict';
-
-  const C = window.GR.constants;
-  const S = window.GR.state;
-  const U = window.GR.utils;
-
-  /**
+/**
    * Zeigt die Übersicht aller Räume an.
    */
-  OR.showOverview = function() {
+  export function showOverview() {
     if (S.get('overview')) return;
     S.set('overview', true);
     S.set('selectedRoom', null);
     document.getElementById('btnOv')?.classList.add('active');
-    S.notify(C.EVT_ROOMS_CHANGED);
+    S.notify(EVT_ROOMS_CHANGED);
 
     var UI = window.GR.ui;
     if (UI) UI.openSidebar();
-    OR.renderOverviewContent();
+    renderOverviewContent();
   };
 
   /**
    * Rendert den Inhalt der Übersicht.
    */
-  OR.renderOverviewContent = function() {
+  export function renderOverviewContent() {
     // Suchwert aus State statt aus DOM (zuverlässiger bei Re-Renders)
     var searchValue = (S.get('searchQuery') || '').toLowerCase();
     var searchInput = document.querySelector('.os');
@@ -70,7 +64,7 @@ window.GR = window.GR || {};
     }
 
     html += '</div>';
-    html += OR.buildLastEditInfo();
+    html += buildLastEditInfo();
 
     document.getElementById('sc').innerHTML = html;
   };
@@ -78,19 +72,18 @@ window.GR = window.GR || {};
   /**
    * Debounced search (wrapped for input delegation).
    */
-  OR.debouncedSearch = function() {
+  export function debouncedSearch() {
     if (S.get('debounceTimer')) clearTimeout(S.get('debounceTimer'));
-    S.set('debounceTimer', setTimeout(function() { OR.renderOverviewContent(); }, C.SEARCH_DEBOUNCE));
+    S.set('debounceTimer', setTimeout(function() { renderOverviewContent(); }, SEARCH_DEBOUNCE));
   };
 
   /**
    * Baut die "Zuletzt bearbeitet"-Info.
    * @returns {string} HTML
    */
-  OR.buildLastEditInfo = function() {
+  export function buildLastEditInfo() {
     var text = U.formatLastEdit(S.get('lastSaveTs'));
     return text
       ? '<div style="margin-top:10px;font-size:11px;color:var(--muted);text-align:center;">' + U.escHtml(text) + '</div>'
       : '';
   };
-})(window.GR.overviewRenderer = window.GR.overviewRenderer || {});

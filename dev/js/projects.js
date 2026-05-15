@@ -4,18 +4,11 @@
  * @module projects
  * @description CRUD für Projekte, Dashboard-Rendering, Projekt-Auswahl.
  * Kommuniziert mit Supabase über den Auth-Client.
- */
-window.GR = window.GR || {};
+ */import { EVT_AUTH_CHANGED, EVT_PROJECT_CHANGED } from './constants.js';
+import * as S from './state.js';
+// Uses window.GR.auth, window.GR.storage, window.GR.ui, etc. (lazy)
 
-(function(Proj) {
-  'use strict';
-
-  var C = window.GR.constants;
-  var S = window.GR.state;
-  var U = window.GR.utils;
-  var Auth = window.GR.auth;
-
-  // ===================================================================
+// ===================================================================
   // API Helpers (via Supabase Client)
   // ===================================================================
 
@@ -56,7 +49,7 @@ window.GR = window.GR || {};
    * Lädt alle Projekte des aktuellen Users (owned + shared).
    * @returns {Promise<{owned: Array, shared: Array}>}
    */
-  Proj.loadProjects = async function() {
+export async function loadProjects() {
     var user = S.get('currentUser');
     if (!user) return { owned: [], shared: [] };
 
@@ -101,7 +94,7 @@ window.GR = window.GR || {};
    * @param {Array<{name: string, imageFile?: File, imageUrl?: string, nativeWidth?: number}>} floors
    * @returns {Promise<{ok: boolean, projectId?: string, error?: string}>}
    */
-  Proj.createProject = async function(name, floors) {
+export async function createProject(name, floors) {
     var user = S.get('currentUser');
     if (!user) return { ok: false, error: 'Nicht angemeldet' };
 
@@ -191,7 +184,7 @@ window.GR = window.GR || {};
    * @param {string} name
    * @returns {Promise<{ok: boolean}>}
    */
-  Proj.updateProjectName = async function(projectId, name) {
+export async function updateProjectName(projectId, name) {
     var sb = Auth.getSupabase();
     if (!sb) return { ok: false, error: 'Verbindung fehlgeschlagen' };
     try {
@@ -212,7 +205,7 @@ window.GR = window.GR || {};
    * @param {string} projectId
    * @returns {Promise<{ok: boolean}>}
    */
-  Proj.deleteProject = async function(projectId) {
+export async function deleteProject(projectId) {
     var sb = Auth.getSupabase();
     if (!sb) return { ok: false, error: 'Verbindung fehlgeschlagen' };
     try {
@@ -253,7 +246,7 @@ window.GR = window.GR || {};
    * @param {string} projectId
    * @returns {Promise<boolean>}
    */
-  Proj.openProject = async function(projectId) {
+export async function openProject(projectId) {
     var sb = Auth.getSupabase();
     if (!sb) return false;
 
@@ -304,18 +297,17 @@ window.GR = window.GR || {};
       }
 
       // Lokal speichern (Cache)
-      var St = window.GR.storage;
-      if (St && St.saveToLocal) St.saveToLocal();
+      if (St && saveToLocal) saveToLocal();
 
       // Floor-Tabs dynamisch aufbauen
-      Proj.buildFloorUI(floors);
+      buildFloorUI(floors);
 
       // Ersten Floor aktivieren
       if (floors.length > 0) {
         S.set('activeFloor', floors[0].id);
       }
 
-      S.notify(C.EVT_PROJECT_CHANGED, projectId);
+      S.notify(EVT_PROJECT_CHANGED, projectId);
       return true;
     } catch (e) {
       console.error('[projects] openProject error:', e);
@@ -329,7 +321,7 @@ window.GR = window.GR || {};
    *   .pw > .plan-nav > span.cnt, img.pi, div.pr
    * @param {Array} floors - Floor-Daten aus Supabase
    */
-  Proj.buildFloorUI = function(floors) {
+  export function buildFloorUI(floors) {
     var tabsContainer = document.getElementById('ft');
     var contentEl = document.getElementById('mc');
     if (!tabsContainer || !contentEl) return;
@@ -390,7 +382,6 @@ window.GR = window.GR || {};
       img.setAttribute('draggable', 'false');
       img.addEventListener('load', function() {
         var Rdr = window.GR.renderer;
-        var Sync = window.GR.sync;
         if (Rdr && Rdr.render) Rdr.render();
         if (Sync && Sync.updateTabBadges) Sync.updateTabBadges();
       });
@@ -430,7 +421,7 @@ window.GR = window.GR || {};
    * @param {string} projectId
    * @returns {Promise<string>} 'owner' | 'editor' | 'viewer' | ''
    */
-  Proj.getProjectRole = async function(projectId) {
+export async function getProjectRole(projectId) {
     var user = S.get('currentUser');
     if (!user) return '';
     var sb = Auth.getSupabase();
@@ -449,5 +440,3 @@ window.GR = window.GR || {};
       return '';
     }
   };
-
-})(window.GR.projects = window.GR.projects || {});

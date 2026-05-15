@@ -4,23 +4,18 @@
  * @module export
  * @description Exportiert Projektdaten als JSON und importiert sie wieder.
  * Floor-IDs werden beim Import automatisch auf das Zielprojekt gemappt.
- */
-window.GR = window.GR || {};
+ */import { LOCAL_STORAGE_KEY } from './constants.js';
+import * as S from './state.js';
+// Uses window.GR.storage (lazy)
 
-(function(Exp) {
-  'use strict';
-
-  var S = window.GR.state;
-  var U = window.GR.utils;
-
-  /** Aktuelle Export-Version */
+/** Aktuelle Export-Version */
   var EXPORT_VERSION = 1;
 
   // ===================================================================
   // Export
   // ===================================================================
 
-  Exp.exportProject = function() {
+  export function exportProject() {
     var proj = S.get('currentProject');
     var floors = S.get('currentProjectFloors') || [];
     var rooms = S.get('rooms') || {};
@@ -79,7 +74,7 @@ window.GR = window.GR || {};
    * JSON hat z.B. floor:"eg", Cloud-Projekt nutzt UUIDs.
    * Strategie: nach sortOrder (Position im Array).
    */
-  Exp._mapFloorIds = function(importedRooms, importedFloors) {
+  export function _mapFloorIds(importedRooms, importedFloors) {
     var currentFloors = S.get('currentProjectFloors') || [];
     if (currentFloors.length === 0) return importedRooms;
 
@@ -127,19 +122,17 @@ window.GR = window.GR || {};
   /**
    * Zentrale Import-Funktion: Mappt Floors, setzt Räume, speichert, rendert.
    */
-  Exp._applyImport = async function(data, toast) {
+  _applyImport = async function(data, toast) {
     var roomCount = Object.keys(data.project.rooms).length;
-    var mappedRooms = Exp._mapFloorIds(data.project.rooms, data.project.floors);
+    var mappedRooms = _mapFloorIds(data.project.rooms, data.project.floors);
 
     S.set('rooms', mappedRooms);
 
-    var St = window.GR.storage;
-    if (St && St.saveData) await St.saveData();
+    if (St && saveData) await saveData();
 
     var Rdr = window.GR.renderer;
     if (Rdr && Rdr.render) Rdr.render();
 
-    var Sync = window.GR.sync;
     if (Sync && Sync.updateTabBadges) Sync.updateTabBadges();
 
     toast('✅ Import erfolgreich! ' + roomCount + ' Raum/Räume importiert', 'success', 3000);
@@ -149,7 +142,7 @@ window.GR = window.GR || {};
   // Validierung
   // ===================================================================
 
-  Exp._validateImportData = function(data) {
+  export function _validateImportData(data) {
     if (!data || typeof data !== 'object') {
       return { valid: false, error: 'Datei ist leer oder kein JSON-Objekt' };
     }
@@ -214,7 +207,7 @@ window.GR = window.GR || {};
 
   var _pendingImport = null;
 
-  Exp.openProjectSettings = function() {
+  export function openProjectSettings() {
     _pendingImport = null;
     var modal = document.getElementById('projectSettingsModal');
     if (!modal) return;
@@ -234,21 +227,21 @@ window.GR = window.GR || {};
     if (preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
     if (importBtn) importBtn.disabled = true;
 
-    if (!Exp._psInit) {
-      Exp._setupProjectSettingsEvents();
-      Exp._psInit = true;
+    if (!_psInit) {
+      _setupProjectSettingsEvents();
+      _psInit = true;
     }
 
     modal.classList.add('open');
   };
 
-  Exp.closeProjectSettings = function() {
+  export function closeProjectSettings() {
     var modal = document.getElementById('projectSettingsModal');
     if (modal) modal.classList.remove('open');
     _pendingImport = null;
   };
 
-  Exp._setupProjectSettingsEvents = function() {
+  export function _setupProjectSettingsEvents() {
     var dropZone = document.getElementById('psDropZone');
     var fileInput = document.getElementById('psFileInput');
     if (!dropZone || !fileInput) return;
@@ -265,7 +258,7 @@ window.GR = window.GR || {};
       e.preventDefault(); e.stopPropagation();
       dropZone.classList.remove('dragover');
       var files = e.dataTransfer && e.dataTransfer.files;
-      if (files && files.length > 0) Exp._handlePsFile(files[0]);
+      if (files && files.length > 0) _handlePsFile(files[0]);
     });
     dropZone.addEventListener('click', function(e) {
       e.preventDefault();
@@ -273,11 +266,11 @@ window.GR = window.GR || {};
       fileInput.click();
     });
     fileInput.addEventListener('change', function() {
-      if (fileInput.files && fileInput.files.length > 0) Exp._handlePsFile(fileInput.files[0]);
+      if (fileInput.files && fileInput.files.length > 0) _handlePsFile(fileInput.files[0]);
     });
   };
 
-  Exp._handlePsFile = function(file) {
+  export function _handlePsFile(file) {
     if (!file) return;
     var dropZone = document.getElementById('psDropZone');
     var preview = document.getElementById('psPreview');
@@ -287,7 +280,7 @@ window.GR = window.GR || {};
     reader.onload = function(ev) {
       try {
         var data = JSON.parse(ev.target.result);
-        var validation = Exp._validateImportData(data);
+        var validation = _validateImportData(data);
 
         if (validation.valid) {
           _pendingImport = data;
@@ -335,8 +328,7 @@ window.GR = window.GR || {};
   };
 
   var _importConfirmed = false;
-
-  Exp.doProjectSettingsImport = async function() {
+export async function doProjectSettingsImport() {
     if (!_pendingImport) {
       var UI = window.GR.ui;
       if (UI && UI.toast) UI.toast('❌ Keine Datei ausgewählt', 'error', 2000);
@@ -381,10 +373,8 @@ window.GR = window.GR || {};
     var UI3 = window.GR.ui;
     var toast = UI3 && UI3.toast ? UI3.toast : function() {};
 
-    await Exp._applyImport(data, toast);
+    await _applyImport(data, toast);
 
-    Exp.closeProjectSettings();
+    closeProjectSettings();
     _pendingImport = null;
   };
-
-})(window.GR.exportMod = window.GR.exportMod || {});

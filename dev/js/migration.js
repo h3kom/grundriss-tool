@@ -4,23 +4,17 @@
  * @module migration
  * @description Migriert bestehende localStorage-Daten (Single-User) zu
  * einem Projekt im neuen Multi-User-System.
- */
-window.GR = window.GR || {};
+ */import * as S from './state.js';
+// Uses window.GR.storage (lazy)
 
-(function(Mig) {
-  'use strict';
-
-  var C = window.GR.constants;
-  var S = window.GR.state;
-
-  /** @const {string} Key für Migrations-Flag */
+/** @const {string} Key für Migrations-Flag */
   var MIGRATION_KEY = 'gr_migrated_v2';
 
   /**
    * Prüft, ob die Migration bereits durchgeführt wurde.
    * @returns {boolean}
    */
-  Mig.isMigrated = function() {
+  export function isMigrated() {
     try {
       return localStorage.getItem(MIGRATION_KEY) === 'true';
     } catch (e) {
@@ -33,10 +27,9 @@ window.GR = window.GR || {};
    * Wird beim ersten Login nach der Multi-User-Aktualisierung ausgeführt.
    * @returns {Promise<{ok: boolean, projectId?: string}>}
    */
-  Mig.migrateLocalData = async function() {
-    if (Mig.isMigrated()) return { ok: true };
+export async function migrateLocalData() {
+    if (isMigrated()) return { ok: true };
 
-    var Auth = window.GR.auth;
     var Proj = window.GR.projects;
     if (!Auth || !Proj) return { ok: false };
 
@@ -46,7 +39,7 @@ window.GR = window.GR || {};
     // Bestehende Daten laden
     var localData = null;
     try {
-      var raw = localStorage.getItem(C.LOCAL_STORAGE_KEY);
+      var raw = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (raw) localData = JSON.parse(raw);
     } catch (e) {
       localData = null;
@@ -54,7 +47,7 @@ window.GR = window.GR || {};
 
     // Keine Daten vorhanden → Migration als fertig markieren
     if (!localData || Object.keys(localData).length === 0) {
-      Mig._markMigrated();
+      _markMigrated();
       return { ok: true };
     }
 
@@ -122,7 +115,7 @@ window.GR = window.GR || {};
       }
 
       // Migration als fertig markieren
-      Mig._markMigrated();
+      _markMigrated();
 
       console.log('[migration] Successfully migrated local data to project:', projectId);
       return { ok: true, projectId: projectId };
@@ -135,10 +128,8 @@ window.GR = window.GR || {};
   /**
    * Markiert die Migration als abgeschlossen.
    */
-  Mig._markMigrated = function() {
+  export function _markMigrated() {
     try {
       localStorage.setItem(MIGRATION_KEY, 'true');
     } catch (e) { /* noop */ }
   };
-
-})(window.GR.migration = window.GR.migration || {});

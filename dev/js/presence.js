@@ -4,17 +4,12 @@
  * @module presence
  * @description Zeigt an, welche Benutzer aktuell im Projekt online sind.
  * Nutzt Supabase Realtime Presence API.
- */
-window.GR = window.GR || {};
+ */import { EVT_PRESENCE_CHANGED } from './constants.js';
+import * as S from './state.js';
+import { escHtml, escAttr } from './utils.js';
+// Uses window.GR.auth (lazy)
 
-(function(Pres) {
-  'use strict';
-
-  var C = window.GR.constants;
-  var S = window.GR.state;
-  var Auth = window.GR.auth;
-
-  var _channel = null;
+var _channel = null;
   var _onlineUsers = {};
 
   /** @const {string[]} Farben für User-Avatare */
@@ -24,11 +19,11 @@ window.GR = window.GR || {};
    * Tritt dem Presence-Channel für ein Projekt bei.
    * @param {string} projectId
    */
-  Pres.joinProject = function(projectId) {
+  export function joinProject(projectId) {
     if (!projectId || projectId === 'legacy') return;
 
     // Alten Channel verlassen
-    Pres.leaveProject();
+    leaveProject();
 
     var sb = Auth.getSupabase();
     if (!sb) return;
@@ -57,8 +52,8 @@ window.GR = window.GR || {};
           colorIdx++;
         }
       }
-      Pres.updateUI();
-      S.notify(C.EVT_PRESENCE_CHANGED, _onlineUsers);
+      updateUI();
+      S.notify(EVT_PRESENCE_CHANGED, _onlineUsers);
     });
 
     _channel.subscribe(async function(status) {
@@ -92,7 +87,7 @@ window.GR = window.GR || {};
   /**
    * Verlässt den aktuellen Presence-Channel.
    */
-  Pres.leaveProject = function() {
+  export function leaveProject() {
     if (_channel) {
       _channel.untrack();
       _channel.unsubscribe();
@@ -101,21 +96,21 @@ window.GR = window.GR || {};
       _channel = null;
     }
     _onlineUsers = {};
-    Pres.updateUI();
+    updateUI();
   };
 
   /**
    * Gibt die aktuell onlineUsers zurück.
    * @returns {Object}
    */
-  Pres.getOnlineUsers = function() {
+  export function getOnlineUsers() {
     return _onlineUsers;
   };
 
   /**
    * Aktualisiert die Presence-Anzeige in der Top-Bar.
    */
-  Pres.updateUI = function() {
+  export function updateUI() {
     var indicator = document.getElementById('presenceIndicator');
     if (!indicator) return;
 
@@ -134,7 +129,6 @@ window.GR = window.GR || {};
     for (var i = 0; i < Math.min(otherUsers.length, 4); i++) {
       var u = _onlineUsers[otherUsers[i]];
       var initial = u.name ? u.name.charAt(0).toUpperCase() : '?';
-      var U = window.GR.utils;
       html += '<span class="presence-avatar" style="background:' + u.color + '" title="' + U.escAttr(u.name || 'Unbekannt') + '">' + U.escHtml(initial) + '</span>';
     }
     if (otherUsers.length > 4) {
@@ -142,5 +136,3 @@ window.GR = window.GR || {};
     }
     indicator.innerHTML = html;
   };
-
-})(window.GR.presence = window.GR.presence || {});

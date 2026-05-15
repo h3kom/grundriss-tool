@@ -3,16 +3,10 @@
  * =====================================================================
  * @module cloud
  * @description Speichert/Lädt Raumdaten in Supabase (project-based).
- */
-window.GR = window.GR || {};
+ */import * as S from './state.js';
+// Uses window.GR.auth, window.GR.sync (lazy)
 
-(function(Cloud) {
-  'use strict';
-
-  const C = window.GR.constants;
-  const S = window.GR.state;
-
-  /** Lock-Flag: verhindert parallele Save-Operationen */
+/** Lock-Flag: verhindert parallele Save-Operationen */
   var _saveInProgress = false;
 
   /**
@@ -20,8 +14,7 @@ window.GR = window.GR || {};
    * @param {Object} rooms - Raumdaten
    * @returns {Promise<{ok: boolean, error?: string}>}
    */
-  Cloud.saveToCloud = async function(rooms) {
-    var Auth = window.GR.auth;
+export async function saveToCloud(rooms) {
     var sb = Auth ? Auth.getSupabase() : null;
     if (!sb) return { ok: false, error: 'Supabase nicht verfügbar' };
 
@@ -31,7 +24,6 @@ window.GR = window.GR || {};
     if (!project) return { ok: false, error: 'Kein Projekt ausgewählt' };
 
     // Offline-Check: keine Netzwerk-Requests wenn offline
-    var Sync = window.GR.sync;
     if (Sync && !Sync._isOnline) {
       return { ok: false, error: 'Offline – wird gespeichert wenn Verbindung wieder da ist' };
     }
@@ -119,8 +111,7 @@ window.GR = window.GR || {};
    * Lädt Raumdaten aus Supabase.
    * @returns {Promise<{ok: boolean, rooms?: Object, error?: string}>}
    */
-  Cloud.loadFromCloud = async function() {
-    var Auth = window.GR.auth;
+export async function loadFromCloud() {
     var sb = Auth ? Auth.getSupabase() : null;
     if (!sb) return { ok: false, error: 'Supabase nicht verfügbar' };
 
@@ -161,8 +152,7 @@ window.GR = window.GR || {};
    * @param {string} roomsRowId - ID der rooms-Zeile
    * @returns {Promise<{ok: boolean, updated_at?: string, error?: string}>}
    */
-  Cloud.getCloudTimestamp = async function(roomsRowId) {
-    var Auth = window.GR.auth;
+export async function getCloudTimestamp(roomsRowId) {
     var sb = Auth ? Auth.getSupabase() : null;
     if (!sb) return { ok: false, error: 'Supabase nicht verfügbar' };
 
@@ -193,5 +183,3 @@ window.GR = window.GR || {};
    * Leitet an loadFromCloud weiter.
    */
   Cloud.loadFromSupabase = Cloud.loadFromCloud;
-
-})(window.GR.cloud = window.GR.cloud || {});

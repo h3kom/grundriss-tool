@@ -4,16 +4,10 @@
  * @module auth
  * @description E-Mail/Passwort Login, Register, Session-Management.
  * Nutzt den Supabase JS Client für Auth-Operationen.
- */
-window.GR = window.GR || {};
+ */import { SUPABASE_URL, SUPABASE_ANON_KEY, EVT_AUTH_CHANGED } from './constants.js';
+import * as S from './state.js';
 
-(function(Auth) {
-  'use strict';
-
-  var C = window.GR.constants;
-  var S = window.GR.state;
-
-  /** @type {Object|null} Supabase Client Instanz */
+/** @type {Object|null} Supabase Client Instanz */
   var _sb = null;
 
   /** @type {Object|null} Auth state subscription (for cleanup) */
@@ -23,7 +17,7 @@ window.GR = window.GR || {};
    * Initialisiert den Supabase Client.
    * Wird beim App-Start aufgerufen.
    */
-  Auth.initSupabase = function() {
+  export function initSupabase() {
     if (typeof window.supabase === 'undefined' || !window.supabase.createClient) {
       console.warn('[auth] Supabase JS Client nicht geladen. Auth deaktiviert.');
       return;
@@ -32,16 +26,16 @@ window.GR = window.GR || {};
     if (_authSubscription) {
       try { _authSubscription.unsubscribe(); } catch (e) { /* noop */ }
     }
-    _sb = window.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY);
+    _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     // Listener für Auth-Status-Änderungen
     var { data } = _sb.auth.onAuthStateChange(function(event, session) {
       if (event === 'SIGNED_IN' && session) {
-        Auth.onSignIn(session.user);
+        onSignIn(session.user);
       } else if (event === 'TOKEN_REFRESHED' && session) {
         // Update user state on token refresh to prevent session expiry
-        Auth.onSignIn(session.user);
+        onSignIn(session.user);
       } else if (event === 'SIGNED_OUT') {
-        Auth.onSignOut();
+        onSignOut();
       }
     });
     _authSubscription = data.subscription;
@@ -51,7 +45,7 @@ window.GR = window.GR || {};
    * Gibt den Supabase Client zurück.
    * @returns {Object|null}
    */
-  Auth.getSupabase = function() {
+  export function getSupabase() {
     return _sb;
   };
 
@@ -59,7 +53,7 @@ window.GR = window.GR || {};
    * Prüft, ob Supabase Auth verfügbar ist.
    * @returns {boolean}
    */
-  Auth.isAvailable = function() {
+  export function isAvailable() {
     return _sb !== null;
   };
 
@@ -71,7 +65,7 @@ window.GR = window.GR || {};
    * Holt die aktuelle Session.
    * @returns {Promise<Object|null>}
    */
-  Auth.getSession = async function() {
+export async function getSession() {
     if (!_sb) return null;
     try {
       var result = await _sb.auth.getSession();
@@ -86,7 +80,7 @@ window.GR = window.GR || {};
    * Holt den aktuellen User.
    * @returns {Promise<Object|null>}
    */
-  Auth.getCurrentUser = async function() {
+export async function getCurrentUser() {
     if (!_sb) return null;
     try {
       var result = await _sb.auth.getUser();
@@ -108,7 +102,7 @@ window.GR = window.GR || {};
    * @param {string} displayName
    * @returns {Promise<{ok: boolean, error?: string}>}
    */
-  Auth.register = async function(email, password, displayName) {
+export async function register(email, password, displayName) {
     if (!_sb) return { ok: false, error: 'Auth nicht verfügbar' };
     try {
       var result = await _sb.auth.signUp({
@@ -157,7 +151,7 @@ window.GR = window.GR || {};
    * @param {string} password
    * @returns {Promise<{ok: boolean, error?: string}>}
    */
-  Auth.login = async function(email, password) {
+export async function login(email, password) {
     if (!_sb) return { ok: false, error: 'Auth nicht verfügbar' };
     try {
       var result = await _sb.auth.signInWithPassword({
@@ -181,7 +175,7 @@ window.GR = window.GR || {};
    * Loggt den aktuellen User aus.
    * @returns {Promise<{ok: boolean}>}
    */
-  Auth.logout = async function() {
+export async function logout() {
     if (!_sb) return { ok: false };
     try {
       await _sb.auth.signOut();
@@ -200,25 +194,25 @@ window.GR = window.GR || {};
    * Wird aufgerufen, wenn ein User sich erfolgreich anmeldet.
    * @param {Object} user - Supabase User-Objekt
    */
-  Auth.onSignIn = function(user) {
+  export function onSignIn(user) {
     S.set('currentUser', {
       id: user.id,
       email: user.email,
       displayName: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User'
     });
     S.set('isAuthenticated', true);
-    S.notify(C.EVT_AUTH_CHANGED, { authenticated: true, user: user });
+    S.notify(EVT_AUTH_CHANGED, { authenticated: true, user: user });
   };
 
   /**
    * Wird aufgerufen, wenn ein User sich abmeldet.
    */
-  Auth.onSignOut = function() {
+  export function onSignOut() {
     S.set('currentUser', null);
     S.set('isAuthenticated', false);
     S.set('currentProject', null);
     S.set('currentProjectFloors', []);
-    S.notify(C.EVT_AUTH_CHANGED, { authenticated: false });
+    S.notify(EVT_AUTH_CHANGED, { authenticated: false });
   };
 
   /**
@@ -226,7 +220,7 @@ window.GR = window.GR || {};
    * @param {string} email
    * @returns {Promise<{ok: boolean, error?: string}>}
    */
-  Auth.resetPassword = async function(email) {
+export async function resetPassword(email) {
     if (!_sb) return { ok: false, error: 'Auth nicht verfügbar' };
     try {
       var result = await _sb.auth.resetPasswordForEmail(email, {
@@ -240,4 +234,3 @@ window.GR = window.GR || {};
       return { ok: false, error: e.message || 'Unbekannter Fehler' };
     }
   };
-})(window.GR.auth = window.GR.auth || {});
