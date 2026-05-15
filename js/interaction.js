@@ -45,6 +45,9 @@ window.GR = window.GR || {};
    * @returns {{x:number, y:number}}
    */
   I.getPointerPos = function(e) {
-    return (window.GR.utils || {}).getPointerPos(e);
+    var u = window.GR.utils;
+    if (u && u.getPointerPos) return u.getPointerPos(e);
+    // Fallback wenn utils noch nicht geladen
+    return { x: e.clientX, y: e.clientY };
   };
 })(window.GR.interaction = window.GR.interaction || {});

@@ -37,9 +37,15 @@ window.GR = window.GR || {};
           .order('updated_at', { ascending: false })
           .limit(1);
 
+        if (existing.error) {
+          console.warn('[cloud] roomsRowId lookup error:', existing.error.message);
+          return { ok: false, error: 'Keine Room-Row-ID (Lookup fehlgeschlagen)' };
+        }
+
         if (existing.data && existing.data.length > 0) {
           // Gefunden → roomsRowId im State aktualisieren
           project.roomsRowId = existing.data[0].id;
+          S.set('currentProject', project);
           console.info('[cloud] Recovered roomsRowId:', project.roomsRowId);
         } else {
           // Nicht gefunden → neue rooms-Zeile anlegen
@@ -49,12 +55,18 @@ window.GR = window.GR || {};
             updated_at: new Date().toISOString()
           }).select('id').single();
 
+          if (insertResult.error) {
+            console.warn('[cloud] Failed to create rooms row:', insertResult.error.message);
+            return { ok: false, error: 'Keine Room-Row-ID (Erstellung fehlgeschlagen: ' + insertResult.error.message + ')' };
+          }
+
           if (insertResult.data && insertResult.data.id) {
             project.roomsRowId = insertResult.data.id;
+            S.set('currentProject', project);
             console.info('[cloud] Created new rooms row:', project.roomsRowId);
             return { ok: true }; // Daten wurden bereits beim INSERT gespeichert
           } else {
-            console.warn('[cloud] Failed to create rooms row:', (insertResult.error || {}).message);
+            console.warn('[cloud] Insert returned no data');
             return { ok: false, error: 'Keine Room-Row-ID (Erstellung fehlgeschlagen)' };
           }
         }
@@ -109,6 +121,7 @@ window.GR = window.GR || {};
         // Update roomsRowId falls nötig
         if (result.data[0].id !== project.roomsRowId) {
           project.roomsRowId = result.data[0].id;
+          S.set('currentProject', project);
         }
         return { ok: true, rooms: result.data[0].data || {} };
       }

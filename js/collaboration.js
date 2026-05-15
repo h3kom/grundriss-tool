@@ -243,8 +243,8 @@ window.GR = window.GR || {};
     var prev = S.get('currentProject');
     S.set('currentProject', { id: projectId });
     await Collab.showShareModal();
-    // Nach dem Anzeigen wiederherstellen (wenn vorher gesetzt)
-    if (!prev) S.set('currentProject', null);
+    // Immer wiederherstellen – verhindert State-Korruption
+    S.set('currentProject', prev);
   };
 
   /**
