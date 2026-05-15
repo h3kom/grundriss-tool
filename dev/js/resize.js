@@ -8,6 +8,12 @@ window.GR = window.GR || {};
   const St = window.GR.storage;
   const U = window.GR.utils;
 
+  // Shared options object for touch event listeners – must be same reference for add/remove
+  RS._touchOptions = { passive: false };
+
+  // rAF throttle for smooth resize rendering
+  var _resizeRafPending = false;
+
   /**
    * Startet einen Resize-Vorgang.
    * @param {Event} e - Mouse-/Touch-Event
@@ -44,23 +50,38 @@ window.GR = window.GR || {};
 
     document.addEventListener('mousemove', RS.onResizeMove);
     document.addEventListener('mouseup', RS.onResizeEnd);
-    document.addEventListener('touchmove', RS.onResizeMoveTouch, { passive: false });
-    document.addEventListener('touchend', RS.onResizeEndTouch, { passive: false });
+    document.addEventListener('touchmove', RS.onResizeMoveTouch, RS._touchOptions);
+    document.addEventListener('touchend', RS.onResizeEndTouch, RS._touchOptions);
   };
 
   /**
    * Bewegt die Resize-Grenzen während des Vorgangs.
    * @param {Event} e
    */
+  RS._doResizeUpdate = function() {
+    _resizeRafPending = false;
+    const rs = S.get('resizeState');
+    if (!rs || rs.currentLeft === undefined) return;
+
+    const el = rs.element;
+    const scale = rs.scale;
+    if (el) {
+      el.style.left = Math.round(rs.currentLeft * scale) + 'px';
+      el.style.top = Math.round(rs.currentTop * scale) + 'px';
+      el.style.width = Math.round(rs.currentWidth * scale) + 'px';
+      el.style.height = Math.round(rs.currentHeight * scale) + 'px';
+    }
+  };
+
   RS.onResizeMove = function(e) {
     const rs = S.get('resizeState');
     if (!rs) return;
+    e.preventDefault();
     const raw = RS.getPointerPos(e);
-    const scale = U.getScale(rs.wrapper);
     const dx = raw.x - rs.startX;
     const dy = raw.y - rs.startY;
-    const dl = dx / scale;
-    const dt = dy / scale;
+    const dl = dx / rs.scale;
+    const dt = dy / rs.scale;
 
     const handle = rs.handle;
     let nl = rs.origLeft;
@@ -83,13 +104,16 @@ window.GR = window.GR || {};
     nl = Math.max(0, nl);
     nt = Math.max(0, nt);
 
-    // Element aus resizeState referenzieren statt每mal DOM-Query
-    const el = rs.element;
-    if (el) {
-      el.style.left = Math.round(nl * scale) + 'px';
-      el.style.top = Math.round(nt * scale) + 'px';
-      el.style.width = Math.round(nw * scale) + 'px';
-      el.style.height = Math.round(nh * scale) + 'px';
+    // Store raw values (cheap – runs every event)
+    rs.currentLeft = nl;
+    rs.currentTop = nt;
+    rs.currentWidth = nw;
+    rs.currentHeight = nh;
+
+    // Throttle DOM writes to rAF (max once per frame)
+    if (!_resizeRafPending) {
+      _resizeRafPending = true;
+      requestAnimationFrame(RS._doResizeUpdate);
     }
   };
 
@@ -106,13 +130,16 @@ window.GR = window.GR || {};
    * Beendet den Resize-Vorgang und speichert die finale Position.
    */
   function onResizeEndCleanup() {
+    // Flush any pending rAF update
+    _resizeRafPending = false;
+
     const rs = S.get('resizeState');
     if (!rs) return;
 
     document.removeEventListener('mousemove', RS.onResizeMove);
     document.removeEventListener('mouseup', RS.onResizeEnd);
-    document.removeEventListener('touchmove', RS.onResizeMoveTouch);
-    document.removeEventListener('touchend', RS.onResizeEndTouch);
+    document.removeEventListener('touchmove', RS.onResizeMoveTouch, RS._touchOptions);
+    document.removeEventListener('touchend', RS.onResizeEndTouch, RS._touchOptions);
 
     const el = rs.element;
     if (el) el.classList.remove('rs');
@@ -123,16 +150,13 @@ window.GR = window.GR || {};
       return;
     }
 
-    const scale = U.getScale(rs.wrapper);
-    const nl = Math.round(parseInt(el.style.left, 10) / scale);
-    const nt = Math.round(parseInt(el.style.top, 10) / scale);
-    const nw = Math.round(parseInt(el.style.width, 10) / scale);
-    const nh = Math.round(parseInt(el.style.height, 10) / scale);
-
-    if (!isNaN(nl)) room.left = Math.max(0, nl);
-    if (!isNaN(nt)) room.top = Math.max(0, nt);
-    if (!isNaN(nw)) room.width = Math.max(C.MIN_ROOM_SIZE, nw);
-    if (!isNaN(nh)) room.height = Math.max(C.MIN_ROOM_SIZE, nh);
+    // Use raw values from resizeState (not CSS-parsed) to avoid rounding drift
+    if (rs.currentLeft !== undefined) {
+      room.left = Math.max(0, Math.round(rs.currentLeft));
+      room.top = Math.max(0, Math.round(rs.currentTop));
+      room.width = Math.max(C.MIN_ROOM_SIZE, Math.round(rs.currentWidth));
+      room.height = Math.max(C.MIN_ROOM_SIZE, Math.round(rs.currentHeight));
+    }
 
     rs.saved = true;
     St.saveData();

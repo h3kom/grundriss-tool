@@ -1,0 +1,45 @@
+{
+  "env": {
+    "browser": true,
+    "es2020": true
+  },
+  "globals": {
+    "window": "readonly",
+    "document": "readonly",
+    "localStorage": "readonly",
+    "setTimeout": "readonly",
+    "clearTimeout": "readonly",
+    "URL": "readonly",
+    "Blob": "readonly",
+    "FileReader": "readonly",
+    "fetch": "readonly",
+    "console": "readonly"
+  },
+  "rules": {
+    "no-undef": "warn",
+    "no-unused-vars": ["warn", { "args": "none" }],
+    "no-console": ["warn", { "allow": ["warn", "error"] }],
+    "no-var": "off",
+    "prefer-const": "off",
+    "no-dupe-keys": "error",
+    "no-duplicate-case": "error",
+    "no-unreachable": "error",
+    "no-constant-condition": "warn",
+    "no-empty": "warn",
+    "no-extra-semi": "warn",
+    "no-irregular-whitespace": "warn",
+    "no-unsafe-finally": "error",
+    "curly": ["warn", "multi-line"],
+    "eqeqeq": ["warn", "smart"],
+    "no-eval": "error",
+    "no-implied-eval": "error",
+    "no-new-func": "error",
+    "no-inner-declarations": "warn",
+    "no-shadow": "warn",
+    "no-use-before-define": ["warn", { "functions": false }],
+    "consistent-return": "warn"
+  },
+  "parserOptions": {
+    "ecmaVersion": 2020
+  }
+}

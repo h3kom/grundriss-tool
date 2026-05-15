@@ -468,3 +468,5 @@ img.pi{position:relative;width:100%;height:auto;display:block;pointer-events:non
 .ps-btn-primary:disabled{opacity:.5;cursor:not-allowed}
 .ps-btn-secondary{background:var(--input);color:var(--text)}
 .ps-btn-secondary:hover{background:var(--blue-light)}
+.ps-btn-primary.confirm-warn{background:var(--red);border-color:var(--red);animation:pulse-warn 1s ease infinite}
+@keyframes pulse-warn{0%,100%{opacity:1}50%{opacity:.75}}

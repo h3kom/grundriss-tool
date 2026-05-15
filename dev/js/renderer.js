@@ -107,9 +107,10 @@ window.GR = window.GR || {};
     div.setAttribute('aria-label', 'Raum: ' + room.title);
 
     // Click: select or show
+    // NOTE: editMode must be read LIVE from state (not from closure) to avoid stale value after mode toggle
     div.addEventListener('click', function(e) {
       if (e.currentTarget._wasDragged) return;
-      if (editMode) {
+      if (S.get('editMode')) {
         Rdr.selectRoomEdit(key);
         return;
       }
@@ -124,7 +125,7 @@ window.GR = window.GR || {};
     div.addEventListener('keydown', function(e) {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        if (editMode) { Rdr.selectRoomEdit(key); }
+        if (S.get('editMode')) { Rdr.selectRoomEdit(key); }
         else { Rdr.showRoom(key); }
       }
     });
