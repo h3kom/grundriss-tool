@@ -7,6 +7,9 @@
  * Alle Event-Handler werden via Event Delegation (data-action) gebunden.
  */import { FLOORS, INTRO_SEEN_KEY, DARK_MODE_KEY, SEARCH_DEBOUNCE, EVT_EDIT_MODE_CHANGED, EVT_AUTH_CHANGED, EVT_ROOMS_CHANGED, EVT_SELECTION_CHANGED, EVT_FLOOR_CHANGED, EVT_SYNC_STATUS_CHANGED, ROOM_TYPES, TOAST_MAX_COUNT, EVT_PRESENCE_CHANGED } from './constants.js';
 import * as S from './state.js';
+import { _resetScaleCache } from './utils.js';
+import { updateTabBadges } from './sync.js';
+import { saveData } from './storage.js';
 // Uses window.GR.storage, window.GR.rooms, window.GR.renderer, etc. (lazy)
 
 // DOM element cache – avoids repeated getElementById calls
@@ -31,7 +34,7 @@ import * as S from './state.js';
    * @param {number} duration - Anzeigedauer in ms (0 = manuell schließen)
    * @param {Function} [undoCallback] - Optionale Undo-Funktion
    */
-  function toast(message, type, duration, undoCallback) {
+  export function toast(message, type, duration, undoCallback) {
     var container = document.getElementById('toasts') || document.getElementById('tc');
     if (!container) return;
 
@@ -78,7 +81,7 @@ import * as S from './state.js';
   /**
    * Schließt einen Toast mit Animation.
    */
-  function dismissToast(toastElement) {
+  export function dismissToast(toastElement) {
     if (!toastElement || !toastElement.classList) return;
     toastElement.classList.add('to');
     setTimeout(function() {
@@ -89,7 +92,7 @@ import * as S from './state.js';
   /**
    * Führt eine Undo-Operation aus.
    */
-  function executeUndo() {
+  export function executeUndo() {
     var container = document.getElementById('toasts') || document.getElementById('tc');
     if (!container) return;
     var target = null;
@@ -112,10 +115,6 @@ import * as S from './state.js';
   }
 
   // Expose toast functions
-  UI.toast = toast;
-  UI.dismissToast = dismissToast;
-  UI.executeUndo = executeUndo;
-  toast = toast;
 
   // ===================================================================
   // Sidebar
@@ -175,9 +174,9 @@ import * as S from './state.js';
     }
 
     // Scale-Cache zurücksetzen
-    U._resetScaleCache();
+    _resetScaleCache();
 
-    Sync.updateTabBadges();
+    updateTabBadges();
 
     // Auswahl zurücksetzen wenn Raum auf anderer Etage
     var rooms = S.get('rooms');

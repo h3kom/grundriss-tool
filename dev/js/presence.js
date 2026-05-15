@@ -129,7 +129,7 @@ var _channel = null;
     for (var i = 0; i < Math.min(otherUsers.length, 4); i++) {
       var u = _onlineUsers[otherUsers[i]];
       var initial = u.name ? u.name.charAt(0).toUpperCase() : '?';
-      html += '<span class="presence-avatar" style="background:' + u.color + '" title="' + U.escAttr(u.name || 'Unbekannt') + '">' + U.escHtml(initial) + '</span>';
+      html += '<span class="presence-avatar" style="background:' + u.color + '" title="' + escAttr(u.name || 'Unbekannt') + '">' + escHtml(initial) + '</span>';
     }
     if (otherUsers.length > 4) {
       html += '<span class="presence-more">+' + (otherUsers.length - 4) + '</span>';

@@ -6,6 +6,7 @@
  * Grundriss-Upload, flexible Benennung.
  */import { ROOM_TYPES } from './constants.js';
 import * as S from './state.js';
+import { escHtml, escAttr } from './utils.js';
 // Uses window.GR.storage, window.GR.rooms (lazy)
 
 // Als Properties am OB-Objekt, damit app.js sie lesen/schreiben kann
@@ -85,7 +86,7 @@ import * as S from './state.js';
         '<div class="ob-icon">🏗️</div>' +
         '<h3>Neues Projekt erstellen</h3>' +
         '<p>Wie heißt das Gebäude?</p>' +
-        '<input type="text" id="obProjectName" placeholder="z.B. Bürogebäude München" class="ob-input" value="' + U.escAttr(_projectName || '') + '" />' +
+        '<input type="text" id="obProjectName" placeholder="z.B. Bürogebäude München" class="ob-input" value="' + escAttr(_projectName || '') + '" />' +
         '<div class="ob-actions">' +
           '<button data-action="ob-cancel" class="ob-btn-cancel">Abbrechen</button>' +
           '<button data-action="ob-next" class="ob-btn-primary">Weiter →</button>' +
@@ -122,7 +123,7 @@ import * as S from './state.js';
           '<button data-action="ob-back" class="ob-btn-back">← Zurück</button>' +
           '<h3>Stockwerke</h3>' +
         '</div>' +
-        '<p class="ob-subtitle">Für "' + U.escHtml(projectName) + '"</p>' +
+        '<p class="ob-subtitle">Für "' + escHtml(projectName) + '"</p>' +
         '<div id="obFloorList" class="ob-floor-list"></div>' +
         '<button data-action="ob-add-floor" class="ob-btn-add">+ Stockwerk hinzufügen</button>' +
         '<p class="ob-hint">ℹ️ Du kannst Grundriss-Bilder hochladen oder das Projekt zuerst ohne Bilder erstellen.</p>' +
@@ -150,7 +151,7 @@ import * as S from './state.js';
         '<div class="ob-floor-item" data-floor-index="' + i + '">' +
           '<div class="ob-floor-header">' +
             '<span class="ob-floor-num">' + (i + 1) + '</span>' +
-            '<input type="text" class="ob-floor-name" data-floor-index="' + i + '" value="' + U.escAttr(f.name) + '" placeholder="Name des Stockwerks" />' +
+            '<input type="text" class="ob-floor-name" data-floor-index="' + i + '" value="' + escAttr(f.name) + '" placeholder="Name des Stockwerks" />' +
             (_wizardFloors.length > 1 ? '<button data-action="ob-remove-floor" data-floor-index="' + i + '" class="ob-btn-remove" title="Entfernen">✕</button>' : '') +
           '</div>' +
           '<div class="ob-floor-upload">' +

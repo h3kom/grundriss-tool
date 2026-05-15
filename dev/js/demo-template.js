@@ -6,6 +6,7 @@
  * Projekts automatisch geladen werden. Jedes Projekt erhält eine
  * unabhängige Kopie dieser Daten.
  */import * as S from './state.js';
+import { escHtml, escAttr, taskProgress, formatLastEdit } from './utils.js';
 // Uses window.GR.rooms, window.GR.ui (lazy)
 
 /**
@@ -132,7 +133,7 @@
     var floorId2 = floors.length > 1 ? floors[1].id : null;
 
     // EG demo rooms → first floor
-    var egRooms = U.deepClone(demoRoomsEg);
+    var egRooms = deepClone(demoRoomsEg);
     for (var k of Object.keys(egRooms)) {
       egRooms[k].floor = floorId1;
       rooms[k] = egRooms[k];
@@ -140,7 +141,7 @@
 
     // OG demo rooms → second floor (if exists)
     if (floorId2) {
-      var ogRooms = U.deepClone(demoRoomsOg);
+      var ogRooms = deepClone(demoRoomsOg);
       for (var k2 of Object.keys(ogRooms)) {
         ogRooms[k2].floor = floorId2;
         rooms[k2] = ogRooms[k2];

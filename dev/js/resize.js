@@ -22,7 +22,7 @@ import { getScale, getPointerPos } from './utils.js';
 
     const raw = getPointerPos(e);
     const wrapper = e.currentTarget.closest('.pw');
-    const scale = U.getScale(wrapper);
+    const scale = getScale(wrapper);
     const room = S.get('rooms')[key];
     const el = e.currentTarget.closest('.ro');
 
