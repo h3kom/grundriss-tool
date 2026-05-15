@@ -30,6 +30,12 @@ window.GR = window.GR || {};
     var project = S.get('currentProject');
     if (!project) return { ok: false, error: 'Kein Projekt ausgewählt' };
 
+    // Offline-Check: keine Netzwerk-Requests wenn offline
+    var Sync = window.GR.sync;
+    if (Sync && !Sync._isOnline) {
+      return { ok: false, error: 'Offline – wird gespeichert wenn Verbindung wieder da ist' };
+    }
+
     // Parallele Saves verhindern
     if (_saveInProgress) {
       console.warn('[cloud] Save already in progress – skipping');
