@@ -17,6 +17,17 @@ window.GR = window.GR || {};
   const Sync = window.GR.sync;
   const U = window.GR.utils;
 
+  // DOM element cache – avoids repeated getElementById calls
+  var _dom = {};
+  // Expose for cleanup module
+  UI._dom = _dom;
+  function $(id) {
+    if (!_dom[id]) _dom[id] = document.getElementById(id);
+    // Fallback: element may have been replaced in the DOM
+    if (_dom[id] && !_dom[id].isConnected) _dom[id] = document.getElementById(id);
+    return _dom[id];
+  }
+
   // ===================================================================
   // Toast
   // ===================================================================
@@ -118,26 +129,34 @@ window.GR = window.GR || {};
   // Sidebar
   // ===================================================================
 
+  function _updateSidebarAria() {
+    var toggle = document.getElementById('sbToggle');
+    if (toggle) toggle.setAttribute('aria-expanded', String(S.get('sidebarOpen')));
+  }
+
   UI.toggleSidebar = function() {
     S.set('sidebarOpen', !S.get('sidebarOpen'));
-    var sb = document.getElementById('sb');
+    var sb = $('sb');
     if (sb) sb.classList.toggle('open', S.get('sidebarOpen'));
+    _updateSidebarAria();
     if (S.get('sidebarOpen')) S.set('sidebarWasManuallyOpened', true);
   };
 
   UI.openSidebar = function() {
     if (!S.get('sidebarOpen')) {
       S.set('sidebarOpen', true);
-      var sb = document.getElementById('sb');
+      var sb = $('sb');
       if (sb) sb.classList.add('open');
+      _updateSidebarAria();
     }
   };
 
   UI.closeSidebar = function() {
     if (S.get('sidebarOpen')) {
       S.set('sidebarOpen', false);
-      var sb = document.getElementById('sb');
+      var sb = $('sb');
       if (sb) sb.classList.remove('open');
+      _updateSidebarAria();
     }
   };
 
@@ -186,8 +205,11 @@ window.GR = window.GR || {};
     if (S.get('editMode') === enabled) return;
     S.set('editMode', enabled);
 
-    var btnEdit = document.getElementById('btnEdit');
-    if (btnEdit) btnEdit.classList.toggle('active', enabled);
+    var btnEdit = $('btnEdit');
+    if (btnEdit) {
+      btnEdit.classList.toggle('active', enabled);
+      btnEdit.setAttribute('aria-pressed', String(enabled));
+    }
 
     document.querySelectorAll('.ro').forEach(function(el) { el.classList.toggle('em', enabled); });
 
@@ -215,8 +237,11 @@ window.GR = window.GR || {};
     var overview = !S.get('overview');
     S.set('overview', overview);
 
-    var btnOv = document.getElementById('btnOv');
-    if (btnOv) btnOv.classList.toggle('active', overview);
+    var btnOv = $('btnOv');
+    if (btnOv) {
+      btnOv.classList.toggle('active', overview);
+      btnOv.setAttribute('aria-pressed', String(overview));
+    }
 
     if (overview) {
       var OR = window.GR.overviewRenderer;
@@ -310,6 +335,7 @@ window.GR = window.GR || {};
     if (!key || !S.get('rooms')[key]) { UI.closeRenameModal(); return; }
     var title = input.value.trim();
     if (!title) { toast('Name darf nicht leer sein', 'error', 2000); return; }
+    if (title.length > 100) { toast('Name zu lang (max. 100 Zeichen)', 'error', 2000); return; }
     var oldTitle = S.get('rooms')[key].title;
     S.get('rooms')[key].title = title;
     St.saveData();

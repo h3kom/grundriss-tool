@@ -12,6 +12,9 @@ window.GR = window.GR || {};
   const C = window.GR.constants;
   const S = window.GR.state;
 
+  /** Lock-Flag: verhindert parallele Save-Operationen */
+  var _saveInProgress = false;
+
   /**
    * Speichert die aktuellen Räume in Supabase.
    * @param {Object} rooms - Raumdaten
@@ -26,6 +29,21 @@ window.GR = window.GR || {};
 
     var project = S.get('currentProject');
     if (!project) return { ok: false, error: 'Kein Projekt ausgewählt' };
+
+    // Offline-Check: keine Netzwerk-Requests wenn offline
+    var Sync = window.GR.sync;
+    if (Sync && !Sync._isOnline) {
+      return { ok: false, error: 'Offline – wird gespeichert wenn Verbindung wieder da ist' };
+    }
+
+    // Parallele Saves verhindern
+    if (_saveInProgress) {
+      console.warn('[cloud] Save already in progress – skipping');
+      return { ok: false, error: 'Speichern bereits im Gange' };
+    }
+    _saveInProgress = true;
+
+    try {
 
     // Auto-Recovery: roomsRowId fehlt → versuchen zu finden oder zu erstellen
     if (!project.roomsRowId) {
@@ -91,6 +109,10 @@ window.GR = window.GR || {};
       console.warn('[cloud] Save exception:', e.message);
       return { ok: false, error: e.message };
     }
+
+    } finally {
+      _saveInProgress = false;
+    }
   };
 
   /**
@@ -129,6 +151,33 @@ window.GR = window.GR || {};
       return { ok: true, rooms: {} };
     } catch (e) {
       console.warn('[cloud] Load exception:', e.message);
+      return { ok: false, error: e.message };
+    }
+  };
+
+  /**
+   * Ruft nur den updated_at-Timestamp einer rooms-Zeile ab.
+   * Wird für die Konflikterkennung vor dem Speichern verwendet.
+   * @param {string} roomsRowId - ID der rooms-Zeile
+   * @returns {Promise<{ok: boolean, updated_at?: string, error?: string}>}
+   */
+  Cloud.getCloudTimestamp = async function(roomsRowId) {
+    var Auth = window.GR.auth;
+    var sb = Auth ? Auth.getSupabase() : null;
+    if (!sb) return { ok: false, error: 'Supabase nicht verfügbar' };
+
+    try {
+      var result = await sb.from('rooms')
+        .select('updated_at')
+        .eq('id', roomsRowId)
+        .single();
+
+      if (result.error) {
+        return { ok: false, error: result.error.message };
+      }
+
+      return { ok: true, updated_at: result.data ? result.data.updated_at : null };
+    } catch (e) {
       return { ok: false, error: e.message };
     }
   };
