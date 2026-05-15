@@ -12,6 +12,9 @@ window.GR = window.GR || {};
   const C = window.GR.constants;
   const S = window.GR.state;
 
+  /** Lock-Flag: verhindert parallele Save-Operationen */
+  var _saveInProgress = false;
+
   /**
    * Speichert die aktuellen Räume in Supabase.
    * @param {Object} rooms - Raumdaten
@@ -26,6 +29,21 @@ window.GR = window.GR || {};
 
     var project = S.get('currentProject');
     if (!project) return { ok: false, error: 'Kein Projekt ausgewählt' };
+
+    // Offline-Check: keine Netzwerk-Requests wenn offline
+    var Sync = window.GR.sync;
+    if (Sync && !Sync._isOnline) {
+      return { ok: false, error: 'Offline – wird gespeichert wenn Verbindung wieder da ist' };
+    }
+
+    // Parallele Saves verhindern
+    if (_saveInProgress) {
+      console.warn('[cloud] Save already in progress – skipping');
+      return { ok: false, error: 'Speichern bereits im Gange' };
+    }
+    _saveInProgress = true;
+
+    try {
 
     // Auto-Recovery: roomsRowId fehlt → versuchen zu finden oder zu erstellen
     if (!project.roomsRowId) {
@@ -90,6 +108,10 @@ window.GR = window.GR || {};
     } catch (e) {
       console.warn('[cloud] Save exception:', e.message);
       return { ok: false, error: e.message };
+    }
+
+    } finally {
+      _saveInProgress = false;
     }
   };
 

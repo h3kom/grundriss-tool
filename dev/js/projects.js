@@ -28,19 +28,24 @@ window.GR = window.GR || {};
   async function query(table, options) {
     var sb = Auth.getSupabase();
     if (!sb) return [];
-    var q = sb.from(table).select(options.select || '*');
-    if (options.filter) {
-      for (var key of Object.keys(options.filter)) {
-        q = q.eq(key, options.filter[key]);
+    try {
+      var q = sb.from(table).select(options.select || '*');
+      if (options.filter) {
+        for (var key of Object.keys(options.filter)) {
+          q = q.eq(key, options.filter[key]);
+        }
       }
-    }
-    if (options.order) q = q.order(options.order.column, { ascending: options.order.ascending !== false });
-    var result = await q;
-    if (result.error) {
-      console.warn('[projects] query error:', result.error.message);
+      if (options.order) q = q.order(options.order.column, { ascending: options.order.ascending !== false });
+      var result = await q;
+      if (result.error) {
+        console.warn('[projects] query error:', result.error.message);
+        return [];
+      }
+      return result.data || [];
+    } catch (e) {
+      console.warn('[projects] query exception:', e.message);
       return [];
     }
-    return result.data || [];
   }
 
   // ===================================================================
@@ -188,12 +193,17 @@ window.GR = window.GR || {};
    */
   Proj.updateProjectName = async function(projectId, name) {
     var sb = Auth.getSupabase();
-    if (!sb) return { ok: false };
+    if (!sb) return { ok: false, error: 'Verbindung fehlgeschlagen' };
     try {
       var result = await sb.from('projects').update({ name: name }).eq('id', projectId);
-      return { ok: !result.error };
+      if (result.error) {
+        console.warn('[projects] updateProjectName error:', result.error.message);
+        return { ok: false, error: result.error.message };
+      }
+      return { ok: true };
     } catch (e) {
-      return { ok: false };
+      console.warn('[projects] updateProjectName exception:', e.message);
+      return { ok: false, error: e.message };
     }
   };
 
@@ -204,7 +214,7 @@ window.GR = window.GR || {};
    */
   Proj.deleteProject = async function(projectId) {
     var sb = Auth.getSupabase();
-    if (!sb) return { ok: false };
+    if (!sb) return { ok: false, error: 'Verbindung fehlgeschlagen' };
     try {
       // Zuerst Stockwerk-Bilder aus Storage löschen
       var floors = await sb.from('floors').select('image_url').eq('project_id', projectId);
@@ -213,15 +223,24 @@ window.GR = window.GR || {};
           if (floor.image_url && floor.image_url.includes('floor-plans')) {
             var pathMatch = floor.image_url.match(/\/floor-plans\/(.+)/);
             if (pathMatch) {
-              await sb.storage.from('floor-plans').remove([pathMatch[1]]);
+              try {
+                await sb.storage.from('floor-plans').remove([pathMatch[1]]);
+              } catch (storageErr) {
+                console.warn('[projects] Failed to delete floor image:', storageErr.message);
+              }
             }
           }
         }
       }
       var result = await sb.from('projects').delete().eq('id', projectId);
-      return { ok: !result.error };
+      if (result.error) {
+        console.warn('[projects] deleteProject error:', result.error.message);
+        return { ok: false, error: result.error.message };
+      }
+      return { ok: true };
     } catch (e) {
-      return { ok: false };
+      console.warn('[projects] deleteProject exception:', e.message);
+      return { ok: false, error: e.message };
     }
   };
 
@@ -417,13 +436,18 @@ window.GR = window.GR || {};
     var sb = Auth.getSupabase();
     if (!sb) return '';
 
-    // Check if owner
-    var proj = await sb.from('projects').select('owner_id').eq('id', projectId).single();
-    if (proj.data && proj.data.owner_id === user.id) return 'owner';
+    try {
+      // Check if owner
+      var proj = await sb.from('projects').select('owner_id').eq('id', projectId).single();
+      if (proj.data && proj.data.owner_id === user.id) return 'owner';
 
-    // Check membership
-    var member = await sb.from('project_members').select('role').eq('project_id', projectId).eq('user_id', user.id).single();
-    return member.data ? member.data.role : '';
+      // Check membership
+      var member = await sb.from('project_members').select('role').eq('project_id', projectId).eq('user_id', user.id).single();
+      return member.data ? member.data.role : '';
+    } catch (e) {
+      console.warn('[projects] getProjectRole error:', e.message);
+      return '';
+    }
   };
 
 })(window.GR.projects = window.GR.projects || {});

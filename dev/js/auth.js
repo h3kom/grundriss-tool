@@ -16,6 +16,9 @@ window.GR = window.GR || {};
   /** @type {Object|null} Supabase Client Instanz */
   var _sb = null;
 
+  /** @type {Object|null} Auth state subscription (for cleanup) */
+  var _authSubscription = null;
+
   /**
    * Initialisiert den Supabase Client.
    * Wird beim App-Start aufgerufen.
@@ -25,9 +28,13 @@ window.GR = window.GR || {};
       console.warn('[auth] Supabase JS Client nicht geladen. Auth deaktiviert.');
       return;
     }
+    // Prevent duplicate listeners on re-init
+    if (_authSubscription) {
+      try { _authSubscription.unsubscribe(); } catch (e) { /* noop */ }
+    }
     _sb = window.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY);
     // Listener für Auth-Status-Änderungen
-    _sb.auth.onAuthStateChange(function(event, session) {
+    var { data } = _sb.auth.onAuthStateChange(function(event, session) {
       if (event === 'SIGNED_IN' && session) {
         Auth.onSignIn(session.user);
       } else if (event === 'TOKEN_REFRESHED' && session) {
@@ -37,6 +44,7 @@ window.GR = window.GR || {};
         Auth.onSignOut();
       }
     });
+    _authSubscription = data.subscription;
   };
 
   /**

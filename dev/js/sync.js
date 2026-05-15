@@ -89,4 +89,34 @@ window.GR = window.GR || {};
     Sync.updateTabBadges();
   });
 
+  // ===================================================================
+  // Online/Offline Detection
+  // ===================================================================
+
+  Sync._isOnline = navigator.onLine;
+
+  function handleOnline() {
+    Sync._isOnline = true;
+    if (S.get('syncStatus') === 'offline') {
+      S.set('syncStatus', 'idle');
+    }
+    var UI = window.GR.ui;
+    if (UI && UI.toast) UI.toast('✅ Verbindung wiederhergestellt', 'success', 2000);
+  }
+
+  function handleOffline() {
+    Sync._isOnline = false;
+    S.set('syncStatus', 'offline');
+    var UI = window.GR.ui;
+    if (UI && UI.toast) UI.toast('🔌 Verbindung verloren – Offline-Modus', 'warning', 4000);
+  }
+
+  window.addEventListener('online', handleOnline);
+  window.addEventListener('offline', handleOffline);
+
+  // Initial status
+  if (!navigator.onLine) {
+    S.set('syncStatus', 'offline');
+  }
+
 })(window.GR.sync = window.GR.sync || {});

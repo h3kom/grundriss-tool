@@ -122,23 +122,56 @@ window.GR = window.GR || {};
   };
 
   /**
+   * Prüft, ob der aktuelle User Owner des Projekts ist.
+   * @param {string} projectId
+   * @returns {Promise<boolean>}
+   */
+  async function _isProjectOwner(projectId) {
+    var currentUser = S.get('currentUser');
+    if (!currentUser) return false;
+
+    var sb = Auth.getSupabase();
+    if (!sb) return false;
+
+    try {
+      var result = await sb.from('project_members')
+        .select('role')
+        .eq('project_id', projectId)
+        .eq('user_id', currentUser.id)
+        .single();
+      return !!(result.data && result.data.role === 'owner');
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /**
    * Entfernt ein Mitglied aus einem Projekt.
    * @param {string} projectId
    * @param {string} memberId - project_members.id
-   * @returns {Promise<{ok: boolean}>}
+   * @returns {Promise<{ok: boolean, error?: string}>}
    */
   Collab.removeMember = async function(projectId, memberId) {
     var sb = Auth.getSupabase();
-    if (!sb) return { ok: false };
+    if (!sb) return { ok: false, error: 'Verbindung fehlgeschlagen' };
+
+    // Client-seitige Owner-Prüfung (Defense-in-Depth, RLS enforced server-side)
+    var isOwner = await _isProjectOwner(projectId);
+    if (!isOwner) return { ok: false, error: 'Nur der Projekt-Owner darf Mitglieder entfernen' };
 
     try {
       var result = await sb.from('project_members')
         .delete()
         .eq('id', memberId)
         .eq('project_id', projectId);
-      return { ok: !result.error };
+      if (result.error) {
+        console.warn('[collaboration] removeMember error:', result.error.message);
+        return { ok: false, error: result.error.message };
+      }
+      return { ok: true };
     } catch (e) {
-      return { ok: false };
+      console.warn('[collaboration] removeMember exception:', e.message);
+      return { ok: false, error: e.message };
     }
   };
 
@@ -147,20 +180,34 @@ window.GR = window.GR || {};
    * @param {string} projectId
    * @param {string} memberId - project_members.id
    * @param {string} newRole - 'editor' | 'viewer'
-   * @returns {Promise<{ok: boolean}>}
+   * @returns {Promise<{ok: boolean, error?: string}>}
    */
   Collab.changeRole = async function(projectId, memberId, newRole) {
     var sb = Auth.getSupabase();
-    if (!sb) return { ok: false };
+    if (!sb) return { ok: false, error: 'Verbindung fehlgeschlagen' };
+
+    // Client-seitige Owner-Prüfung (Defense-in-Depth, RLS enforced server-side)
+    var isOwner = await _isProjectOwner(projectId);
+    if (!isOwner) return { ok: false, error: 'Nur der Projekt-Owner darf Rollen ändern' };
+
+    // Role-Wert validieren
+    if (newRole !== 'editor' && newRole !== 'viewer') {
+      return { ok: false, error: 'Ungültige Rolle: ' + newRole };
+    }
 
     try {
       var result = await sb.from('project_members')
         .update({ role: newRole })
         .eq('id', memberId)
         .eq('project_id', projectId);
-      return { ok: !result.error };
+      if (result.error) {
+        console.warn('[collaboration] changeRole error:', result.error.message);
+        return { ok: false, error: result.error.message };
+      }
+      return { ok: true };
     } catch (e) {
-      return { ok: false };
+      console.warn('[collaboration] changeRole exception:', e.message);
+      return { ok: false, error: e.message };
     }
   };
 
@@ -242,9 +289,12 @@ window.GR = window.GR || {};
     // Temporär currentProject setzen, damit showShareModal funktioniert
     var prev = S.get('currentProject');
     S.set('currentProject', { id: projectId });
-    await Collab.showShareModal();
-    // Immer wiederherstellen – verhindert State-Korruption
-    S.set('currentProject', prev);
+    try {
+      await Collab.showShareModal();
+    } finally {
+      // Immer wiederherstellen – verhindert State-Korruption
+      S.set('currentProject', prev);
+    }
   };
 
   /**
@@ -275,15 +325,30 @@ window.GR = window.GR || {};
       return;
     }
 
-    var result = await Collab.inviteMember(project.id, email, role);
-    var UI = window.GR.ui;
-    if (result.ok) {
-      if (UI && UI.toast) UI.toast('✅ ' + (result.displayName || email) + ' eingeladen!', 'success', 3000);
-      emailInput.value = '';
-      // Member-Liste aktualisieren
-      Collab.showShareModal();
-    } else {
-      if (UI && UI.toast) UI.toast('❌ ' + result.error, 'error', 3000);
+    // Invite-Button deaktivieren, um doppelte Einladungen zu verhindern
+    var inviteBtn = document.querySelector('[data-action="send-invite"]');
+    if (inviteBtn) {
+      inviteBtn.disabled = true;
+      inviteBtn.textContent = 'Einladen\u2026';
+    }
+
+    try {
+      var result = await Collab.inviteMember(project.id, email, role);
+      var UI = window.GR.ui;
+      if (result.ok) {
+        if (UI && UI.toast) UI.toast('✅ ' + (result.displayName || email) + ' eingeladen!', 'success', 3000);
+        emailInput.value = '';
+        // Member-Liste aktualisieren (await um Race-Condition zu vermeiden)
+        await Collab.showShareModal();
+      } else {
+        if (UI && UI.toast) UI.toast('❌ ' + result.error, 'error', 3000);
+      }
+    } finally {
+      // Button wieder aktivieren
+      if (inviteBtn) {
+        inviteBtn.disabled = false;
+        inviteBtn.textContent = 'Einladen';
+      }
     }
   };
 
