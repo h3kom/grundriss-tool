@@ -5,13 +5,10 @@
  * @description Enthält Demo-Raumdaten, die beim Erstellen eines neuen
  * Projekts automatisch geladen werden. Jedes Projekt erhält eine
  * unabhängige Kopie dieser Daten.
- */
-window.GR = window.GR || {};
+ */import * as S from './state.js';
+// Uses window.GR.rooms, window.GR.ui (lazy)
 
-(function(DT) {
-  'use strict';
-
-  /**
+/**
    * Demo-Räume für EG (Erdgeschoss).
    * Werden in jedes neue Projekt als Startvorlage kopiert.
    */
@@ -126,8 +123,7 @@ window.GR = window.GR || {};
    * @param {Array<{id: string, name: string}>} floors - Array der Floor-IDs
    * @returns {Object} Demo-Räume, kopiert und auf Floors gemappt
    */
-  DT.getDemoRooms = function(floors) {
-    var U = window.GR.utils;
+  export function getDemoRooms(floors) {
     var rooms = {};
     var keyCounter = 0;
 
@@ -158,10 +154,9 @@ window.GR = window.GR || {};
    * Standard-Floor-Konfiguration für neue Projekte.
    * @returns {Array<{name: string, imageUrl: string, nativeWidth: number}>}
    */
-  DT.getDefaultFloors = function() {
+  export function getDefaultFloors() {
     return [
       { name: 'Erdgeschoss', imageUrl: 'EG.png', nativeWidth: 1000 },
       { name: 'Obergeschoss', imageUrl: 'OG.png', nativeWidth: 800 }
     ];
   };
-})(window.GR.demoTemplate = window.GR.demoTemplate || {});

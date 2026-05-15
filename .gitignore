@@ -28,3 +28,5 @@ dist/
 # Temp files
 *.tmp
 *.temp
+convert-to-esm.js
+fix-refs.cjs

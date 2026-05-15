@@ -4,17 +4,12 @@
  * @module rooms
  * @description Operationen auf Raum-Daten (Tasks, Comments, Notes, Delete).
  * Enthält kein Rendering – kommuniziert via State und Storage.
- */
-window.GR = window.GR || {};
+ */import { MIN_ROOM_SIZE, FLOORS, ROOM_TYPES, ROOM_TYPE_DEFAULT, EVT_ROOMS_CHANGED, EVT_SELECTION_CHANGED, EVT_EDIT_MODE_CHANGED } from './constants.js';
+import * as S from './state.js';
+import { saveData } from './storage.js';
+// Uses window.GR.renderer, window.GR.ui (lazy)
 
-(function(R) {
-  'use strict';
-
-  const S = window.GR.state;
-  const St = window.GR.storage;
-  const U = window.GR.utils;
-
-  // ===================================================================
+// ===================================================================
   // Task Actions
   // ===================================================================
 
@@ -24,19 +19,19 @@ window.GR = window.GR || {};
    * @param {number} idx - Aufgaben-Index
    * @param {boolean} checked - Erledigt?
    */
-  R.toggleTask = function(key, idx, checked) {
+  export function toggleTask(key, idx, checked) {
     const room = S.get('rooms')[key];
     if (!room) return;
     if (!room.done) room.done = {};
     room.done[idx] = checked;
-    St.saveData();
+    saveData();
   };
 
   /**
    * Fügt eine neue Aufgabe hinzu.
    * @param {string} key - Raumschlüssel
    */
-  R.addTask = function(key) {
+  export function addTask(key) {
     const input = document.getElementById(`nti-${key}`);
     const text = input?.value?.trim();
     if (!text) return;
@@ -48,7 +43,7 @@ window.GR = window.GR || {};
     const rooms = S.get('rooms');
     if (!rooms[key].tasks) rooms[key].tasks = [];
     rooms[key].tasks.push(text);
-    St.saveData();
+    saveData();
     input.value = '';
     input.focus();
   };
@@ -58,7 +53,7 @@ window.GR = window.GR || {};
    * @param {string} key - Raumschlüssel
    * @param {number} idx - Aufgaben-Index
    */
-  R.deleteTask = function(key, idx) {
+  export function deleteTask(key, idx) {
     const room = S.get('rooms')[key];
     if (!room) return;
     if (!room.tasks) room.tasks = [];
@@ -71,7 +66,7 @@ window.GR = window.GR || {};
       else if (ki > idx) newDone[(ki - 1).toString()] = room.done[k];
     }
     room.done = newDone;
-    St.saveData();
+    saveData();
   };
 
   // ===================================================================
@@ -83,9 +78,9 @@ window.GR = window.GR || {};
    * @param {string} key - Raumschlüssel
    * @param {string} value - Notiztext
    */
-  R.saveNote = function(key, value) {
+  export function saveNote(key, value) {
     S.get('rooms')[key].note = value;
-    St.saveData();
+    saveData();
   };
 
   // ===================================================================
@@ -96,7 +91,7 @@ window.GR = window.GR || {};
    * Fügt einen Kommentar hinzu.
    * @param {string} key - Raumschlüssel
    */
-  R.addComment = function(key) {
+  export function addComment(key) {
     const input = document.getElementById(`nci-${key}`);
     const text = input?.value?.trim();
     if (!text) return;
@@ -110,7 +105,7 @@ window.GR = window.GR || {};
     var currentUser = S.get('currentUser');
     var userName = (currentUser && currentUser.displayName) || 'Unbekannt';
     rooms[key].comments.push({ text: text, time: new Date().toISOString(), user: userName });
-    St.saveData();
+    saveData();
     input.value = '';
     input.focus();
   };
@@ -120,11 +115,11 @@ window.GR = window.GR || {};
    * @param {string} key - Raumschlüssel
    * @param {number} idx - Kommentar-Index
    */
-  R.deleteComment = function(key, idx) {
+  export function deleteComment(key, idx) {
     const rooms = S.get('rooms');
     if (!rooms[key].comments) rooms[key].comments = [];
     rooms[key].comments.splice(idx, 1);
-    St.saveData();
+    saveData();
   };
 
   // ===================================================================
@@ -135,7 +130,7 @@ window.GR = window.GR || {};
    * Löscht einen Raum (mit Undo-Unterstützung).
    * @param {string} key - Raumschlüssel
    */
-  R.deleteRoom = function(key) {
+  export function deleteRoom(key) {
     const rooms = S.get('rooms');
     const roomTitle = rooms[key]?.title || 'Unbekannt';
     const UI = window.GR.ui;
@@ -145,14 +140,13 @@ window.GR = window.GR || {};
         const backupKey = key;
         delete rooms[key];
         S.set('selectedRoom', null);
-        St.saveData();
+        saveData();
         if (UI && UI.toast) {
           UI.toast(`"${backupRoom.title}" gelöscht`, 'warning', 6000, function() {
             rooms[backupKey] = backupRoom;
-            St.saveData();
+            saveData();
           });
         }
       });
     }
   };
-})(window.GR.rooms = window.GR.rooms || {});

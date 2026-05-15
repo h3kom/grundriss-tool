@@ -3,26 +3,20 @@
  * =====================================================================
  * @module drag
  * @description Drag von Räumen auf dem Grundriss.
- */
-window.GR = window.GR || {};
+ */import { DRAG_DEAD_ZONE, MIN_ROOM_SIZE, NATIVE_WIDTHS } from './constants.js';
+import * as S from './state.js';
+import { saveData } from './storage.js';
+import { getScale, detectFloorId, getPointerPos } from './utils.js';
 
-(function(D) {
-  'use strict';
-
-  const C = window.GR.constants;
-  const S = window.GR.state;
-  const St = window.GR.storage;
-  const U = window.GR.utils;
-
-  // Shared options object for touch event listeners – must be same reference for add/remove
-  D._touchOptions = { passive: false };
+// Shared options object for touch event listeners – must be same reference for add/remove
+  _touchOptions = { passive: false };
 
   // rAF throttle for smooth drag rendering
   var _dragRafPending = false;
 
-  D.startDrag = function(e, key) {
+  export function startDrag(e, key) {
     if (!S.get('editMode')) return;
-    const raw = D.getPointerPos(e);
+    const raw = getPointerPos(e);
     const wrapper = e.currentTarget.closest('.pw');
     const rooms = S.get('rooms');
     if (!rooms[key]) return;
@@ -43,11 +37,11 @@ window.GR = window.GR || {};
 
     document.addEventListener('mousemove', D.onDragMove);
     document.addEventListener('mouseup', D.onDragEnd);
-    document.addEventListener('touchmove', D.onDragMoveTouch, D._touchOptions);
-    document.addEventListener('touchend', D.onDragEndTouch, D._touchOptions);
+    document.addEventListener('touchmove', D.onDragMoveTouch, _touchOptions);
+    document.addEventListener('touchend', D.onDragEndTouch, _touchOptions);
   };
 
-  D._doDragUpdate = function(e) {
+  export function _doDragUpdate(e) {
     _dragRafPending = false;
     const ds = S.get('dragState');
     if (!ds || !ds.isDragging) return;
@@ -60,15 +54,15 @@ window.GR = window.GR || {};
     }
   };
 
-  D.onDragMove = function(e) {
+  export function onDragMove(e) {
     const ds = S.get('dragState');
     if (!ds) return;
-    const raw = D.getPointerPos(e);
+    const raw = getPointerPos(e);
     const dx = raw.x - ds.startX;
     const dy = raw.y - ds.startY;
 
     if (!ds.isDragging) {
-      if (Math.sqrt(dx * dx + dy * dy) < C.DRAG_DEAD_ZONE) return;
+      if (Math.sqrt(dx * dx + dy * dy) < DRAG_DEAD_ZONE) return;
       ds.isDragging = true;
       e.preventDefault();
       if (ds.element) {
@@ -87,12 +81,12 @@ window.GR = window.GR || {};
     // Throttle DOM writes to rAF (max once per frame)
     if (!_dragRafPending) {
       _dragRafPending = true;
-      requestAnimationFrame(function() { D._doDragUpdate(e); });
+      requestAnimationFrame(function() { _doDragUpdate(e); });
     }
   };
 
-  D.onDragMoveTouch = function(e) {
-    D.onDragMove(e);
+  export function onDragMoveTouch(e) {
+    onDragMove(e);
     const ds = S.get('dragState');
     if (ds && ds.isDragging) e.preventDefault();
   };
@@ -105,8 +99,8 @@ window.GR = window.GR || {};
     if (!ds) return;
     document.removeEventListener('mousemove', D.onDragMove);
     document.removeEventListener('mouseup', D.onDragEnd);
-    document.removeEventListener('touchmove', D.onDragMoveTouch, D._touchOptions);
-    document.removeEventListener('touchend', D.onDragEndTouch, D._touchOptions);
+    document.removeEventListener('touchmove', D.onDragMoveTouch, _touchOptions);
+    document.removeEventListener('touchend', D.onDragEndTouch, _touchOptions);
 
     if (ds.element) ds.element.classList.remove('dg');
 
@@ -127,23 +121,18 @@ window.GR = window.GR || {};
 
     const rooms = S.get('rooms');
     if (newLeft !== ds.origLeft || newTop !== ds.origTop) {
-      const nativeWidth = C.NATIVE_WIDTHS[U.detectFloorId(ds.wrapper.id)] || 1000;
+      const nativeWidth = [U.detectFloorId(ds.wrapper.id)] || 1000;
       const room = rooms[ds.key];
-      const clampedLeft = Math.max(0, Math.min(newLeft, nativeWidth - (room ? room.width : C.MIN_ROOM_SIZE)));
+      const clampedLeft = Math.max(0, Math.min(newLeft, nativeWidth - (room ? room.width : MIN_ROOM_SIZE)));
       const clampedTop = Math.max(0, newTop);
 
       rooms[ds.key].left = clampedLeft;
       rooms[ds.key].top = clampedTop;
       ds.saved = true;
-      St.saveData();
+      saveData();
     }
     S.set('dragState', null);
   }
 
-  D.onDragEnd = function() { onDragEndCleanup(); };
-  D.onDragEndTouch = function() { onDragEndCleanup(); };
-
-  D.getPointerPos = function(e) {
-    return U.getPointerPos(e);
-  };
-})(window.GR.drag = window.GR.drag || {});
+  export function onDragEnd() { onDragEndCleanup(); };
+  export function onDragEndTouch() { onDragEndCleanup(); };

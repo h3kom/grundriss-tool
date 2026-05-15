@@ -5,35 +5,30 @@
  * @description Zeichnet die Raum-Elemente auf den Grundriss und erstellt
  * die Resize-Handles. Reagiert auf roomsChanged-Events.
  * Nutzt DOM-Diffing: nur geänderte Räume werden neu gerendert.
- */
-window.GR = window.GR || {};
+ */import { HANDLE_DIRECTIONS, NATIVE_WIDTHS, MIN_ROOM_SIZE, EVT_ROOMS_CHANGED, EVT_SELECTION_CHANGED, EVT_EDIT_MODE_CHANGED } from './constants.js';
+import * as S from './state.js';
+import { getScale, detectFloorId, taskProgress, escHtml } from './utils.js';
+import { updateTabBadges } from './sync.js';
+// Uses window.GR.interaction, window.GR.detailRenderer, window.GR.ui (lazy)
 
-(function(Rdr) {
-  'use strict';
-
-  const C = window.GR.constants;
-  const S = window.GR.state;
-  const Sync = window.GR.sync;
-  const U = window.GR.utils;
-
-  // ===================================================================
+// ===================================================================
   // Main Render
   // ===================================================================
 
-  Rdr.render = function() {
+  export function render() {
     Sync.updateTabBadges();
     var floors = S.get('currentProjectFloors');
     if (floors && floors.length > 0) {
       for (var i = 0; i < floors.length; i++) {
-        Rdr.renderFloor(floors[i].id);
+        renderFloor(floors[i].id);
       }
     } else {
-      Rdr.renderFloor('eg');
-      Rdr.renderFloor('og');
+      renderFloor('eg');
+      renderFloor('og');
     }
   };
 
-  Rdr.renderFloor = function(floor) {
+  export function renderFloor(floor) {
     const container = document.getElementById(floor + '-r');
     if (!container) return;
 
@@ -58,7 +53,7 @@ window.GR = window.GR || {};
       let element = existingElements.get(key);
 
       if (!element) {
-        element = Rdr.createRoomElement(key, room, scale);
+        element = createRoomElement(key, room, scale);
         container.appendChild(element);
       } else {
         element.style.left = Math.round(room.left * scale) + 'px';
@@ -91,7 +86,7 @@ window.GR = window.GR || {};
     }
   };
 
-  Rdr.createRoomElement = function(key, room, scale) {
+  export function createRoomElement(key, room, scale) {
     const div = document.createElement('div');
     const isSelected = S.get('selectedRoom') === key;
     const editMode = S.get('editMode');
@@ -111,10 +106,10 @@ window.GR = window.GR || {};
     div.addEventListener('click', function(e) {
       if (e.currentTarget._wasDragged) return;
       if (S.get('editMode')) {
-        Rdr.selectRoomEdit(key);
+        selectRoomEdit(key);
         return;
       }
-      Rdr.showRoom(key);
+      showRoom(key);
       if (window.innerWidth < 768) {
         const UI = window.GR.ui;
         if (UI) UI.openSidebar();
@@ -125,8 +120,8 @@ window.GR = window.GR || {};
     div.addEventListener('keydown', function(e) {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        if (S.get('editMode')) { Rdr.selectRoomEdit(key); }
-        else { Rdr.showRoom(key); }
+        if (S.get('editMode')) { selectRoomEdit(key); }
+        else { showRoom(key); }
       }
     });
 
@@ -154,13 +149,13 @@ window.GR = window.GR || {};
     div.appendChild(sdot);
 
     // Resize handles
-    Rdr.createResizeHandles(div, key);
+    createResizeHandles(div, key);
 
     return div;
   };
 
-  Rdr.createResizeHandles = function(element, key) {
-    const handleNames = C.HANDLE_DIRECTIONS;
+  export function createResizeHandles(element, key) {
+    const handleNames = HANDLE_DIRECTIONS;
     for (const handle of handleNames) {
       const hdl = document.createElement('div');
       hdl.className = 'rh ' + handle;
@@ -180,7 +175,7 @@ window.GR = window.GR || {};
   // Navigation / Selection
   // ===================================================================
 
-  Rdr.showRoom = function(key) {
+  export function showRoom(key) {
     const room = S.get('rooms')[key];
     if (!room) return;
     if (room.floor !== S.get('activeFloor')) {
@@ -193,14 +188,14 @@ window.GR = window.GR || {};
     S.set('selectedRoom', key);
     const DetailRdr = window.GR.detailRenderer;
     if (DetailRdr) DetailRdr.renderDetail(key);
-    Rdr.scrollToRoom(key);
+    scrollToRoom(key);
     if (window.innerWidth < 768) {
       const UI = window.GR.ui;
       if (UI) UI.openSidebar();
     }
   };
 
-  Rdr.scrollToRoom = function(key) {
+  export function scrollToRoom(key) {
     const el = document.querySelector('.ro[data-key="' + key + '"]');
     if (!el) return;
     setTimeout(function() {
@@ -218,13 +213,13 @@ window.GR = window.GR || {};
     }, 100);
   };
 
-  Rdr.selectRoomEdit = function(key) {
+  export function selectRoomEdit(key) {
     // Set selectedRoom WITHOUT triggering EVT_SELECTION_CHANGED to avoid double render.
     // The explicit render() + renderDetail() calls below handle the update.
     var rooms = S.get('rooms');
     if (!rooms[key]) return;
     S.get().selectedRoom = key;
-    Rdr.render();
+    render();
     const DetailRdr = window.GR.detailRenderer;
     if (DetailRdr) DetailRdr.renderDetail(key);
     if (window.innerWidth < 768) {
@@ -236,18 +231,15 @@ window.GR = window.GR || {};
   // ===================================================================
   // Event-Abonnement
   // ===================================================================
-  S.subscribe(C.EVT_ROOMS_CHANGED, function() {
-    Rdr.render();
+  S.subscribe(EVT_ROOMS_CHANGED, function() {
+    render();
   });
 
-  S.subscribe(C.EVT_SELECTION_CHANGED, function(selectedKey) {
-    Rdr.render();
+  S.subscribe(EVT_SELECTION_CHANGED, function(selectedKey) {
+    render();
     if (selectedKey && S.get('rooms')[selectedKey]) {
       const DetailRdr = window.GR.detailRenderer;
       if (DetailRdr) DetailRdr.renderDetail(selectedKey);
     }
   });
 
-  Rdr.getScale = U.getScale;
-  Rdr.detectFloorId = U.detectFloorId;
-})(window.GR.renderer = window.GR.renderer || {});

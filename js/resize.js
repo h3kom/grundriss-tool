@@ -1,15 +1,10 @@
-window.GR = window.GR || {};
+import { MIN_ROOM_SIZE, HANDLE_DIRECTIONS } from './constants.js';
+import * as S from './state.js';
+import { saveData } from './storage.js';
+import { getScale, getPointerPos } from './utils.js';
 
-(function(RS) {
-  'use strict';
-
-  const C = window.GR.constants;
-  const S = window.GR.state;
-  const St = window.GR.storage;
-  const U = window.GR.utils;
-
-  // Shared options object for touch event listeners – must be same reference for add/remove
-  RS._touchOptions = { passive: false };
+// Shared options object for touch event listeners – must be same reference for add/remove
+  _touchOptions = { passive: false };
 
   // rAF throttle for smooth resize rendering
   var _resizeRafPending = false;
@@ -20,12 +15,12 @@ window.GR = window.GR || {};
    * @param {string} key - Raumschlüssel
    * @param {string} handle - Handle-Name (nw, n, ne, e, se, s, sw, w)
    */
-  RS.startResize = function(e, key, handle) {
+  export function startResize(e, key, handle) {
     if (!S.get('editMode')) return;
     e.preventDefault();
     e.stopPropagation();
 
-    const raw = RS.getPointerPos(e);
+    const raw = getPointerPos(e);
     const wrapper = e.currentTarget.closest('.pw');
     const scale = U.getScale(wrapper);
     const room = S.get('rooms')[key];
@@ -50,15 +45,15 @@ window.GR = window.GR || {};
 
     document.addEventListener('mousemove', RS.onResizeMove);
     document.addEventListener('mouseup', RS.onResizeEnd);
-    document.addEventListener('touchmove', RS.onResizeMoveTouch, RS._touchOptions);
-    document.addEventListener('touchend', RS.onResizeEndTouch, RS._touchOptions);
+    document.addEventListener('touchmove', RS.onResizeMoveTouch, _touchOptions);
+    document.addEventListener('touchend', RS.onResizeEndTouch, _touchOptions);
   };
 
   /**
    * Bewegt die Resize-Grenzen während des Vorgangs.
    * @param {Event} e
    */
-  RS._doResizeUpdate = function() {
+  export function _doResizeUpdate() {
     _resizeRafPending = false;
     const rs = S.get('resizeState');
     if (!rs || rs.currentLeft === undefined) return;
@@ -73,11 +68,11 @@ window.GR = window.GR || {};
     }
   };
 
-  RS.onResizeMove = function(e) {
+  export function onResizeMove(e) {
     const rs = S.get('resizeState');
     if (!rs) return;
     e.preventDefault();
-    const raw = RS.getPointerPos(e);
+    const raw = getPointerPos(e);
     const dx = raw.x - rs.startX;
     const dy = raw.y - rs.startY;
     const dl = dx / rs.scale;
@@ -89,14 +84,14 @@ window.GR = window.GR || {};
     let nw = rs.origWidth;
     let nh = rs.origHeight;
 
-    if (handle.indexOf('e') >= 0) nw = Math.max(C.MIN_ROOM_SIZE, rs.origWidth + dl);
+    if (handle.indexOf('e') >= 0) nw = Math.max(MIN_ROOM_SIZE, rs.origWidth + dl);
     if (handle.indexOf('w') >= 0) {
-      nw = Math.max(C.MIN_ROOM_SIZE, rs.origWidth - dl);
+      nw = Math.max(MIN_ROOM_SIZE, rs.origWidth - dl);
       nl = rs.origLeft + rs.origWidth - nw;
     }
-    if (handle.indexOf('s') >= 0) nh = Math.max(C.MIN_ROOM_SIZE, rs.origHeight + dt);
+    if (handle.indexOf('s') >= 0) nh = Math.max(MIN_ROOM_SIZE, rs.origHeight + dt);
     if (handle.indexOf('n') >= 0) {
-      nh = Math.max(C.MIN_ROOM_SIZE, rs.origHeight - dt);
+      nh = Math.max(MIN_ROOM_SIZE, rs.origHeight - dt);
       nt = rs.origTop + rs.origHeight - nh;
     }
 
@@ -113,7 +108,7 @@ window.GR = window.GR || {};
     // Throttle DOM writes to rAF (max once per frame)
     if (!_resizeRafPending) {
       _resizeRafPending = true;
-      requestAnimationFrame(RS._doResizeUpdate);
+      requestAnimationFrame(_doResizeUpdate);
     }
   };
 
@@ -121,9 +116,9 @@ window.GR = window.GR || {};
    * Touch-Variante von onResizeMove.
    * @param {Event} e
    */
-  RS.onResizeMoveTouch = function(e) {
+  export function onResizeMoveTouch(e) {
     e.preventDefault();
-    RS.onResizeMove(e);
+    onResizeMove(e);
   };
 
   /**
@@ -138,8 +133,8 @@ window.GR = window.GR || {};
 
     document.removeEventListener('mousemove', RS.onResizeMove);
     document.removeEventListener('mouseup', RS.onResizeEnd);
-    document.removeEventListener('touchmove', RS.onResizeMoveTouch, RS._touchOptions);
-    document.removeEventListener('touchend', RS.onResizeEndTouch, RS._touchOptions);
+    document.removeEventListener('touchmove', RS.onResizeMoveTouch, _touchOptions);
+    document.removeEventListener('touchend', RS.onResizeEndTouch, _touchOptions);
 
     const el = rs.element;
     if (el) el.classList.remove('rs');
@@ -154,24 +149,20 @@ window.GR = window.GR || {};
     if (rs.currentLeft !== undefined) {
       room.left = Math.max(0, Math.round(rs.currentLeft));
       room.top = Math.max(0, Math.round(rs.currentTop));
-      room.width = Math.max(C.MIN_ROOM_SIZE, Math.round(rs.currentWidth));
-      room.height = Math.max(C.MIN_ROOM_SIZE, Math.round(rs.currentHeight));
+      room.width = Math.max(MIN_ROOM_SIZE, Math.round(rs.currentWidth));
+      room.height = Math.max(MIN_ROOM_SIZE, Math.round(rs.currentHeight));
     }
 
     rs.saved = true;
-    St.saveData();
+    saveData();
     S.set('resizeState', null);
   }
 
-  RS.onResizeEnd = function() { onResizeEndCleanup(); };
-  RS.onResizeEndTouch = function() { onResizeEndCleanup(); };
+  export function onResizeEnd() { onResizeEndCleanup(); };
+  export function onResizeEndTouch() { onResizeEndCleanup(); };
 
   /**
    * Ermittelt die Pointer-Position über die zentrale utils-Funktion.
    * @param {Event} e
    * @returns {{x:number, y:number}}
    */
-  RS.getPointerPos = function(e) {
-    return U.getPointerPos(e);
-  };
-})(window.GR.resize = window.GR.resize || {});
