@@ -7,7 +7,7 @@
  * Nutzt DOM-Diffing: nur geänderte Räume werden neu gerendert.
  */import { HANDLE_DIRECTIONS, NATIVE_WIDTHS, MIN_ROOM_SIZE, EVT_ROOMS_CHANGED, EVT_SELECTION_CHANGED, EVT_EDIT_MODE_CHANGED } from './constants.js';
 import * as S from './state.js';
-import { getScale, detectFloorId, taskProgress, escHtml } from './utils.js';
+import { getScale, detectFloorId, taskProgress, escHtml, _resetScaleCache } from './utils.js';
 import { updateTabBadges } from './sync.js';
 // Uses window.GR.interaction, window.GR.detailRenderer, window.GR.ui (lazy)
 
@@ -16,7 +16,7 @@ import { updateTabBadges } from './sync.js';
   // ===================================================================
 
   export function render() {
-    Sync.updateTabBadges();
+    updateTabBadges();
     var floors = S.get('currentProjectFloors');
     if (floors && floors.length > 0) {
       for (var i = 0; i < floors.length; i++) {
@@ -33,7 +33,7 @@ import { updateTabBadges } from './sync.js';
     if (!container) return;
 
     const wrapper = document.getElementById(floor + '-w');
-    const scale = U.getScale(wrapper);
+    const scale = getScale(wrapper);
     const rooms = S.get('rooms');
     const selectedKey = S.get('selectedRoom');
     const editMode = S.get('editMode');
@@ -66,12 +66,12 @@ import { updateTabBadges } from './sync.js';
         element.classList.toggle('em', editMode);
 
 
-        const progress = U.taskProgress(room);
+        const progress = taskProgress(room);
         const existingLabel = element.querySelector('.rl');
         if (existingLabel) {
           const newHtml = progress.total > 0
-            ? U.escHtml(room.title) + '<span class="pm">' + progress.percent + '%</span>'
-            : U.escHtml(room.title);
+            ? escHtml(room.title) + '<span class="pm">' + progress.percent + '%</span>'
+            : escHtml(room.title);
           if (existingLabel.innerHTML !== newHtml) {
             existingLabel.innerHTML = newHtml;
           }
@@ -137,10 +137,10 @@ import { updateTabBadges } from './sync.js';
     // Label
     const label = document.createElement('div');
     label.className = 'rl';
-    const progress = U.taskProgress(room);
+    const progress = taskProgress(room);
     label.innerHTML = progress.total > 0
-      ? U.escHtml(room.title) + '<span class="pm">' + progress.percent + '%</span>'
-      : U.escHtml(room.title);
+      ? escHtml(room.title) + '<span class="pm">' + progress.percent + '%</span>'
+      : escHtml(room.title);
     div.appendChild(label);
 
     // Selection dot

@@ -48,7 +48,7 @@ import { getScale, detectFloorId, getPointerPos } from './utils.js';
 
     const el = ds.element;
     if (el && ds.currentLeft !== undefined) {
-      const scale = U.getScale(ds.wrapper);
+      const scale = getScale(ds.wrapper);
       el.style.left = Math.round(ds.currentLeft * scale) + 'px';
       el.style.top = Math.round(ds.currentTop * scale) + 'px';
     }
@@ -74,7 +74,7 @@ import { getScale, detectFloorId, getPointerPos } from './utils.js';
     }
 
     // Calculate new position (cheap – runs every event)
-    const scale = U.getScale(ds.wrapper);
+    const scale = getScale(ds.wrapper);
     ds.currentLeft = ds.origLeft + dx / scale;
     ds.currentTop = ds.origTop + dy / scale;
 
@@ -121,7 +121,7 @@ import { getScale, detectFloorId, getPointerPos } from './utils.js';
 
     const rooms = S.get('rooms');
     if (newLeft !== ds.origLeft || newTop !== ds.origTop) {
-      const nativeWidth = [U.detectFloorId(ds.wrapper.id)] || 1000;
+      const nativeWidth = [detectFloorId(ds.wrapper.id)] || 1000;
       const room = rooms[ds.key];
       const clampedLeft = Math.max(0, Math.min(newLeft, nativeWidth - (room ? room.width : MIN_ROOM_SIZE)));
       const clampedTop = Math.max(0, newTop);

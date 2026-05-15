@@ -5,6 +5,7 @@
  * @description Teilen von Projekten, Einladungen, Rollen-Verwaltung.
  */import { SUPABASE_URL, SUPABASE_ANON_KEY } from './constants.js';
 import * as S from './state.js';
+import { escHtml, escAttr } from './utils.js';
 // Uses window.GR.auth, window.GR.ui, window.GR.projects (lazy)
 
 /**
@@ -239,12 +240,12 @@ export async function showShareModal() {
       html +=
         '<div class="member-item">' +
           '<div class="member-info">' +
-            '<span class="member-name">' + U.escHtml(m.displayName) + '</span>' +
-            '<span class="member-email">' + U.escHtml(m.email) + '</span>' +
+            '<span class="member-name">' + escHtml(m.displayName) + '</span>' +
+            '<span class="member-email">' + escHtml(m.email) + '</span>' +
           '</div>' +
           '<div class="member-role">' +
             (isOwner ? '<span class="role-badge owner">Owner</span>' :
-              isSelf ? '<span class="role-badge">' + U.escHtml(m.role) + '</span>' :
+              isSelf ? '<span class="role-badge">' + escHtml(m.role) + '</span>' :
               '<select data-action-change="change-role" data-member-id="' + m.id + '" class="role-select">' +
                 '<option value="editor"' + (m.role === 'editor' ? ' selected' : '') + '>Editor</option>' +
                 '<option value="viewer"' + (m.role === 'viewer' ? ' selected' : '') + '>Viewer</option>' +

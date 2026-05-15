@@ -7,6 +7,7 @@
  */import { MIN_ROOM_SIZE, FLOORS, ROOM_TYPES, ROOM_TYPE_DEFAULT, EVT_ROOMS_CHANGED, EVT_SELECTION_CHANGED, EVT_EDIT_MODE_CHANGED } from './constants.js';
 import * as S from './state.js';
 import { saveData } from './storage.js';
+import { escHtml, escAttr, generateKey } from './utils.js';
 // Uses window.GR.renderer, window.GR.ui (lazy)
 
 // ===================================================================
@@ -136,7 +137,7 @@ import { saveData } from './storage.js';
     const UI = window.GR.ui;
     if (UI && UI.confirm) {
       UI.confirm(`"${roomTitle}" löschen?`, function() {
-        const backupRoom = U.deepClone(rooms[key]);
+        const backupRoom = deepClone(rooms[key]);
         const backupKey = key;
         delete rooms[key];
         S.set('selectedRoom', null);

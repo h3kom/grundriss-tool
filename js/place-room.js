@@ -7,6 +7,7 @@
  */import { MIN_ROOM_SIZE, FLOORS, ROOM_TYPE_DEFAULT, EVT_ROOMS_CHANGED } from './constants.js';
 import * as S from './state.js';
 import { saveData } from './storage.js';
+import { getPointerPos, getScale, generateKey, detectFloorId } from './utils.js';
 // Uses window.GR.ui, window.GR.renderer (lazy)
 
 /**
@@ -74,7 +75,7 @@ import { saveData } from './storage.js';
       relStartY: raw.y - rect.top,
       wrapper,
       pi,
-      floor: U.detectFloorId(wrapper.id),
+      floor: detectFloorId(wrapper.id),
       endX: null,
       endY: null,
       relEndX: null,
@@ -189,7 +190,7 @@ import { saveData } from './storage.js';
     }
 
     // Convert display pixels to native coordinates
-    const scale = U.getScale(ps.wrapper);
+    const scale = getScale(ps.wrapper);
     const nativeLeft = Math.round(finalLeft / scale);
     const nativeTop = Math.round(finalTop / scale);
     const nativeWidth = Math.round(finalWidth / scale);
@@ -197,7 +198,7 @@ import { saveData } from './storage.js';
 
     // Build a unique key
     const rooms = S.get('rooms');
-    const key = U.generateKey(rooms);
+    const key = generateKey(rooms);
 
     // Create the new room
     rooms[key] = {

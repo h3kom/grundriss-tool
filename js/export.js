@@ -6,6 +6,8 @@
  * Floor-IDs werden beim Import automatisch auf das Zielprojekt gemappt.
  */import { LOCAL_STORAGE_KEY } from './constants.js';
 import * as S from './state.js';
+import { escHtml, escAttr } from './utils.js';
+import { updateTabBadges } from './sync.js';
 // Uses window.GR.storage (lazy)
 
 /** Aktuelle Export-Version */
@@ -121,19 +123,18 @@ import * as S from './state.js';
 
   /**
    * Zentrale Import-Funktion: Mappt Floors, setzt Räume, speichert, rendert.
-   */
-  _applyImport = async function(data, toast) {
+   */export async function _applyImport(data, toast) {
     var roomCount = Object.keys(data.project.rooms).length;
     var mappedRooms = _mapFloorIds(data.project.rooms, data.project.floors);
 
     S.set('rooms', mappedRooms);
 
-    if (St && saveData) await saveData();
+    if (saveData) await saveData();
 
     var Rdr = window.GR.renderer;
     if (Rdr && Rdr.render) Rdr.render();
 
-    if (Sync && Sync.updateTabBadges) Sync.updateTabBadges();
+    if (Sync && updateTabBadges) updateTabBadges();
 
     toast('✅ Import erfolgreich! ' + roomCount + ' Raum/Räume importiert', 'success', 3000);
   };
@@ -297,11 +298,11 @@ import * as S from './state.js';
             var roomCount = Object.keys(data.project.rooms).length;
             var floorCount = data.project.floors ? data.project.floors.length : 0;
             var floorNames = data.project.floors ? data.project.floors.map(function(f) { return f.name; }).join(', ') : '';
-            var html = '<div class="ps-preview-title">📋 ' + U.escHtml(data.project.name || 'Unbenanntes Projekt') + '</div>';
+            var html = '<div class="ps-preview-title">📋 ' + escHtml(data.project.name || 'Unbenanntes Projekt') + '</div>';
             html += '<div class="ps-preview-info">';
             html += 'Räume: <span>' + roomCount + '</span><br>';
             html += 'Stockwerke: <span>' + floorCount + '</span>';
-            if (floorNames) html += ' (' + U.escHtml(floorNames) + ')';
+            if (floorNames) html += ' (' + escHtml(floorNames) + ')';
             html += '</div>';
             preview.innerHTML = html;
             preview.style.display = '';
@@ -310,7 +311,7 @@ import * as S from './state.js';
         } else {
           _pendingImport = null;
           if (preview) {
-            preview.innerHTML = '<div class="ps-preview-error">❌ ' + U.escHtml(validation.error) + '</div>';
+            preview.innerHTML = '<div class="ps-preview-error">❌ ' + escHtml(validation.error) + '</div>';
             preview.style.display = '';
           }
           if (importBtn) importBtn.disabled = true;
@@ -318,7 +319,7 @@ import * as S from './state.js';
       } catch (err) {
         _pendingImport = null;
         if (preview) {
-          preview.innerHTML = '<div class="ps-preview-error">❌ Ungültige JSON: ' + U.escHtml(err.message) + '</div>';
+          preview.innerHTML = '<div class="ps-preview-error">❌ Ungültige JSON: ' + escHtml(err.message) + '</div>';
           preview.style.display = '';
         }
         if (importBtn) importBtn.disabled = true;

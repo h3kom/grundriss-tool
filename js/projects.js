@@ -6,6 +6,8 @@
  * Kommuniziert mit Supabase über den Auth-Client.
  */import { EVT_AUTH_CHANGED, EVT_PROJECT_CHANGED } from './constants.js';
 import * as S from './state.js';
+import { escHtml, escAttr, _resetScaleCache } from './utils.js';
+import { updateTabBadges } from './sync.js';
 // Uses window.GR.auth, window.GR.storage, window.GR.ui, etc. (lazy)
 
 // ===================================================================
@@ -290,7 +292,7 @@ export async function openProject(projectId) {
 
       // Räume in State laden
       if (roomsData && typeof roomsData === 'object') {
-        U.ensureAllRooms(roomsData);
+        ensureAllRooms(roomsData);
         S.set('rooms', roomsData);
       } else {
         S.set('rooms', {});
@@ -353,7 +355,7 @@ export async function openProject(projectId) {
       tab.className = 'ft-tab' + (isActive ? ' active' : '');
       tab.setAttribute('data-floor', f.id);
       tab.innerHTML =
-        '<span class="ft-label">' + U.escHtml(f.name) + '</span>' +
+        '<span class="ft-label">' + escHtml(f.name) + '</span>' +
         '<span class="ft-badge" id="badge-' + f.id + '">0</span>';
       tabsContainer.appendChild(tab);
 
@@ -378,12 +380,12 @@ export async function openProject(projectId) {
       img.className = 'pi';
       img.id = f.id + '-img';
       img.src = f.image_url || '';
-      img.alt = U.escHtml(f.name);
+      img.alt = escHtml(f.name);
       img.setAttribute('draggable', 'false');
       img.addEventListener('load', function() {
         var Rdr = window.GR.renderer;
         if (Rdr && Rdr.render) Rdr.render();
-        if (Sync && Sync.updateTabBadges) Sync.updateTabBadges();
+        if (Sync && updateTabBadges) updateTabBadges();
       });
       pw.appendChild(img);
 
@@ -411,8 +413,8 @@ export async function openProject(projectId) {
     }
 
     // Caches zurücksetzen
-    if (U && U._resetScaleCache) {
-      U._resetScaleCache();
+    if (U && _resetScaleCache) {
+      _resetScaleCache();
     }
   };
 

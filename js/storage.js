@@ -118,7 +118,7 @@ export async function loadData(forceLocal) {
     }
 
     if (rooms) {
-      U.ensureAllRooms(rooms);
+      ensureAllRooms(rooms);
       var hadMigration = S.migrateRooms(rooms);
       // Persist migrated rooms back to localStorage so migration doesn't get lost
       if (hadMigration) {
