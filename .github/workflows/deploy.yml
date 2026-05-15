@@ -1,0 +1,63 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main, dev]
+
+permissions:
+  contents: write
+
+jobs:
+  deploy-prod:
+    name: Prod → /prod/
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate prod config from secrets
+        run: |
+          cat > config.local.js << 'EOF'
+          window._GR_CONFIG = {
+            SUPABASE_URL: '${{ secrets.PROD_SUPABASE_URL }}',
+            SUPABASE_ANON_KEY: '${{ secrets.PROD_SUPABASE_ANON_KEY }}'
+          };
+          EOF
+          # Remove .gitignore so config.local.js is deployed to gh-pages
+          rm .gitignore
+
+      - name: Deploy Prod to /prod/
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./
+          publish_branch: gh-pages
+          destination_dir: prod
+          keep_files: false
+
+  deploy-dev:
+    name: Dev → /dev/
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate dev config from secrets
+        run: |
+          cat > config.local.js << 'EOF'
+          window._GR_CONFIG = {
+            SUPABASE_URL: '${{ secrets.DEV_SUPABASE_URL }}',
+            SUPABASE_ANON_KEY: '${{ secrets.DEV_SUPABASE_ANON_KEY }}'
+          };
+          EOF
+          # Remove .gitignore so config.local.js is deployed to gh-pages
+          rm .gitignore
+
+      - name: Deploy Dev to /dev/
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./
+          publish_branch: gh-pages
+          destination_dir: dev
+          keep_files: false
