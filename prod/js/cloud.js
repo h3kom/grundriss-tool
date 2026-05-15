@@ -26,7 +26,43 @@ window.GR = window.GR || {};
 
     var project = S.get('currentProject');
     if (!project) return { ok: false, error: 'Kein Projekt ausgewählt' };
-    if (!project.roomsRowId) return { ok: false, error: 'Keine Room-Row-ID' };
+
+    // Auto-Recovery: roomsRowId fehlt → versuchen zu finden oder zu erstellen
+    if (!project.roomsRowId) {
+      try {
+        // Bestehende rooms-Zeile suchen
+        var existing = await sb.from('rooms')
+          .select('id')
+          .eq('project_id', project.id)
+          .order('updated_at', { ascending: false })
+          .limit(1);
+
+        if (existing.data && existing.data.length > 0) {
+          // Gefunden → roomsRowId im State aktualisieren
+          project.roomsRowId = existing.data[0].id;
+          console.info('[cloud] Recovered roomsRowId:', project.roomsRowId);
+        } else {
+          // Nicht gefunden → neue rooms-Zeile anlegen
+          var insertResult = await sb.from('rooms').insert({
+            project_id: project.id,
+            data: rooms,
+            updated_at: new Date().toISOString()
+          }).select('id').single();
+
+          if (insertResult.data && insertResult.data.id) {
+            project.roomsRowId = insertResult.data.id;
+            console.info('[cloud] Created new rooms row:', project.roomsRowId);
+            return { ok: true }; // Daten wurden bereits beim INSERT gespeichert
+          } else {
+            console.warn('[cloud] Failed to create rooms row:', (insertResult.error || {}).message);
+            return { ok: false, error: 'Keine Room-Row-ID (Erstellung fehlgeschlagen)' };
+          }
+        }
+      } catch (e) {
+        console.warn('[cloud] roomsRowId recovery failed:', e.message);
+        return { ok: false, error: 'Keine Room-Row-ID (Recovery fehlgeschlagen)' };
+      }
+    }
 
     try {
       var result = await sb.from('rooms')
