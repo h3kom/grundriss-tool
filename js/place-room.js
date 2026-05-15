@@ -19,16 +19,17 @@ window.GR = window.GR || {};
    * Aktiviert den Platzierungs-Modus.
    * @param {string} floor - Etagen-Kürzel ('eg' | 'og')
    */
-  PR.enablePlaceNewRoom = function(floor) {
+  PR.enablePlaceNewRoom = function(floor, roomType) {
     if (!S.get('editMode')) return;
     S.set('isPlacing', true);
     S.set('placeFloor', floor);
+    S.set('placeRoomType', roomType || null);
     document.querySelectorAll('.pw').forEach(w => { w.style.cursor = 'crosshair'; });
     const UI = window.GR.ui;
     if (UI) UI.closeSidebar();
-    const sbBody = document.getElementById('sbBody');
-    if (sbBody) {
-      sbBody.innerHTML = '<p class="hint"><strong>Neuen Raum platzieren</strong><br/>' +
+    const sc = document.getElementById('sc');
+    if (sc) {
+      sc.innerHTML = '<p class="hint"><strong>Neuen Raum platzieren</strong><br/>' +
         '\uD83D\uDC46 Auf den Grundriss tippen & ziehen um die Gr\u00F6\u00DFe festzulegen.<br/>' +
         '<button data-action="cancel-place" style="margin-top:8px;background:#ef4444;color:#fff;border:none;padding:8px 16px;border-radius:var(--rs);cursor:pointer;font-size:14px;">Abbrechen</button>' +
       '</p>';
@@ -42,10 +43,11 @@ window.GR = window.GR || {};
     PR.removePlacePreview();
     S.set('isPlacing', false);
     S.set('placeFloor', null);
+    S.set('placeRoomType', null);
     S.set('placeState', null);
     document.querySelectorAll('.pw').forEach(w => { w.style.cursor = ''; });
-    const sbBody = document.getElementById('sbBody');
-    if (sbBody) sbBody.innerHTML = '<p class="hint">👆 Raum antippen</p>';
+    const sc = document.getElementById('sc');
+    if (sc) sc.innerHTML = '<p class="hint">\uD83D\uDC46 Raum antippen</p>';
   };
 
   /**
@@ -203,9 +205,10 @@ window.GR = window.GR || {};
     const rooms = S.get('rooms');
     const key = U.generateKey(rooms);
 
-    // Create the room with a default name
+    // Create the new room
     rooms[key] = {
       title: 'Neuer Raum',
+      type: C.ROOM_TYPE_DEFAULT,
       floor: ps.floor,
       tasks: [],
       done: {},
@@ -221,6 +224,7 @@ window.GR = window.GR || {};
     S.set('isPlacing', false);
     S.set('placeState', null);
     S.set('placeFloor', null);
+    S.set('placeRoomType', null);
     document.querySelectorAll('.pw').forEach(w => { w.style.cursor = ''; });
     S.notify(C.EVT_ROOMS_CHANGED);
 

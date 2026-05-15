@@ -1,3 +1,9 @@
+/**
+ * Grundriss Tool – Drag-Interaktion
+ * =====================================================================
+ * @module drag
+ * @description Drag von Räumen auf dem Grundriss.
+ */
 window.GR = window.GR || {};
 
 (function(D) {
@@ -8,11 +14,6 @@ window.GR = window.GR || {};
   const St = window.GR.storage;
   const U = window.GR.utils;
 
-  /**
-   * Startet einen Drag-Vorgang.
-   * @param {Event} e - Mouse-/Touch-Event
-   * @param {string} key - Raumschlüssel
-   */
   D.startDrag = function(e, key) {
     if (!S.get('editMode')) return;
     const raw = D.getPointerPos(e);
@@ -39,10 +40,6 @@ window.GR = window.GR || {};
     document.addEventListener('touchend', D.onDragEndTouch, { passive: false });
   };
 
-  /**
-   * Bewegt den Raum während des Drags.
-   * @param {Event} e - Mouse-/Touch-Event
-   */
   D.onDragMove = function(e) {
     const ds = S.get('dragState');
     if (!ds) return;
@@ -62,28 +59,23 @@ window.GR = window.GR || {};
       e.preventDefault();
     }
 
-    // Element aus dragState referenzieren statt每mal DOM-Query
     const el = ds.element;
     if (el) {
       const scale = U.getScale(ds.wrapper);
-      el.style.left = Math.round(ds.origLeft * scale + dx) + 'px';
-      el.style.top = Math.round(ds.origTop * scale + dy) + 'px';
+      var newX = ds.origLeft + dx / scale;
+      var newY = ds.origTop + dy / scale;
+
+      el.style.left = Math.round(newX * scale) + 'px';
+      el.style.top = Math.round(newY * scale) + 'px';
     }
   };
 
-  /**
-   * Touch-Variante von onDragMove.
-   * @param {Event} e
-   */
   D.onDragMoveTouch = function(e) {
     D.onDragMove(e);
     const ds = S.get('dragState');
     if (ds && ds.isDragging) e.preventDefault();
   };
 
-  /**
-   * Beendet den Drag-Vorgang (Aufräumen + Speichern).
-   */
   function onDragEndCleanup() {
     const ds = S.get('dragState');
     if (!ds) return;
@@ -106,12 +98,11 @@ window.GR = window.GR || {};
     }
 
     const scale = U.getScale(ds.wrapper);
-    const newLeft = Math.round(parseInt(el.style.left, 10) / scale);
-    const newTop = Math.round(parseInt(el.style.top, 10) / scale);
+    var newLeft = Math.round(parseInt(el.style.left, 10) / scale);
+    var newTop = Math.round(parseInt(el.style.top, 10) / scale);
 
     const rooms = S.get('rooms');
     if (newLeft !== ds.origLeft || newTop !== ds.origTop) {
-      // Grenzenprüfung: Raum darf nicht aus dem Grundriss verschoben werden
       const nativeWidth = C.NATIVE_WIDTHS[U.detectFloorId(ds.wrapper.id)] || 1000;
       const room = rooms[ds.key];
       const clampedLeft = Math.max(0, Math.min(newLeft, nativeWidth - (room ? room.width : C.MIN_ROOM_SIZE)));
@@ -128,11 +119,6 @@ window.GR = window.GR || {};
   D.onDragEnd = function() { onDragEndCleanup(); };
   D.onDragEndTouch = function() { onDragEndCleanup(); };
 
-  /**
-   * Ermittelt die Pointer-Position über die zentrale utils-Funktion.
-   * @param {Event} e
-   * @returns {{x:number, y:number}}
-   */
   D.getPointerPos = function(e) {
     return U.getPointerPos(e);
   };

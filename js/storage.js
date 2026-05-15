@@ -1,9 +1,8 @@
 /**
- * Grundriss Tool – Lokale Datenpersistenz (localStorage) + Init-Logik
+ * Grundriss Tool – Lokale Speicherung + Cloud-Trigger
  * =====================================================================
  * @module storage
- * @description Lädt und speichert Raumdaten lokal, delegiert Cloud-Operationen
- * an cloud.js und sync.js.
+ * @description localStorage als Cache, cloudSync als optionaler Hintergrund-Sync.
  */
 window.GR = window.GR || {};
 
@@ -12,109 +11,131 @@ window.GR = window.GR || {};
 
   const C = window.GR.constants;
   const S = window.GR.state;
+  const Cloud = window.GR.cloud;
   const U = window.GR.utils;
-  const Cl = window.GR.cloud;
-  const Sync = window.GR.sync;
+
+  /** @type {number} Debounce-Timer für Cloud-Save */
+  var _saveTimer = null;
 
   /**
-   * Zeigt/versteckt den Lade-Indikator.
-   * @param {boolean} show
-   */
-  function showLoading(show) {
-    let el = document.getElementById('loadingIndicator');
-    if (show) {
-      if (!el) {
-        el = document.createElement('div');
-        el.id = 'loadingIndicator';
-        el.className = 'loading-indicator';
-        el.textContent = '⏳ Lade Daten...';
-        document.body.appendChild(el);
-      }
-      el.classList.add('show');
-    } else {
-      if (el) el.classList.remove('show');
-    }
-  }
-
-  /**
-   * Lädt Daten: zuerst Cloud, dann localStorage als Fallback.
-   * @returns {Promise<void>}
-   */
-  St.loadData = async function() {
-    Sync.setSyncStatus('idle');
-    showLoading(true);
-
-    try {
-      const cloudLoaded = await St.loadFromCloud();
-      if (cloudLoaded) return;
-
-      const local = localStorage.getItem(C.LOCAL_STORAGE_KEY);
-      if (local) {
-        try {
-          S.set('rooms', JSON.parse(local));
-          U.ensureAllRooms(S.get('rooms'));
-          return;
-        } catch (e) {
-          // corrupted – start empty
-        }
-      }
-
-      S.set('rooms', {});
-      St.saveToLocal();
-    } finally {
-      showLoading(false);
-    }
-  };
-
-  /**
-   * Lädt Daten aus der Cloud.
-   * @returns {Promise<boolean>} true bei Erfolg
-   */
-  St.loadFromCloud = async function() {
-    const result = await Cl.fetchData();
-    if (result && result.data && Object.keys(result.data).length > 0) {
-      S.set('rooms', result.data);
-      S.migrateRooms(S.get('rooms'));
-      S.set('serverStamp', result.updatedAt || Date.now());
-      localStorage.setItem(C.LOCAL_STORAGE_KEY, JSON.stringify(S.get('rooms')));
-      return true;
-    }
-    return false;
-  };
-
-  /**
-   * Speichert Daten lokal und triggert Cloud-Sync.
+   * Speichert Daten: sofort lokal, debounced in die Cloud.
    */
   St.saveData = function() {
     St.saveToLocal();
-    Sync.updateTabBadges();
-    S.notify(C.EVT_ROOMS_CHANGED);
-
-    // Debounced Cloud-Sync
-    if (S.get('saveTimeout')) clearTimeout(S.get('saveTimeout'));
-    const timeout = setTimeout(function() {
-      Sync.saveToCloud();
-    }, C.CLOUD_SYNC_DEBOUNCE);
-    S.set('saveTimeout', timeout);
+    St.debouncedCloudSave();
+    S.set('lastSaveTs', Date.now());
   };
 
   /**
-   * Speichert nur lokal (ohne Cloud).
-   * Achtung: Überschreibt serverStamp NICHT mit lokalem Timestamp,
-   * damit Sync-Konflikte korrekt erkannt werden.
+   * Speichert Raumdaten in localStorage (synchron).
    */
   St.saveToLocal = function() {
-    const now = Date.now();
-    S.set('lastSaveTs', now);
     try {
-      localStorage.setItem(C.LOCAL_STORAGE_KEY, JSON.stringify(S.get('rooms')));
+      const rooms = S.get('rooms');
+      localStorage.setItem(C.LOCAL_STORAGE_KEY, JSON.stringify(rooms));
     } catch (e) {
-      console.error('[storage] localStorage save failed:', e.message || e);
+      if (e.name === 'QuotaExceededError' || (e.code === 22) || (e.message && e.message.indexOf('quota') !== -1)) {
+        console.warn('[storage] localStorage quota exceeded — cloud save still active');
+        var UI = window.GR.ui;
+        if (UI && UI.toast) UI.toast('⚠️ Lokaler Speicher voll. Daten werden nur in der Cloud gespeichert.', 'warning', 4000);
+      } else {
+        console.error('[storage] saveToLocal error:', e);
+        var UI2 = window.GR.ui;
+        if (UI2 && UI2.toast) UI2.toast('Speichern fehlgeschlagen', 'error', 2000);
+      }
     }
   };
 
   /**
-   * Toast-Stub – wird von ui.js überschrieben.
+   * Debounced Cloud-Save – sammelt schnelle Änderungen.
    */
-  St.toast = function() {};
+  St.debouncedCloudSave = function() {
+    if (_saveTimer) clearTimeout(_saveTimer);
+    _saveTimer = setTimeout(function() {
+      St.cloudSave();
+    }, C.CLOUD_SYNC_DEBOUNCE);
+  };
+
+  /**
+   * Speichert Raumdaten asynchron in die Cloud.
+   */
+  St.cloudSave = async function() {
+    var Auth = window.GR.auth;
+    var isAuthenticated = S.get('isAuthenticated');
+    var project = S.get('currentProject');
+
+    if (!isAuthenticated || !project) return;
+
+    var rooms = S.get('rooms');
+    var result = await Cloud.saveToCloud(rooms);
+
+    if (result.ok) {
+      S.set('syncStatus', 'saved');
+    } else {
+      S.set('syncStatus', 'error');
+      console.warn('[storage] Cloud save failed:', result.error);
+    }
+  };
+
+  /**
+   * Lädt Daten: bevorzugt aus der Cloud, Fallback localStorage.
+   * @param {boolean} [forceLocal=false] - Nur lokal laden
+   * @returns {Object|null} Raumdaten oder null
+   */
+  St.loadData = async function(forceLocal) {
+    var rooms = null;
+
+    // Versuche Cloud-Laden (wenn eingeloggt und Projekt ausgewählt)
+    if (!forceLocal && S.get('isAuthenticated') && S.get('currentProject')) {
+      var result = await Cloud.loadFromCloud();
+      if (result.ok && result.rooms) {
+        rooms = result.rooms;
+      }
+    }
+
+    // Fallback: localStorage
+    if (!rooms) {
+      rooms = St.loadFromLocal();
+    }
+
+    if (rooms) {
+      U.ensureAllRooms(rooms);
+      var hadMigration = S.migrateRooms(rooms);
+      // Persist migrated rooms back to localStorage so migration doesn't get lost
+      if (hadMigration) {
+        try {
+          localStorage.setItem(C.LOCAL_STORAGE_KEY, JSON.stringify(rooms));
+        } catch (e) { /* noop */ }
+      }
+    }
+
+    return rooms;
+  };
+
+  /**
+   * Lädt Raumdaten aus localStorage (synchron).
+   * @returns {Object|null}
+   */
+  St.loadFromLocal = function() {
+    try {
+      const raw = localStorage.getItem(C.LOCAL_STORAGE_KEY);
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      if (data && typeof data === 'object' && Object.keys(data).length > 0) return data;
+    } catch (e) { /* noop */ }
+    return null;
+  };
+
+  /**
+   * Löscht lokale Daten.
+   */
+  St.clearLocal = function() {
+    try {
+      localStorage.removeItem(C.LOCAL_STORAGE_KEY);
+    } catch (e) { /* noop */ }
+  };
+
+  // Toast-Stub (wird von ui.js überschrieben)
+  St.toast = null;
+
 })(window.GR.storage = window.GR.storage || {});
