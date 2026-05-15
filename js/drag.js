@@ -25,6 +25,7 @@ window.GR = window.GR || {};
     const raw = D.getPointerPos(e);
     const wrapper = e.currentTarget.closest('.pw');
     const rooms = S.get('rooms');
+    if (!rooms[key]) return;
 
     S.set('dragState', {
       key: key,

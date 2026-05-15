@@ -335,6 +335,7 @@ window.GR = window.GR || {};
     if (!key || !S.get('rooms')[key]) { UI.closeRenameModal(); return; }
     var title = input.value.trim();
     if (!title) { toast('Name darf nicht leer sein', 'error', 2000); return; }
+    if (title.length > 100) { toast('Name zu lang (max. 100 Zeichen)', 'error', 2000); return; }
     var oldTitle = S.get('rooms')[key].title;
     S.get('rooms')[key].title = title;
     St.saveData();

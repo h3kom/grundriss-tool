@@ -219,15 +219,17 @@ window.GR = window.GR || {};
   };
 
   Rdr.selectRoomEdit = function(key) {
-    S.set('selectedRoom', key);
+    // Set selectedRoom WITHOUT triggering EVT_SELECTION_CHANGED to avoid double render.
+    // The explicit render() + renderDetail() calls below handle the update.
+    var rooms = S.get('rooms');
+    if (!rooms[key]) return;
+    S.get().selectedRoom = key;
     Rdr.render();
-    if (S.get('rooms')[key]) {
-      const DetailRdr = window.GR.detailRenderer;
-      if (DetailRdr) DetailRdr.renderDetail(key);
-      if (window.innerWidth < 768) {
-        const UI = window.GR.ui;
-        if (UI) UI.openSidebar();
-      }
+    const DetailRdr = window.GR.detailRenderer;
+    if (DetailRdr) DetailRdr.renderDetail(key);
+    if (window.innerWidth < 768) {
+      const UI = window.GR.ui;
+      if (UI) UI.openSidebar();
     }
   };
 

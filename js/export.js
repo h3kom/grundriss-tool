@@ -115,8 +115,8 @@ window.GR = window.GR || {};
       var room = mappedRooms[keys[k]];
       if (room.floor && floorMap[room.floor]) {
         room.floor = floorMap[room.floor];
-      } else if (!room.floor || !floorMap[room.floor]) {
-        // Fallback: ersten Floor setzen
+      } else {
+        // Fallback: Floor-ID nicht im Mapping → ersten Floor setzen
         if (currentFloors.length > 0) room.floor = currentFloors[0].id;
       }
     }
