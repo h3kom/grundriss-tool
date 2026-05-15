@@ -43,7 +43,7 @@ window.GR = window.GR || {};
       origHeight: room.height,
       scale: scale,
       saved: false,
-      element: el // Element referenzieren statt每mal DOM-Query
+      element: el // Element referenzieren statt jedes Mal DOM-Query
     });
 
     if (el) el.classList.add('rs');
