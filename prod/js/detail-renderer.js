@@ -13,6 +13,7 @@ window.GR = window.GR || {};
   const S = window.GR.state;
   const St = window.GR.storage;
   const U = window.GR.utils;
+  const C = window.GR.constants;
 
   /**
    * Rendert die Detail-Ansicht eines Raums in der Sidebar.
@@ -23,40 +24,32 @@ window.GR = window.GR || {};
     if (!room) return;
 
     var progress = U.taskProgress(room);
-    var sbBody = document.getElementById('sbBody');
-    if (!sbBody) return;
+    var sc = document.getElementById('sc');
+    if (!sc) return;
 
     var html = DR.buildDetailHeader(key, room);
     html += DR.buildProgressBar(progress);
     html += DR.buildTaskSection(key, room, progress);
     html += DR.buildNoteSection(key, room);
     html += DR.buildCommentSection(key, room);
-    if (S.get('editMode')) html += DR.buildDeleteSection(key);
+    if (S.get('editMode')) html += DR.buildActionButtons(key);
     html += DR.buildLastEditInfo();
 
-    sbBody.innerHTML = html;
+    sc.innerHTML = html;
   };
 
   /**
    * Baut den Header des Detail-Panels.
-   * @param {string} key - Raumschlüssel
-   * @param {Object} room - Raum-Daten
-   * @returns {string} HTML
    */
   DR.buildDetailHeader = function(key, room) {
     return '<div class="rdh">' +
-      '<button class="bb" data-action="show-overview">\u2190</button>' +
+      '<button class="bb" data-action="close-sidebar">\u2190</button>' +
       '<h3>' + U.escHtml(room.title) + '</h3>' +
-      '<button class="rb" data-action="open-rename" data-key="' + U.escAttr(key) + '" title="Umbenennen">\u270F\uFE0F</button>' +
+      (S.get('editMode') ? '<button class="rb" data-action="open-rename" data-key="' + U.escAttr(key) + '" title="Umbenennen">\u270F\uFE0F</button>' : '') +
       '<span class="rk">' + U.escHtml(key) + '</span>' +
     '</div>';
   };
 
-  /**
-   * Baut die Fortschrittsanzeige.
-   * @param {{done:number,total:number,percent:number}} progress
-   * @returns {string} HTML
-   */
   DR.buildProgressBar = function(progress) {
     if (progress.total === 0) return '';
     return '<div style="font-size:13px;color:var(--muted);margin-bottom:2px;">' +
@@ -65,13 +58,6 @@ window.GR = window.GR || {};
     '<div class="pbw"><div class="pbf" style="width:' + progress.percent + '%"></div></div>';
   };
 
-  /**
-   * Baut die Aufgaben-Sektion.
-   * @param {string} key - Raumschlüssel
-   * @param {Object} room - Raum-Daten
-   * @param {{done:number,total:number,percent:number}} progress
-   * @returns {string} HTML
-   */
   DR.buildTaskSection = function(key, room, progress) {
     var safeKey = U.escAttr(key);
     var html = '<div class="is">' +
@@ -104,30 +90,18 @@ window.GR = window.GR || {};
     return html;
   };
 
-  /**
-   * Baut die Notiz-Sektion.
-   * @param {string} key - Raumschlüssel
-   * @param {Object} room - Raum-Daten
-   * @returns {string} HTML
-   */
   DR.buildNoteSection = function(key, room) {
     var safeKey = U.escAttr(key);
     var html = '<div class="is"><h4>Notiz</h4>';
     if (S.get('editMode')) {
       html += '<textarea class="rne" data-action-change="save-note" data-key="' + safeKey + '">' + U.escHtml(room.note || '') + '</textarea>';
     } else {
-      html += '<p style="margin:0;font-size:14px;">' + U.escHtml(room.note || 'Keine Notiz.') + '</p>';
+      html += '<p style="margin:0;font-size:14px;text-align:left;">' + U.escHtml(room.note || 'Keine Notiz.') + '</p>';
     }
     html += '</div>';
     return html;
   };
 
-  /**
-   * Baut die Kommentar-Sektion.
-   * @param {string} key - Raumschlüssel
-   * @param {Object} room - Raum-Daten
-   * @returns {string} HTML
-   */
   DR.buildCommentSection = function(key, room) {
     var safeKey = U.escAttr(key);
     var commentCount = room.comments ? room.comments.length : 0;
@@ -137,13 +111,15 @@ window.GR = window.GR || {};
 
     if (room.comments && room.comments.length > 0) {
       for (var i = 0; i < room.comments.length; i++) {
-        var timeStr = room.comments[i].time
-          ? new Date(room.comments[i].time).toLocaleString('de-DE')
+        var c = room.comments[i];
+        var timeStr = c.time
+          ? new Date(c.time).toLocaleString('de-DE')
           : '';
+        var userName = c.user || 'Unbekannt';
         html += '<div class="ci">' +
           (S.get('editMode') ? '<button class="cd" data-action="delete-comment" data-key="' + safeKey + '" data-idx="' + i + '">\u00D7</button>' : '') +
-          '<div class="cm">' + U.escHtml(timeStr) + '</div>' +
-          U.escHtml(room.comments[i].text) +
+          '<div class="cm"><strong>' + U.escHtml(userName) + '</strong> · ' + U.escHtml(timeStr) + '</div>' +
+          '<div class="ct">' + U.escHtml(c.text) + '</div>' +
         '</div>';
       }
     } else {
@@ -161,18 +137,19 @@ window.GR = window.GR || {};
   };
 
   /**
-   * Baut den Löschen-Button (nur im Edit-Mode).
-   * @param {string} key - Raumschlüssel
-   * @returns {string} HTML
+   * Baut Aktions-Buttons (Duplizieren + Löschen).
    */
-  DR.buildDeleteSection = function(key) {
-    return '<div class="is"><button class="drb" data-action="delete-room" data-key="' + U.escAttr(key) + '">\uD83D\uDDD1 L\u00F6schen</button></div>';
+  DR.buildActionButtons = function(key) {
+    return '<div class="is" style="display:flex;gap:8px;">' +
+      '<button class="dup-btn" data-action="duplicate-room" style="flex:1;">📋 Duplizieren</button>' +
+      '<button class="drb" data-action="delete-room" data-key="' + U.escAttr(key) + '" style="flex:1;">🗑️ Löschen</button>' +
+    '</div>';
   };
 
-  /**
-   * Baut die "Zuletzt bearbeitet"-Info.
-   * @returns {string} HTML
-   */
+  DR.buildDeleteSection = function(key) {
+    return '<div class="is"><button class="drb" data-action="delete-room" data-key="' + U.escAttr(key) + '">🗑️ Löschen</button></div>';
+  };
+
   DR.buildLastEditInfo = function() {
     var text = U.formatLastEdit(S.get('lastSaveTs'));
     return text

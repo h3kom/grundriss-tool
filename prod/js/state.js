@@ -1,3 +1,9 @@
+/**
+ * Grundriss Tool – State Management
+ * =====================================================================
+ * @module state
+ * @description Zentraler State mit Pub/Sub-Event-System.
+ */
 window.GR = window.GR || {};
 
 (function(S) {
@@ -22,10 +28,10 @@ window.GR = window.GR || {};
    * @param {Object<string,Object>} rooms
    */
   function migrateRooms(rooms) {
-    if (!rooms || typeof rooms !== 'object') return;
+    if (!rooms || typeof rooms !== 'object') return false;
     // Prüfe, ob Migration überhaupt nötig ist
     const storedVersion = parseInt(localStorage.getItem(DATA_VERSION_KEY) || '0', 10);
-    if (storedVersion >= DATA_VERSION) return;
+    if (storedVersion >= DATA_VERSION) return false;
     for (const key of Object.keys(rooms)) {
       const room = rooms[key];
       if (!room.comments) room.comments = [];
@@ -33,20 +39,39 @@ window.GR = window.GR || {};
     }
     // Version persistieren, damit Migration nicht bei jedem Laden läuft
     try { localStorage.setItem(DATA_VERSION_KEY, String(DATA_VERSION)); } catch (e) { /* noop */ }
+    return true;
   }
 
   const _state = {
+    // === Auth & User ===
+    currentUser: null,
+    isAuthenticated: false,
+
+    // === Project ===
+    currentProject: null,        // { id, name, ownerId, roomsRowId }
+    currentProjectFloors: [],    // [{ id, name, imageUrl, nativeWidth, sortOrder }]
+
+    // === Rooms ===
     rooms: {},
     selectedRoom: null,
     editMode: false,
     overview: false,
+
+    // === UI ===
     sidebarOpen: false,
     sidebarWasManuallyOpened: false,
+    activeFloor: 'eg',
+    searchQuery: '',
+    currentView: 'auth',        // 'auth' | 'dashboard' | 'editor'
+
+    // === Interaction ===
     dragState: null,
     resizeState: null,
     isPlacing: false,
     placeFloor: null,
     placeState: null,
+
+    // === Sync ===
     debounceTimer: null,
     lastSaveTs: Date.now(),
     undoStack: [],
@@ -54,9 +79,7 @@ window.GR = window.GR || {};
     serverStamp: 0,
     pollInterval: null,
     isSyncing: false,
-    saveTimeout: null,
-    activeFloor: 'eg',
-    searchQuery: ''
+    saveTimeout: null
   };
 
   /**
@@ -76,7 +99,6 @@ window.GR = window.GR || {};
    * @param {*} value - Neuer Wert
    */
   S.set = function(key, value) {
-    // Nur bekannte State-Keys setzen, sonst Warnung
     if (!(key in _state)) {
       console.warn(`[state] Unknown key "${key}" ignored by set()`);
       return;
@@ -95,6 +117,9 @@ window.GR = window.GR || {};
     }
     if (key === 'syncStatus' && old !== value) {
       S.notify(C.EVT_SYNC_STATUS_CHANGED, value);
+    }
+    if (key === 'currentView' && old !== value) {
+      S.notify(C.EVT_AUTH_CHANGED, value);
     }
   };
 
@@ -168,31 +193,38 @@ window.GR = window.GR || {};
   // Undo
   // ===================================================================
 
+  /** Unique ID counter for undo entries */
+  var _undoCounter = 0;
+
   /**
    * Push an undo callback (with max limit).
    * @param {Function} callback - Rückgängig-Funktion
+   * @returns {number} Unique undo ID
    */
   S.pushUndo = function(callback) {
-    _state.undoStack.push(callback);
+    var id = ++_undoCounter;
+    _state.undoStack.push({ id: id, fn: callback });
     if (_state.undoStack.length > C.MAX_UNDO) _state.undoStack.shift();
+    return id;
   };
 
   /**
-   * Get undo callback by key.
-   * @param {number} key - Index
+   * Get undo callback by ID.
+   * @param {number} id - Undo ID
    * @returns {Function|null}
    */
-  S.getUndo = function(key) {
-    return _state.undoStack[key];
+  S.getUndo = function(id) {
+    var entry = _state.undoStack.find(function(e) { return e.id === id; });
+    return entry ? entry.fn : null;
   };
 
   /**
-   * Removes an undo entry completely (consumed).
-   * Verwendet splice statt null-Setzung, um Memory-Leaks zu vermeiden.
-   * @param {number} key - Index
+   * Removes an undo entry by ID (consumed).
+   * @param {number} id - Undo ID
    */
-  S.clearUndo = function(key) {
-    _state.undoStack.splice(key, 1);
+  S.clearUndo = function(id) {
+    var idx = _state.undoStack.findIndex(function(e) { return e.id === id; });
+    if (idx >= 0) _state.undoStack.splice(idx, 1);
   };
 
   // Export migration for storage module
