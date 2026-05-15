@@ -56,8 +56,12 @@ window.GR = window.GR || {};
     }, C.CLOUD_SYNC_DEBOUNCE);
   };
 
+  /** @type {string|null} Timestamp der letzten erfolgreich geladenen Cloud-Daten */
+  var _lastCloudLoadTs = null;
+
   /**
    * Speichert Raumdaten asynchron in die Cloud.
+   * Prüft vorher auf neuere Remote-Daten (einfache Konfliktauflösung).
    */
   St.cloudSave = async function() {
     var Auth = window.GR.auth;
@@ -67,13 +71,35 @@ window.GR = window.GR || {};
     if (!isAuthenticated || !project) return;
 
     var rooms = S.get('rooms');
-    var result = await Cloud.saveToCloud(rooms);
 
-    if (result.ok) {
-      S.set('syncStatus', 'saved');
-    } else {
+    try {
+      // Check for newer remote data before overwriting
+      if (project.roomsRowId) {
+        var checkResult = await Cloud.getCloudTimestamp(project.roomsRowId);
+        if (checkResult.ok && checkResult.updated_at) {
+          if (_lastCloudLoadTs && checkResult.updated_at > _lastCloudLoadTs) {
+            // Remote is newer than what we last loaded – potential conflict
+            console.warn('[storage] Remote data is newer than local. Skipping save to prevent overwrite.');
+            S.set('syncStatus', 'error');
+            var UI = window.GR.ui;
+            if (UI && UI.toast) UI.toast('⚠️ Konflikt: Neuere Daten in der Cloud. Seite neu laden.', 'warning', 5000);
+            return;
+          }
+        }
+      }
+
+      var result = await Cloud.saveToCloud(rooms);
+
+      if (result.ok) {
+        _lastCloudLoadTs = new Date().toISOString();
+        S.set('syncStatus', 'saved');
+      } else {
+        S.set('syncStatus', 'error');
+        console.warn('[storage] Cloud save failed:', result.error);
+      }
+    } catch (e) {
       S.set('syncStatus', 'error');
-      console.warn('[storage] Cloud save failed:', result.error);
+      console.warn('[storage] Cloud save exception:', e.message);
     }
   };
 
@@ -90,6 +116,7 @@ window.GR = window.GR || {};
       var result = await Cloud.loadFromCloud();
       if (result.ok && result.rooms) {
         rooms = result.rooms;
+        _lastCloudLoadTs = new Date().toISOString();
       }
     }
 

@@ -134,6 +134,33 @@ window.GR = window.GR || {};
   };
 
   /**
+   * Ruft nur den updated_at-Timestamp einer rooms-Zeile ab.
+   * Wird für die Konflikterkennung vor dem Speichern verwendet.
+   * @param {string} roomsRowId - ID der rooms-Zeile
+   * @returns {Promise<{ok: boolean, updated_at?: string, error?: string}>}
+   */
+  Cloud.getCloudTimestamp = async function(roomsRowId) {
+    var Auth = window.GR.auth;
+    var sb = Auth ? Auth.getSupabase() : null;
+    if (!sb) return { ok: false, error: 'Supabase nicht verfügbar' };
+
+    try {
+      var result = await sb.from('rooms')
+        .select('updated_at')
+        .eq('id', roomsRowId)
+        .single();
+
+      if (result.error) {
+        return { ok: false, error: result.error.message };
+      }
+
+      return { ok: true, updated_at: result.data ? result.data.updated_at : null };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  };
+
+  /**
    * Alte saveToSupabase-Funktion (backward compat).
    * Leitet an saveToCloud weiter.
    */
