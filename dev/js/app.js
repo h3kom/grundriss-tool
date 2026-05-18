@@ -189,10 +189,17 @@ async function handlePostLogin() {
 // ===================================================================
 
 async function init() {
-  await loadModules();
-  Auth.initSupabase();
+  // Register action handlers FIRST so login button works immediately
   setupActions();
+  Auth.initSupabase();
   initDarkMode();
+
+  // Load remaining modules (non-blocking – errors won't prevent auth)
+  try {
+    await loadModules();
+  } catch (e) {
+    console.error('[app] Module loading failed:', e);
+  }
 
   if (Auth.isAvailable()) {
     var session = await Auth.getSession();
