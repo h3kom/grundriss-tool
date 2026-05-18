@@ -6,7 +6,7 @@
  */
 import {
   EVT_ROOMS_CHANGED, EVT_SELECTION_CHANGED, EVT_EDIT_MODE_CHANGED,
-  EVT_FLOOR_CHANGED, EVT_SYNC_STATUS_CHANGED, EVT_AUTH_CHANGED, MAX_UNDO
+  EVT_FLOOR_CHANGED, EVT_SYNC_STATUS_CHANGED, MAX_UNDO
 } from './constants.js';
 
 const listeners = {};
@@ -106,7 +106,6 @@ export function set(key, value) {
   if (key === 'activeFloor' && old !== value) notify(EVT_FLOOR_CHANGED, value);
   if (key === 'selectedRoom' && old !== value) notify(EVT_SELECTION_CHANGED, value);
   if (key === 'syncStatus' && old !== value) notify(EVT_SYNC_STATUS_CHANGED, value);
-  if (key === 'currentView' && old !== value) notify(EVT_AUTH_CHANGED, value);
 }
 
 /**
