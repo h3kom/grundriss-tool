@@ -161,7 +161,7 @@ export async function login(email, password) {
       if (result.error) {
         return { ok: false, error: translateError(result.error.message) };
       }
-      return { ok: true };
+      return { ok: true, user: result.data?.user };
     } catch (e) {
       return { ok: false, error: translateError(e.message) };
     }
