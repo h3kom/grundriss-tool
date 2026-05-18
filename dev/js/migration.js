@@ -5,6 +5,8 @@
  * @description Migriert bestehende localStorage-Daten (Single-User) zu
  * einem Projekt im neuen Multi-User-System.
  */import * as S from './state.js';
+import { LOCAL_STORAGE_KEY } from './constants.js';
+import * as Auth from './auth.js';
 // Uses window.GR.storage (lazy)
 
 /** @const {string} Key für Migrations-Flag */

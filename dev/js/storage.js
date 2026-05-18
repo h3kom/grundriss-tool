@@ -5,6 +5,7 @@
  * @description localStorage als Cache, cloudSync als optionaler Hintergrund-Sync.
  */import { LOCAL_STORAGE_KEY, CLOUD_SYNC_DEBOUNCE } from './constants.js';
 import * as S from './state.js';
+import { ensureAllRooms } from './utils.js';
 // Uses window.GR.cloud (lazy)
 
 /** @type {number} Debounce-Timer für Cloud-Save */
@@ -65,9 +66,10 @@ export async function cloudSave() {
     var rooms = S.get('rooms');
 
     try {
+      var Cloud = window.GR.cloud;
       // Check for newer remote data before overwriting
       if (project.roomsRowId) {
-        var checkResult = await Cloud.getCloudTimestamp(project.roomsRowId);
+      var checkResult = await Cloud.getCloudTimestamp(project.roomsRowId);
         if (checkResult.ok && checkResult.updated_at) {
           if (_lastCloudLoadTs && checkResult.updated_at > _lastCloudLoadTs) {
             // Remote is newer than what we last loaded – potential conflict
@@ -105,6 +107,7 @@ export async function loadData(forceLocal) {
 
     // Versuche Cloud-Laden (wenn eingeloggt und Projekt ausgewählt)
     if (!forceLocal && S.get('isAuthenticated') && S.get('currentProject')) {
+      var Cloud = window.GR.cloud;
       var result = await Cloud.loadFromCloud();
       if (result.ok && result.rooms) {
         rooms = result.rooms;

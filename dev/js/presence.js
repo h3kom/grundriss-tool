@@ -7,7 +7,7 @@
  */import { EVT_PRESENCE_CHANGED } from './constants.js';
 import * as S from './state.js';
 import { escHtml, escAttr } from './utils.js';
-// Uses window.GR.auth (lazy)
+import * as Auth from './auth.js';
 
 var _channel = null;
   var _onlineUsers = {};
