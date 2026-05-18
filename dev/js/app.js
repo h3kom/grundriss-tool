@@ -6,7 +6,7 @@
  */
 import { INTRO_SEEN_KEY, DARK_MODE_KEY, EVT_AUTH_CHANGED, SUPABASE_URL, SUPABASE_ANON_KEY, MIN_ROOM_SIZE, NATIVE_WIDTHS, FLOORS, MAX_UNDO, SYNC_INTERVAL, LOCAL_STORAGE_KEY, SUPABASE_TABLE, SUPABASE_ROW_ID, EVT_ROOMS_CHANGED, EVT_SELECTION_CHANGED, EVT_EDIT_MODE_CHANGED, EVT_FLOOR_CHANGED, EVT_SYNC_STATUS_CHANGED, EVT_PROJECT_CHANGED, DRAG_DEAD_ZONE, HANDLE_DIRECTIONS, SCALE_CACHE_TTL, CLOUD_SYNC_DEBOUNCE, TOAST_MAX_COUNT, SEARCH_DEBOUNCE, ROOM_TYPES, ROOM_TYPE_DEFAULT, SNAP_DISTANCE, SNAP_ENABLED, EVT_PRESENCE_CHANGED, TIME_THRESHOLD_MINUTE, TIME_THRESHOLD_HOUR, TIME_THRESHOLD_DAY } from './constants.js';
 import * as S from './state.js';
-import { escHtml, escAttr, generateKey } from './utils.js';
+import { escHtml, escAttr, generateKey, getScale, getPointerPos, detectFloorId, taskProgress, formatLastEdit, deepClone, ensureRoomFields, ensureAllRooms, completedTaskCount, isValidKey, getDeviceId, _resetScaleCache } from './utils.js';
 import { updateTabBadges } from './sync.js';
 import * as Auth from './auth.js';
 import * as St from './storage.js';
@@ -641,6 +641,12 @@ async function handleLogin() {
     var result = await Auth.login(email, password);
     if (!result.ok) {
       if (errorEl) errorEl.textContent = result.error || 'Anmeldung fehlgeschlagen';
+      if (btn) { btn.disabled = false; btn.textContent = 'Anmelden'; }
+    } else {
+      // Explicit success: trigger onSignIn if auth listener hasn't fired yet
+      if (!S.get('isAuthenticated') && result.user) {
+        Auth.onSignIn(result.user);
+      }
       if (btn) { btn.disabled = false; btn.textContent = 'Anmelden'; }
     }
   } catch (e) {

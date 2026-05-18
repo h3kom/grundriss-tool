@@ -6,9 +6,10 @@
  * Kommuniziert mit Supabase über den Auth-Client.
  */import { EVT_AUTH_CHANGED, EVT_PROJECT_CHANGED } from './constants.js';
 import * as S from './state.js';
-import { escHtml, escAttr, _resetScaleCache } from './utils.js';
+import { escHtml, escAttr, _resetScaleCache, ensureAllRooms } from './utils.js';
 import { updateTabBadges } from './sync.js';
-// Uses window.GR.auth, window.GR.storage, window.GR.ui, etc. (lazy)
+import * as Auth from './auth.js';
+import * as St from './storage.js';
 
 // ===================================================================
   // API Helpers (via Supabase Client)
@@ -299,7 +300,7 @@ export async function openProject(projectId) {
       }
 
       // Lokal speichern (Cache)
-      if (St && saveToLocal) saveToLocal();
+      St.saveToLocal();
 
       // Floor-Tabs dynamisch aufbauen
       buildFloorUI(floors);
@@ -385,7 +386,7 @@ export async function openProject(projectId) {
       img.addEventListener('load', function() {
         var Rdr = window.GR.renderer;
         if (Rdr && Rdr.render) Rdr.render();
-        if (Sync && updateTabBadges) updateTabBadges();
+        updateTabBadges();
       });
       pw.appendChild(img);
 
@@ -413,9 +414,7 @@ export async function openProject(projectId) {
     }
 
     // Caches zurücksetzen
-    if (U && _resetScaleCache) {
-      _resetScaleCache();
-    }
+    _resetScaleCache();
   };
 
   /**
