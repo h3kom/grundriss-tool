@@ -166,7 +166,7 @@ window.GR = window.GR || {};
     if (cached && (now - cached.stamp) < C.SCALE_CACHE_TTL) return cached.value;
     const img = wrapper.querySelector('img');
     if (!img) return 1;
-    const nativeWidth = C.NATIVE_WIDTHS[U.detectFloorId(wrapper.id)] || 1000;
+    const nativeWidth = img.naturalWidth || C.NATIVE_WIDTHS[U.detectFloorId(wrapper.id)] || 1000;
     const displayWidth = img.getBoundingClientRect().width;
     const value = displayWidth > 0 && nativeWidth > 0 ? displayWidth / nativeWidth : 1;
     _scaleCache.set(wrapper, { value, stamp: now });

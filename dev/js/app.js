@@ -373,20 +373,68 @@ window.GR = window.GR || {};
     var floors = S.get('currentProjectFloors') || [];
     var floor = floors.find(function(f) { return f.id === floorId; });
     if (!floor) return;
-    var newName = prompt('Neuer Name für Stockwerk:', floor.name);
-    if (!newName || !newName.trim()) return;
+
+    var el = document.getElementById('floorRenameModal');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'floorRenameModal';
+      el.className = 'mo';
+      el.innerHTML =
+        '<div class="mb">' +
+          '<h3>Stockwerk umbenennen</h3>' +
+          '<input type="text" id="floorRenameInput" class="ob-input" style="margin-bottom:0" />' +
+          '<div class="ma" style="margin-top:16px">' +
+            '<button data-action="cancel-floor-rename" style="padding:10px 24px;border-radius:var(--rm);cursor:pointer;font-size:14px;font-weight:500;border:1px solid var(--border);background:var(--input);color:var(--text);min-height:44px">Abbrechen</button>' +
+            '<button data-action="confirm-floor-rename" class="p" style="padding:10px 24px;border-radius:var(--rm);cursor:pointer;font-size:14px;font-weight:500;border:none;background:var(--blue);color:#fff;min-height:44px">Speichern</button>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(el);
+    }
+
+    var input = document.getElementById('floorRenameInput');
+    if (input) {
+      input.value = floor.name;
+      input.setAttribute('data-floor-id', floorId);
+    }
+    el.classList.add('open');
+    setTimeout(function() {
+      if (input) { input.focus(); input.select(); }
+    }, 100);
+  };
+
+  App.cancelFloorRename = function() {
+    var el = document.getElementById('floorRenameModal');
+    if (el) el.classList.remove('open');
+  };
+
+  App.confirmFloorRename = async function() {
+    var input = document.getElementById('floorRenameInput');
+    if (!input) return;
+    var floorId = input.getAttribute('data-floor-id');
+    var newName = input.value.trim();
+    if (!newName) {
+      var UI = window.GR.ui;
+      if (UI && UI.toast) UI.toast('Name darf nicht leer sein', 'error', 2000);
+      return;
+    }
+    if (!floorId) return;
 
     var sb = Auth.getSupabase();
     if (!sb) return;
 
-    await sb.from('floors').update({ name: newName.trim() }).eq('id', floorId);
-    floor.name = newName.trim();
+    await sb.from('floors').update({ name: newName }).eq('id', floorId);
+
+    var floors = S.get('currentProjectFloors') || [];
+    var floor = floors.find(function(f) { return f.id === floorId; });
+    if (floor) floor.name = newName;
 
     var tab = document.getElementById('tab-' + floorId);
     if (tab) {
       var label = tab.querySelector('.ft-label');
-      if (label) label.textContent = newName.trim();
+      if (label) label.textContent = newName;
     }
+
+    App.cancelFloorRename();
   };
 
   App.handleDeleteFloor = async function(floorId) {
@@ -396,8 +444,16 @@ window.GR = window.GR || {};
       if (UI && UI.toast) UI.toast('Mindestens ein Stockwerk erforderlich', 'warning', 2000);
       return;
     }
-    if (!confirm('Stockwerk wirklich löschen?')) return;
+    var UI3 = window.GR.ui;
+    if (UI3 && UI3.confirm) {
+      UI3.confirm('Stockwerk wirklich löschen? Alle Räume auf diesem Stockwerk werden ebenfalls gelöscht.', function() {
+        App._executeDeleteFloor(floorId);
+      });
+    }
+  };
 
+  App._executeDeleteFloor = async function(floorId) {
+    var floors = S.get('currentProjectFloors') || [];
     var sb = Auth.getSupabase();
     if (!sb) return;
 
@@ -421,8 +477,7 @@ window.GR = window.GR || {};
   };
 
   App.showFloorMenu = function(floorId) {
-    var choice = confirm('OK = Umbenennen, Abbrechen = Abbrechen');
-    if (choice) { App.handleRenameFloor(floorId); }
+    App.handleRenameFloor(floorId);
   };
 
   // ===================================================================
@@ -505,6 +560,8 @@ window.GR = window.GR || {};
         case 'manage-floor': App.showFloorMenu(target.dataset.floorId); break;
         case 'rename-floor': App.handleRenameFloor(target.dataset.floorId); break;
         case 'delete-floor': App.handleDeleteFloor(target.dataset.floorId); break;
+        case 'confirm-floor-rename': App.confirmFloorRename(); break;
+        case 'cancel-floor-rename': App.cancelFloorRename(); break;
         case 'duplicate-room':
           if (selectedRoom) App.duplicateRoom(selectedRoom);
           break;
@@ -601,13 +658,14 @@ window.GR = window.GR || {};
       else if (id === 'regEmail' || id === 'regPassword' || id === 'regName') { App.handleRegister(); }
       else if (id === 'resetEmail') { App.handleReset(); }
       else if (id === 'renameProjectInput') { App.confirmRenameProject(); }
+      else if (id === 'floorRenameInput') { App.confirmFloorRename(); }
     });
 
     // Keyboard Shortcuts
     document.addEventListener('keydown', function(e) {
       var selectedRoom = S.get('selectedRoom');
       if (!selectedRoom) return;
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
 
       if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
         e.preventDefault();
@@ -848,6 +906,12 @@ window.GR = window.GR || {};
 
   App.handleDashboardExport = async function(projectId) {
     App.closeProjectMenu();
+    var savedState = {
+      project: S.get('currentProject'),
+      floors: S.get('currentProjectFloors'),
+      rooms: S.get('rooms'),
+      activeFloor: S.get('activeFloor')
+    };
     var success = await Proj.openProject(projectId);
     if (!success) {
       var UI = window.GR.ui;
@@ -856,6 +920,13 @@ window.GR = window.GR || {};
     }
     var Exp = window.GR.exportMod;
     if (Exp && Exp.exportProject) Exp.exportProject();
+    // Restore previous state
+    if (savedState.project) {
+      S.set('currentProject', savedState.project);
+      S.set('currentProjectFloors', savedState.floors);
+      S.set('rooms', savedState.rooms);
+      S.set('activeFloor', savedState.activeFloor);
+    }
     App.showView('dashboard');
   };
 

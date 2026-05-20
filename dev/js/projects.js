@@ -135,8 +135,8 @@ window.GR = window.GR || {};
             upsert: true
           });
           if (uploadResult.data) {
-            var urlResult = sb.storage.from('floor-plans').getPublicUrl(filePath);
-            imageUrl = urlResult.data.publicUrl;
+            var urlResult = await sb.storage.from('floor-plans').createSignedUrl(filePath, 3600);
+            imageUrl = urlResult.data ? urlResult.data.signedUrl : '';
           }
         }
 
@@ -153,6 +153,9 @@ window.GR = window.GR || {};
         var floorResult = await sb.from('floors').insert(floorRecords).select('id, name, image_url, native_width, sort_order');
         if (floorResult.error) {
           console.warn('[projects] floor insert error:', floorResult.error.message);
+          // Cleanup: delete partial project on floor failure
+          await sb.from('projects').delete().eq('id', projectId);
+          return { ok: false, error: 'Stockwerke konnten nicht erstellt werden: ' + floorResult.error.message };
         }
 
         // 3. Demo-Räume anlegen (mit Floor-IDs)
@@ -391,8 +394,8 @@ window.GR = window.GR || {};
       img.addEventListener('load', function() {
         var Rdr = window.GR.renderer;
         var Sync = window.GR.sync;
-        if (Rdr && Rdr.render) Rdr.render();
-        if (Sync && Sync.updateTabBadges) Sync.updateTabBadges();
+        if (Rdr && typeof Rdr.render === 'function') Rdr.render();
+        if (Sync && typeof Sync.updateTabBadges === 'function') Sync.updateTabBadges();
       });
       pw.appendChild(img);
 

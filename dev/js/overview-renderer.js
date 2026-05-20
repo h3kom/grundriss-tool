@@ -61,7 +61,15 @@ window.GR = window.GR || {};
         var key = filtered[i][0];
         var room = filtered[i][1];
         var progress = U.taskProgress(room);
-        var floorLabel = room.floor === 'eg' ? 'EG' : 'OG';
+        var floors = S.get('currentProjectFloors');
+        var floorLabel = 'EG';
+        if (floors) {
+          for (var f = 0; f < floors.length; f++) {
+            if (floors[f].id === room.floor) { floorLabel = floors[f].name || floors[f].id; break; }
+          }
+        } else {
+          floorLabel = room.floor === 'og' ? 'OG' : 'EG';
+        }
         html += '<div class="ori" data-action="show-room" data-key="' + U.escAttr(key) + '">' +
           '<div class="nm">' + U.escHtml(room.title) + '<span style="font-size:11px;color:var(--muted);margin-left:4px;">(' + floorLabel + ')</span></div>' +
           '<div class="pt">' + progress.done + '/' + progress.total + ' (' + progress.percent + '%)</div>' +

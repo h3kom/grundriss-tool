@@ -109,7 +109,10 @@ window.GR = window.GR || {};
     // Click: select or show
     // NOTE: editMode must be read LIVE from state (not from closure) to avoid stale value after mode toggle
     div.addEventListener('click', function(e) {
-      if (e.currentTarget._wasDragged) return;
+      if (e.currentTarget._wasDragged) {
+        e.currentTarget._wasDragged = false;
+        return;
+      }
       if (S.get('editMode')) {
         Rdr.selectRoomEdit(key);
         return;
@@ -201,7 +204,11 @@ window.GR = window.GR || {};
   };
 
   Rdr.scrollToRoom = function(key) {
-    const el = document.querySelector('.ro[data-key="' + key + '"]');
+    var el = null;
+    var roomEls = document.querySelectorAll('.ro');
+    for (var i = 0; i < roomEls.length; i++) {
+      if (roomEls[i].getAttribute('data-key') === key) { el = roomEls[i]; break; }
+    }
     if (!el) return;
     setTimeout(function() {
       const wrapper = el.closest('.pw');

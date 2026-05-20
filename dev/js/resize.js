@@ -171,6 +171,11 @@ window.GR = window.GR || {};
   RS.onResizeEnd = function() { onResizeEndCleanup(); };
   RS.onResizeEndTouch = function() { onResizeEndCleanup(); };
 
+  // Cleanup bei Tab-Wechsel/Fokusverlust
+  document.addEventListener('visibilitychange', function() {
+    if (document.hidden && S.get('resizeState')) onResizeEndCleanup();
+  });
+
   /**
    * Ermittelt die Pointer-Position über die zentrale utils-Funktion.
    * @param {Event} e

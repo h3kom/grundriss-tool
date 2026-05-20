@@ -144,6 +144,11 @@ window.GR = window.GR || {};
   D.onDragEnd = function() { onDragEndCleanup(); };
   D.onDragEndTouch = function() { onDragEndCleanup(); };
 
+  // Cleanup bei Tab-Wechsel/Fokusverlust
+  document.addEventListener('visibilitychange', function() {
+    if (document.hidden && S.get('dragState')) onDragEndCleanup();
+  });
+
   D.getPointerPos = function(e) {
     return U.getPointerPos(e);
   };

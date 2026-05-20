@@ -83,7 +83,7 @@ window.GR = window.GR || {};
       relStartY: raw.y - rect.top,
       wrapper,
       pi,
-      floor: U.detectFloorId(wrapper.id),
+      floor: wrapper.id.replace(/-w$/, ''),
       endX: null,
       endY: null,
       relEndX: null,
