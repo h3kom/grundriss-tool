@@ -219,11 +219,9 @@ window.GR = window.GR || {};
   };
 
   Rdr.selectRoomEdit = function(key) {
-    // Set selectedRoom WITHOUT triggering EVT_SELECTION_CHANGED to avoid double render.
-    // The explicit render() + renderDetail() calls below handle the update.
     var rooms = S.get('rooms');
     if (!rooms[key]) return;
-    S.get().selectedRoom = key;
+    S.set('selectedRoom', key);
     Rdr.render();
     const DetailRdr = window.GR.detailRenderer;
     if (DetailRdr) DetailRdr.renderDetail(key);

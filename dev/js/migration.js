@@ -118,7 +118,7 @@ window.GR = window.GR || {};
       });
       if (memberResult.error) {
         console.warn('[migration] member insert failed:', memberResult.error.message);
-        // Non-fatal – Projekt existiert bereits
+        return { ok: false, error: 'Owner-Mitglied konnte nicht erstellt werden' };
       }
 
       // Migration als fertig markieren

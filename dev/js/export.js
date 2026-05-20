@@ -216,6 +216,7 @@ window.GR = window.GR || {};
 
   Exp.openProjectSettings = function() {
     _pendingImport = null;
+    _importConfirmed = false;
     var modal = document.getElementById('projectSettingsModal');
     if (!modal) return;
 

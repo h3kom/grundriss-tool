@@ -9,11 +9,11 @@ window.GR = window.GR || {};
 (function(C) {
   'use strict';
 
-  /** @const {string} Supabase-Projekt-URL */
-  C.SUPABASE_URL = window._GR_CONFIG?.SUPABASE_URL || 'https://civkerrcyqgsqqjpccqe.supabase.co';
+  /** @const {string} Supabase-Projekt-URL (muss via config.local.js gesetzt werden) */
+  C.SUPABASE_URL = (window._GR_CONFIG && window._GR_CONFIG.SUPABASE_URL) || '';
 
-  /** @const {string} Supabase anonymer API-Key */
-  C.SUPABASE_ANON_KEY = window._GR_CONFIG?.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpdmtlcnJjeXFnc3FxanBjY3FlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzMzkxNzAsImV4cCI6MjA5MzkxNTE3MH0.Q01QUWnwYm-aDAhbwi-Rb_kBU28s8Rx27J0RUkILY1U';
+  /** @const {string} Supabase anonymer API-Key (muss via config.local.js gesetzt werden) */
+  C.SUPABASE_ANON_KEY = (window._GR_CONFIG && window._GR_CONFIG.SUPABASE_ANON_KEY) || '';
 
   /** @const {number} Mindestgröße für Räume in Pixeln */
   C.MIN_ROOM_SIZE = 20;
@@ -63,6 +63,9 @@ window.GR = window.GR || {};
 
   /** @const {string} Event-Name bei Auth-Änderungen */
   C.EVT_AUTH_CHANGED = 'authChanged';
+
+  /** @const {string} Event-Name bei View-Wechsel (auth/dashboard/editor) */
+  C.EVT_VIEW_CHANGED = 'viewChanged';
 
   /** @const {string} Event-Name bei Projekt-Wechsel */
   C.EVT_PROJECT_CHANGED = 'projectChanged';

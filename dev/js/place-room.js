@@ -15,6 +15,9 @@ window.GR = window.GR || {};
   const St = window.GR.storage;
   const U = window.GR.utils;
 
+  // Shared options object for touch event listeners – must be same reference for add/remove
+  PR._touchOptions = { passive: false };
+
   /**
    * Aktiviert den Platzierungs-Modus.
    * @param {string} floor - Etagen-Kürzel ('eg' | 'og')
@@ -100,8 +103,8 @@ window.GR = window.GR || {};
 
     document.addEventListener('mousemove', PR.onPlaceDrawMove);
     document.addEventListener('mouseup', PR.onPlaceDrawEnd);
-    document.addEventListener('touchmove', PR.onPlaceDrawMoveTouch, { passive: false });
-    document.addEventListener('touchend', PR.onPlaceDrawEndTouch, { passive: false });
+    document.addEventListener('touchmove', PR.onPlaceDrawMoveTouch, PR._touchOptions);
+    document.addEventListener('touchend', PR.onPlaceDrawEndTouch, PR._touchOptions);
   };
 
   /**
@@ -156,8 +159,8 @@ window.GR = window.GR || {};
     if (!ps) return;
     document.removeEventListener('mousemove', PR.onPlaceDrawMove);
     document.removeEventListener('mouseup', PR.onPlaceDrawEnd);
-    document.removeEventListener('touchmove', PR.onPlaceDrawMoveTouch);
-    document.removeEventListener('touchend', PR.onPlaceDrawEndTouch);
+    document.removeEventListener('touchmove', PR.onPlaceDrawMoveTouch, PR._touchOptions);
+    document.removeEventListener('touchend', PR.onPlaceDrawEndTouch, PR._touchOptions);
   }
 
   PR.onPlaceDrawEnd = function() { onPlaceDrawEndCleanup(); PR.finishPlaceDraw(); };

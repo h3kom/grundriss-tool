@@ -72,7 +72,8 @@ window.GR = window.GR || {};
     html += '</div>';
     html += OR.buildLastEditInfo();
 
-    document.getElementById('sc').innerHTML = html;
+    var sc = document.getElementById('sc');
+    if (sc) sc.innerHTML = html;
   };
 
   /**

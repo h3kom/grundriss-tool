@@ -46,6 +46,7 @@ window.GR = window.GR || {};
       return;
     }
     const rooms = S.get('rooms');
+    if (!rooms[key]) return;
     if (!rooms[key].tasks) rooms[key].tasks = [];
     rooms[key].tasks.push(text);
     St.saveData();
@@ -84,7 +85,9 @@ window.GR = window.GR || {};
    * @param {string} value - Notiztext
    */
   R.saveNote = function(key, value) {
-    S.get('rooms')[key].note = value;
+    var room = S.get('rooms')[key];
+    if (!room) return;
+    room.note = value;
     St.saveData();
   };
 
@@ -106,6 +109,7 @@ window.GR = window.GR || {};
       return;
     }
     const rooms = S.get('rooms');
+    if (!rooms[key]) return;
     if (!rooms[key].comments) rooms[key].comments = [];
     var currentUser = S.get('currentUser');
     var userName = (currentUser && currentUser.displayName) || 'Unbekannt';
@@ -122,6 +126,7 @@ window.GR = window.GR || {};
    */
   R.deleteComment = function(key, idx) {
     const rooms = S.get('rooms');
+    if (!rooms[key]) return;
     if (!rooms[key].comments) rooms[key].comments = [];
     rooms[key].comments.splice(idx, 1);
     St.saveData();
@@ -150,6 +155,7 @@ window.GR = window.GR || {};
           UI.toast(`"${backupRoom.title}" gelöscht`, 'warning', 6000, function() {
             rooms[backupKey] = backupRoom;
             St.saveData();
+            S.notify(C.EVT_ROOMS_CHANGED);
           });
         }
       });

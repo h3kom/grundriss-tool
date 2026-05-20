@@ -119,7 +119,7 @@ window.GR = window.GR || {};
       S.notify(C.EVT_SYNC_STATUS_CHANGED, value);
     }
     if (key === 'currentView' && old !== value) {
-      S.notify(C.EVT_AUTH_CHANGED, value);
+      S.notify(C.EVT_VIEW_CHANGED, value);
     }
   };
 

@@ -149,7 +149,9 @@ window.GR = window.GR || {};
       if (!raw) return null;
       const data = JSON.parse(raw);
       if (data && typeof data === 'object' && Object.keys(data).length > 0) return data;
-    } catch (e) { /* noop */ }
+    } catch (e) {
+      console.warn('[storage] loadFromLocal: corrupted localStorage data', e);
+    }
     return null;
   };
 

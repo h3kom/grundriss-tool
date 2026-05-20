@@ -28,6 +28,10 @@ window.GR = window.GR || {};
       console.warn('[auth] Supabase JS Client nicht geladen. Auth deaktiviert.');
       return;
     }
+    if (!C.SUPABASE_URL || !C.SUPABASE_ANON_KEY) {
+      console.warn('[auth] Supabase URL/Key nicht konfiguriert. Auth deaktiviert.');
+      return;
+    }
     // Prevent duplicate listeners on re-init
     if (_authSubscription) {
       try { _authSubscription.unsubscribe(); } catch (e) { /* noop */ }
