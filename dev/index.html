@@ -1,15 +1,15 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self';" />
-  <title data-i18n="app.title">Grundriss Tool</title>
+  <title>Grundriss Tool</title>
   <link rel="icon" href="data:;base64,iVBORw0KGgo=" />
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.js" integrity="sha384-l7yJnh/cWKcqeTC5adHUdc5b+J4Kb2QTGRSkCQehn1YT5xEFlrgwnXOYuvrtI1F6" crossorigin="anonymous"></script>
-  <script src="/grundriss-tool/dev/config.local.js"></script>
-  <script type="module" crossorigin src="/grundriss-tool/dev/assets/index-DRbCms2r.js"></script>
-  <link rel="stylesheet" crossorigin href="/grundriss-tool/dev/assets/index-B-MwJG6N.css">
+  <link rel="stylesheet" href="styles.css" />
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Local config (overrides defaults) -->
+  <script src="config.local.js" onerror="window._GR_CONFIG=null"></script>
 </head>
 <body>
 
@@ -19,20 +19,20 @@
   <div id="authView" class="view auth-view">
     <div class="auth-container">
       <div class="auth-header">
-        <h1>🏗️ <span data-i18n="app.title">Grundriss Tool</span></h1>
-        <p data-i18n="app.tagline">Gebäude planen, Räume definieren, Projekte verwalten.</p>
+        <h1>🏗️ Grundriss Tool</h1>
+        <p>Gebäude planen, Räume definieren, Projekte verwalten.</p>
       </div>
 
       <!-- Login Form -->
       <div id="loginForm" class="auth-form">
-        <h2 data-i18n="auth.login">Anmelden</h2>
+        <h2>Anmelden</h2>
         <div id="loginError" class="auth-error"></div>
-        <input type="email" id="loginEmail" data-i18n-placeholder="auth.email" placeholder="E-Mail" autocomplete="email" />
-        <input type="password" id="loginPassword" data-i18n-placeholder="auth.password" placeholder="Passwort" autocomplete="current-password" />
-        <button data-action="do-login" class="auth-btn-primary" data-i18n="auth.login">Anmelden</button>
+        <input type="email" id="loginEmail" placeholder="E-Mail" autocomplete="email" />
+        <input type="password" id="loginPassword" placeholder="Passwort" autocomplete="current-password" />
+        <button data-action="do-login" class="auth-btn-primary">Anmelden</button>
         <div class="auth-links">
-          <a href="#" data-action="show-reset" data-i18n="auth.forgotPassword">Passwort vergessen?</a>
-          <a href="#" data-action="show-register" data-i18n="auth.createAccount">Neues Konto erstellen</a>
+          <a href="#" data-action="show-reset">Passwort vergessen?</a>
+          <a href="#" data-action="show-register">Neues Konto erstellen</a>
         </div>
       </div>
 
@@ -111,20 +111,20 @@
       </div>
 
       <!-- Plan-Wrapper EG -->
-      <div id="eg-w" class="pw" data-floor="eg" data-native-width="1000" role="tabpanel" aria-label="Erdgeschoss Grundriss">
+      <div id="eg-w" class="pw" data-floor="eg" role="tabpanel" aria-label="Erdgeschoss Grundriss">
         <div class="plan-nav">
           <span id="cnt-eg" class="cnt"></span>
         </div>
-        <img id="eg-img" class="pi" src="/grundriss-tool/dev/assets/EG-BHebtXml.png" alt="Grundriss Erdgeschoss" draggable="false" />
+        <img id="eg-img" class="pi" src="EG.png" alt="Grundriss Erdgeschoss" draggable="false" />
         <div id="eg-r" class="pr"></div>
       </div>
 
       <!-- Plan-Wrapper OG -->
-      <div id="og-w" class="pw" data-floor="og" data-native-width="800" role="tabpanel" aria-label="Obergeschoss Grundriss">
+      <div id="og-w" class="pw" data-floor="og" role="tabpanel" aria-label="Obergeschoss Grundriss">
         <div class="plan-nav">
           <span id="cnt-og" class="cnt"></span>
         </div>
-        <img id="og-img" class="pi" src="/grundriss-tool/dev/assets/OG-DohHCYKW.png" alt="Grundriss Obergeschoss" draggable="false" />
+        <img id="og-img" class="pi" src="OG.png" alt="Grundriss Obergeschoss" draggable="false" />
         <div id="og-r" class="pr"></div>
       </div>
 
@@ -176,19 +176,12 @@
       </div>
       <div class="settings-body">
         <div class="settings-item">
-          <span class="settings-label" data-i18n="settings.darkMode">🌙 Dark Mode</span>
-          <button id="settingsDarkToggle" data-action="toggle-dark-mode" class="settings-toggle" data-i18n="settings.off">Aus</button>
+          <span class="settings-label">🌙 Dark Mode</span>
+          <button id="settingsDarkToggle" data-action="toggle-dark-mode" class="settings-toggle">Aus</button>
         </div>
         <div class="settings-item">
-          <span class="settings-label" data-i18n="settings.language">🌐 Sprache</span>
-          <div class="settings-lang">
-            <button id="settingsLangDe" type="button" data-action="set-locale-de" class="settings-toggle active" data-i18n="settings.langDe">Deutsch</button>
-            <button id="settingsLangEn" type="button" data-action="set-locale-en" class="settings-toggle" data-i18n="settings.langEn">English</button>
-          </div>
-        </div>
-        <div class="settings-item">
-          <span class="settings-label" data-i18n="settings.about">ℹ️ Über</span>
-          <span class="settings-value" data-i18n="settings.version">Grundriss Tool v1.0</span>
+          <span class="settings-label">ℹ️ Über</span>
+          <span class="settings-value">Grundriss Tool v1.0</span>
         </div>
       </div>
     </div>
@@ -245,5 +238,32 @@
   <!-- ============================================================ -->
   <!-- Scripts (Reihenfolge wichtig!)                                -->
   <!-- ============================================================ -->
+  <script src="js/error-handler.js"></script>
+  <script src="js/constants.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/sync.js"></script>
+  <script src="js/cloud.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/rooms.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/detail-renderer.js"></script>
+  <script src="js/overview-renderer.js"></script>
+  <script src="js/drag.js"></script>
+  <script src="js/resize.js"></script>
+  <script src="js/interaction.js"></script>
+  <script src="js/place-room.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/demo-template.js"></script>
+  <!-- New modules -->
+  <script src="js/auth.js"></script>
+  <script src="js/projects.js"></script>
+  <script src="js/onboarding.js"></script>
+  <script src="js/collaboration.js"></script>
+  <script src="js/migration.js"></script>
+  <script src="js/presence.js"></script>
+  <script src="js/export.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
