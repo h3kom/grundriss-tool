@@ -59,7 +59,6 @@ window.GR = window.GR || {};
         }
       }
       Pres.updateUI();
-      S.notify(C.EVT_PRESENCE_CHANGED, _onlineUsers);
     });
 
     _channel.subscribe(async function(status) {
@@ -105,14 +104,6 @@ window.GR = window.GR || {};
     }
     _onlineUsers = {};
     Pres.updateUI();
-  };
-
-  /**
-   * Gibt die aktuell onlineUsers zurück.
-   * @returns {Object}
-   */
-  Pres.getOnlineUsers = function() {
-    return _onlineUsers;
   };
 
   /**

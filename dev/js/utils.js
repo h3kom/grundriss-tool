@@ -87,16 +87,6 @@ window.GR = window.GR || {};
   };
 
   /**
-   * Validiert, dass ein Raum-Key nur sichere Zeichen enthält.
-   * Verhindert Injection über Raum-Schlüssel.
-   * @param {string} key - Zu prüfender Schlüssel
-   * @returns {boolean} True wenn der Key sicher ist
-   */
-  U.isValidKey = function(key) {
-    return typeof key === 'string' && /^[a-zA-Z0-9_\-]+$/.test(key);
-  };
-
-  /**
    * Formatiert die "Zuletzt bearbeitet"-Anzeige.
    * Zentralisiert, um Duplikate in detail-renderer und overview-renderer zu vermeiden.
    * @param {number} lastSaveTs - Timestamp der letzten Speicherung
@@ -190,18 +180,4 @@ window.GR = window.GR || {};
     return { x: e.clientX, y: e.clientY };
   };
 
-  /**
-   * Generiert oder liest eine eindeutige Geräte-ID (UUID) aus dem localStorage.
-   * Wird für die Benutzerisolierung bei Supabase-Zeilen verwendet.
-   * @returns {string} Geräte-UUID
-   */
-  U.getDeviceId = function() {
-    const KEY = 'gr_device_id';
-    let id = localStorage.getItem(KEY);
-    if (!id) {
-      id = 'd' + Date.now().toString(36) + Math.random().toString(36).substring(2, 10);
-      localStorage.setItem(KEY, id);
-    }
-    return id;
-  };
 })(window.GR.utils = window.GR.utils || {});

@@ -153,15 +153,4 @@ window.GR = window.GR || {};
 
     return rooms;
   };
-
-  /**
-   * Standard-Floor-Konfiguration für neue Projekte.
-   * @returns {Array<{name: string, imageUrl: string, nativeWidth: number}>}
-   */
-  DT.getDefaultFloors = function() {
-    return [
-      { name: 'Erdgeschoss', imageUrl: 'EG.png', nativeWidth: 1000 },
-      { name: 'Obergeschoss', imageUrl: 'OG.png', nativeWidth: 800 }
-    ];
-  };
 })(window.GR.demoTemplate = window.GR.demoTemplate || {});

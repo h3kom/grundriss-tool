@@ -211,7 +211,7 @@ window.GR = window.GR || {};
     // Create the new room
     rooms[key] = {
       title: 'Neuer Raum',
-      type: C.ROOM_TYPE_DEFAULT,
+      type: S.get('placeRoomType') || C.ROOM_TYPE_DEFAULT,
       floor: ps.floor,
       tasks: [],
       done: {},

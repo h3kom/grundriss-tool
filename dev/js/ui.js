@@ -40,7 +40,7 @@ window.GR = window.GR || {};
    * @param {Function} [undoCallback] - Optionale Undo-Funktion
    */
   function toast(message, type, duration, undoCallback) {
-    var container = document.getElementById('toasts') || document.getElementById('tc');
+    var container = document.getElementById('toasts');
     if (!container) return;
 
     var icons = { success: '\u2705', error: '\u274C', warning: '\u26A0\uFE0F', info: '\u2139\uFE0F' };
@@ -98,7 +98,7 @@ window.GR = window.GR || {};
    * Führt eine Undo-Operation aus.
    */
   function executeUndo() {
-    var container = document.getElementById('toasts') || document.getElementById('tc');
+    var container = document.getElementById('toasts');
     if (!container) return;
     var target = null;
     var elements = container.querySelectorAll('.t');
@@ -555,9 +555,6 @@ window.GR = window.GR || {};
     }
     if (e.target.closest('#btnOv')) {
       UI.toggleOverview();
-    }
-    if (e.target.closest('#sbC')) {
-      UI.closeSidebar();
     }
     if (e.target.closest('#introClose')) {
       UI.closeIntro();

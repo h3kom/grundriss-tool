@@ -193,16 +193,4 @@ window.GR = window.GR || {};
     }
   };
 
-  /**
-   * Alte saveToSupabase-Funktion (backward compat).
-   * Leitet an saveToCloud weiter.
-   */
-  Cloud.saveToSupabase = Cloud.saveToCloud;
-
-  /**
-   * Alte loadFromSupabase-Funktion (backward compat).
-   * Leitet an loadFromCloud weiter.
-   */
-  Cloud.loadFromSupabase = Cloud.loadFromCloud;
-
 })(window.GR.cloud = window.GR.cloud || {});

@@ -70,16 +70,13 @@ window.GR = window.GR || {};
     isPlacing: false,
     placeFloor: null,
     placeState: null,
+    placeRoomType: null,
 
     // === Sync ===
     debounceTimer: null,
     lastSaveTs: Date.now(),
     undoStack: [],
-    syncStatus: 'idle',
-    serverStamp: 0,
-    pollInterval: null,
-    isSyncing: false,
-    saveTimeout: null
+    syncStatus: 'idle'
   };
 
   /**
@@ -109,47 +106,11 @@ window.GR = window.GR || {};
     if (key === 'editMode' && old !== value) {
       S.notify(C.EVT_EDIT_MODE_CHANGED, value);
     }
-    if (key === 'activeFloor' && old !== value) {
-      S.notify(C.EVT_FLOOR_CHANGED, value);
-    }
     if (key === 'selectedRoom' && old !== value) {
       S.notify(C.EVT_SELECTION_CHANGED, value);
     }
     if (key === 'syncStatus' && old !== value) {
       S.notify(C.EVT_SYNC_STATUS_CHANGED, value);
-    }
-    if (key === 'currentView' && old !== value) {
-      S.notify(C.EVT_VIEW_CHANGED, value);
-    }
-  };
-
-  /**
-   * Führt ein partielles Merge mit dem State aus und feuert roomsChanged.
-   * @param {Object} obj - Teilzustand (z. B. { rooms: ... })
-   */
-  S.notifyRoomsChanged = function() {
-    S.notify(C.EVT_ROOMS_CHANGED);
-  };
-
-  /**
-   * Merged mehrere Werte auf einmal in den State (ohne Events, außer man ruft notify auf).
-   * @param {Object} obj - Partial-Objekt
-   */
-  S.merge = function(obj) {
-    const old = {};
-    for (const key of Object.keys(obj)) {
-      old[key] = _state[key];
-    }
-    Object.assign(_state, obj);
-    // Feuert Events für bekannte Schlüssel
-    for (const key of Object.keys(obj)) {
-      if (old[key] !== obj[key]) {
-        if (key === 'editMode') S.notify(C.EVT_EDIT_MODE_CHANGED, obj[key]);
-        if (key === 'activeFloor') S.notify(C.EVT_FLOOR_CHANGED, obj[key]);
-        if (key === 'selectedRoom') S.notify(C.EVT_SELECTION_CHANGED, obj[key]);
-        if (key === 'syncStatus') S.notify(C.EVT_SYNC_STATUS_CHANGED, obj[key]);
-        if (key === 'rooms') S.notify(C.EVT_ROOMS_CHANGED);
-      }
     }
   };
 

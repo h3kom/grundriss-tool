@@ -86,21 +86,6 @@ window.GR = window.GR || {};
     }
   };
 
-  /**
-   * Holt den aktuellen User.
-   * @returns {Promise<Object|null>}
-   */
-  Auth.getCurrentUser = async function() {
-    if (!_sb) return null;
-    try {
-      var result = await _sb.auth.getUser();
-      return result.data.user;
-    } catch (e) {
-      console.warn('[auth] getUser error:', e.message);
-      return null;
-    }
-  };
-
   // ===================================================================
   // E-Mail/Passwort Auth
   // ===================================================================
