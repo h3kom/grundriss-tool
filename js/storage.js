@@ -17,6 +17,10 @@ window.GR = window.GR || {};
   /** @type {number} Debounce-Timer für Cloud-Save */
   var _saveTimer = null;
 
+  /** Retry-Queue für fehlgeschlagene Cloud-Saves */
+  var _retryCount = 0;
+  var MAX_RETRIES = 3;
+
   /**
    * Speichert Daten: sofort lokal, debounced in die Cloud.
    */
@@ -77,7 +81,7 @@ window.GR = window.GR || {};
       if (project.roomsRowId) {
         var checkResult = await Cloud.getCloudTimestamp(project.roomsRowId);
         if (checkResult.ok && checkResult.updated_at) {
-          if (_lastCloudLoadTs && checkResult.updated_at > _lastCloudLoadTs) {
+          if (_lastCloudLoadTs && new Date(checkResult.updated_at) > new Date(_lastCloudLoadTs)) {
             // Remote is newer than what we last loaded – potential conflict
             console.warn('[storage] Remote data is newer than local. Skipping save to prevent overwrite.');
             S.set('syncStatus', 'error');
@@ -93,9 +97,17 @@ window.GR = window.GR || {};
       if (result.ok) {
         _lastCloudLoadTs = new Date().toISOString();
         S.set('syncStatus', 'saved');
+        _retryCount = 0;
       } else {
-        S.set('syncStatus', 'error');
-        console.warn('[storage] Cloud save failed:', result.error);
+        _retryCount++;
+        if (_retryCount <= MAX_RETRIES) {
+          console.warn('[storage] Cloud save failed (attempt ' + _retryCount + '/' + MAX_RETRIES + '):', result.error);
+          setTimeout(function() { St.cloudSave(); }, _retryCount * 2000);
+        } else {
+          S.set('syncStatus', 'error');
+          console.warn('[storage] Cloud save failed after ' + MAX_RETRIES + ' retries:', result.error);
+          _retryCount = 0;
+        }
       }
     } catch (e) {
       S.set('syncStatus', 'error');
@@ -166,5 +178,14 @@ window.GR = window.GR || {};
 
   // Toast-Stub (wird von ui.js überschrieben)
   St.toast = null;
+
+  // Flush pending saves when page is closing
+  window.addEventListener('beforeunload', function() {
+    if (_saveTimer) {
+      clearTimeout(_saveTimer);
+      _saveTimer = null;
+      St.cloudSave();
+    }
+  });
 
 })(window.GR.storage = window.GR.storage || {});

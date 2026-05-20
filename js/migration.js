@@ -62,6 +62,18 @@ window.GR = window.GR || {};
       var sb = Auth.getSupabase();
       if (!sb) return { ok: false };
 
+      // Idempotency: Check if migrated project already exists
+      var existingProject = await sb.from('projects')
+        .select('id')
+        .eq('owner_id', user.id)
+        .eq('name', 'Altes Projekt (migriert)')
+        .limit(1);
+      if (existingProject.data && existingProject.data.length > 0) {
+        console.info('[migration] Migrated project already exists, skipping');
+        Mig._markMigrated();
+        return { ok: true, projectId: existingProject.data[0].id };
+      }
+
       // Projekt "Altes Projekt (migriert)" erstellen
       var projResult = await sb.from('projects').insert({
         owner_id: user.id,

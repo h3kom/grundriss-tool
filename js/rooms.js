@@ -49,9 +49,10 @@ window.GR = window.GR || {};
     if (!rooms[key]) return;
     if (!rooms[key].tasks) rooms[key].tasks = [];
     rooms[key].tasks.push(text);
+    if (input) input.value = '';
     St.saveData();
-    input.value = '';
-    input.focus();
+    var newInput = document.getElementById(`nti-${key}`);
+    if (newInput) newInput.focus();
   };
 
   /**
@@ -114,9 +115,10 @@ window.GR = window.GR || {};
     var currentUser = S.get('currentUser');
     var userName = (currentUser && currentUser.displayName) || 'Unbekannt';
     rooms[key].comments.push({ text: text, time: new Date().toISOString(), user: userName });
+    if (input) input.value = '';
     St.saveData();
-    input.value = '';
-    input.focus();
+    var newInput = document.getElementById(`nci-${key}`);
+    if (newInput) newInput.focus();
   };
 
   /**
@@ -153,9 +155,11 @@ window.GR = window.GR || {};
         St.saveData();
         if (UI && UI.toast) {
           UI.toast(`"${backupRoom.title}" gelöscht`, 'warning', 6000, function() {
-            rooms[backupKey] = backupRoom;
-            St.saveData();
-            S.notify(C.EVT_ROOMS_CHANGED);
+            if (!rooms[backupKey]) {
+              rooms[backupKey] = backupRoom;
+              St.saveData();
+              S.notify(C.EVT_ROOMS_CHANGED);
+            }
           });
         }
       });

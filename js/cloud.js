@@ -74,15 +74,26 @@ window.GR = window.GR || {};
           }).select('id').single();
 
           if (insertResult.error) {
-            console.warn('[cloud] Failed to create rooms row:', insertResult.error.message);
-            return { ok: false, error: 'Keine Room-Row-ID (Erstellung fehlgeschlagen: ' + insertResult.error.message + ')' };
-          }
-
-          if (insertResult.data && insertResult.data.id) {
+            // Race condition: anderer Client hat bereits eingefügt → nochmal suchen
+            var retryLookup = await sb.from('rooms')
+              .select('id')
+              .eq('project_id', project.id)
+              .order('updated_at', { ascending: false })
+              .limit(1);
+            if (retryLookup.data && retryLookup.data.length > 0) {
+              project.roomsRowId = retryLookup.data[0].id;
+              S.set('currentProject', project);
+              console.info('[cloud] Recovered roomsRowId after race:', project.roomsRowId);
+              // Save the data to the recovered row
+            } else {
+              console.warn('[cloud] Failed to create rooms row:', insertResult.error.message);
+              return { ok: false, error: 'Keine Room-Row-ID (Erstellung fehlgeschlagen: ' + insertResult.error.message + ')' };
+            }
+          } else if (insertResult.data && insertResult.data.id) {
             project.roomsRowId = insertResult.data.id;
             S.set('currentProject', project);
             console.info('[cloud] Created new rooms row:', project.roomsRowId);
-            return { ok: true }; // Daten wurden bereits beim INSERT gespeichert
+            return { ok: true };
           } else {
             console.warn('[cloud] Insert returned no data');
             return { ok: false, error: 'Keine Room-Row-ID (Erstellung fehlgeschlagen)' };

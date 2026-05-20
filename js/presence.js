@@ -138,7 +138,8 @@ window.GR = window.GR || {};
       var u = _onlineUsers[otherUsers[i]];
       var initial = u.name ? u.name.charAt(0).toUpperCase() : '?';
       var U = window.GR.utils;
-      html += '<span class="presence-avatar" style="background:' + u.color + '" title="' + U.escAttr(u.name || 'Unbekannt') + '">' + U.escHtml(initial) + '</span>';
+      var safeColor = /^#[0-9a-fA-F]{6}$/.test(u.color) ? u.color : '#78716c';
+      html += '<span class="presence-avatar" style="background:' + safeColor + '" title="' + U.escAttr(u.name || 'Unbekannt') + '">' + U.escHtml(initial) + '</span>';
     }
     if (otherUsers.length > 4) {
       html += '<span class="presence-more">+' + (otherUsers.length - 4) + '</span>';
