@@ -16,39 +16,6 @@ window.GR = window.GR || {};
   var Auth = window.GR.auth;
 
   // ===================================================================
-  // API Helpers (via Supabase Client)
-  // ===================================================================
-
-  /**
-   * Führt eine Supabase REST-Abfrage durch.
-   * @param {string} table - Tabellenname
-   * @param {Object} options - Query-Optionen
-   * @returns {Promise<Array>}
-   */
-  async function query(table, options) {
-    var sb = Auth.getSupabase();
-    if (!sb) return [];
-    try {
-      var q = sb.from(table).select(options.select || '*');
-      if (options.filter) {
-        for (var key of Object.keys(options.filter)) {
-          q = q.eq(key, options.filter[key]);
-        }
-      }
-      if (options.order) q = q.order(options.order.column, { ascending: options.order.ascending !== false });
-      var result = await q;
-      if (result.error) {
-        console.warn('[projects] query error:', result.error.message);
-        return [];
-      }
-      return result.data || [];
-    } catch (e) {
-      console.warn('[projects] query exception:', e.message);
-      return [];
-    }
-  }
-
-  // ===================================================================
   // Projekt CRUD
   // ===================================================================
 
@@ -425,31 +392,6 @@ window.GR = window.GR || {};
     // Caches zurücksetzen
     if (U && U._resetScaleCache) {
       U._resetScaleCache();
-    }
-  };
-
-  /**
-   * Lädt die aktuellen User-Role für ein Projekt.
-   * @param {string} projectId
-   * @returns {Promise<string>} 'owner' | 'editor' | 'viewer' | ''
-   */
-  Proj.getProjectRole = async function(projectId) {
-    var user = S.get('currentUser');
-    if (!user) return '';
-    var sb = Auth.getSupabase();
-    if (!sb) return '';
-
-    try {
-      // Check if owner
-      var proj = await sb.from('projects').select('owner_id').eq('id', projectId).single();
-      if (proj.data && proj.data.owner_id === user.id) return 'owner';
-
-      // Check membership
-      var member = await sb.from('project_members').select('role').eq('project_id', projectId).eq('user_id', user.id).single();
-      return member.data ? member.data.role : '';
-    } catch (e) {
-      console.warn('[projects] getProjectRole error:', e.message);
-      return '';
     }
   };
 

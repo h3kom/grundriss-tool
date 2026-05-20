@@ -40,23 +40,16 @@ export function setupGR(opts = {}) {
   window.GR.constants = {
     MIN_ROOM_SIZE: 20,
     NATIVE_WIDTHS: { eg: 1000, og: 800 },
-    FLOORS: ['eg', 'og'],
     MAX_UNDO: 20,
-    SYNC_INTERVAL: 3000,
     LOCAL_STORAGE_KEY: 'gR',
     INTRO_SEEN_KEY: 'gd',
-    SUPABASE_TABLE: 'rooms',
-    SUPABASE_ROW_ID: 1,
 
     EVT_ROOMS_CHANGED: 'roomsChanged',
     EVT_SELECTION_CHANGED: 'selectionChanged',
     EVT_EDIT_MODE_CHANGED: 'editModeChanged',
-    EVT_FLOOR_CHANGED: 'floorChanged',
     EVT_SYNC_STATUS_CHANGED: 'syncStatusChanged',
     EVT_AUTH_CHANGED: 'authChanged',
-    EVT_VIEW_CHANGED: 'viewChanged',
     EVT_PROJECT_CHANGED: 'projectChanged',
-    EVT_PRESENCE_CHANGED: 'presenceChanged',
 
     DRAG_DEAD_ZONE: 3,
     HANDLE_DIRECTIONS: ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'],
@@ -65,21 +58,7 @@ export function setupGR(opts = {}) {
     TOAST_MAX_COUNT: 3,
     SEARCH_DEBOUNCE: 200,
 
-    ROOM_TYPES: {
-      buero:       { label: 'Büro', color: '#3b82f6' },
-      besprechung: { label: 'Besprechung', color: '#8b5cf6' },
-      flur:        { label: 'Flur', color: '#94a3b8' },
-      kueche:      { label: 'Küche', color: '#f59e0b' },
-      wc:          { label: 'WC / Bad', color: '#06b6d4' },
-      lager:       { label: 'Lager', color: '#78716c' },
-      serverraum:  { label: 'Serverraum', color: '#64748b' },
-      empfang:     { label: 'Empfang', color: '#ec4899' },
-      pause:       { label: 'Pausenraum', color: '#22c55e' },
-      sonstige:    { label: 'Sonstige', color: '#a3a3a3' },
-    },
     ROOM_TYPE_DEFAULT: 'sonstige',
-    SNAP_DISTANCE: 8,
-    SNAP_ENABLED: true,
     DARK_MODE_KEY: 'gr_dark',
 
     TIME_THRESHOLD_MINUTE: 60000,
@@ -118,9 +97,6 @@ export function setupGR(opts = {}) {
     },
     set(key, value) {
       _store[key] = value;
-    },
-    merge(obj) {
-      Object.assign(_store, obj);
     },
     subscribe(event, cb) {
       if (!_listeners[event]) _listeners[event] = [];

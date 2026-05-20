@@ -1,6 +1,6 @@
 /**
  * Tests for js/utils.js
- * Covers: escHtml, escAttr, isValidKey, taskProgress, completedTaskCount,
+ * Covers: escHtml, escAttr, taskProgress, completedTaskCount,
  *         generateKey, deepClone, formatLastEdit, ensureRoomFields, ensureAllRooms,
  *         detectFloorId, getPointerPos
  */
@@ -106,48 +106,6 @@ describe('utils', () => {
 
     it('handles safe strings unchanged', () => {
       expect(esc()('hello-world')).toBe('hello-world');
-    });
-  });
-
-  // ===================================================================
-  // isValidKey
-  // ===================================================================
-  describe('isValidKey()', () => {
-    const fn = () => getUtils().isValidKey;
-
-    it('accepts alphanumeric keys', () => {
-      expect(fn()('raum1')).toBe(true);
-    });
-
-    it('accepts hyphens', () => {
-      expect(fn()('my-room')).toBe(true);
-    });
-
-    it('accepts underscores', () => {
-      expect(fn()('my_room')).toBe(true);
-    });
-
-    it('rejects strings with spaces', () => {
-      expect(fn()('my room')).toBe(false);
-    });
-
-    it('rejects strings with special characters', () => {
-      expect(fn()('raum<script>')).toBe(false);
-    });
-
-    it('rejects strings with dots', () => {
-      expect(fn()('raum.test')).toBe(false);
-    });
-
-    it('rejects non-string input', () => {
-      expect(fn()(123)).toBe(false);
-      expect(fn()(null)).toBe(false);
-      expect(fn()(undefined)).toBe(false);
-    });
-
-    it('accepts empty string (matches regex)', () => {
-      // The regex /^[a-zA-Z0-9_\-]+$/ requires at least one character due to +
-      expect(fn()('')).toBe(false);
     });
   });
 

@@ -146,10 +146,6 @@ window.GR = window.GR || {};
     '</div>';
   };
 
-  DR.buildDeleteSection = function(key) {
-    return '<div class="is"><button class="drb" data-action="delete-room" data-key="' + U.escAttr(key) + '">🗑️ Löschen</button></div>';
-  };
-
   DR.buildLastEditInfo = function() {
     var text = U.formatLastEdit(S.get('lastSaveTs'));
     return text

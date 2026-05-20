@@ -52,21 +52,6 @@ window.GR = window.GR || {};
     }
   }
 
-  /**
-   * Gibt die gesammelten Fehler zurück.
-   * @returns {Error[]}
-   */
-  EH.getErrors = function() {
-    return _errors.slice();
-  };
-
-  /**
-   * Löscht die Fehlersammlung.
-   */
-  EH.clearErrors = function() {
-    _errors = [];
-  };
-
   // ===================================================================
   // window.onerror – synchrone Fehler
   // ===================================================================

@@ -949,9 +949,6 @@ window.GR = window.GR || {};
     if (ExpPS && ExpPS.openProjectSettings) ExpPS.openProjectSettings();
   };
 
-  // Details-Toggle: Klick auf #sbToggle öffnet/schließt Sidebar
-  App._detailToggleInit = false;
-
   // ===================================================================
   // Auto-Init bei DOM Ready
   // ===================================================================

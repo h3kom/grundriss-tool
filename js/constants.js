@@ -21,26 +21,14 @@ window.GR = window.GR || {};
   /** @const {Object<string,number>} Native Breiten – wird dynamisch überschrieben */
   C.NATIVE_WIDTHS = { eg: 1000, og: 800 };
 
-  /** @const {string[]} Liste der Etagen-Kürzel – wird dynamisch überschrieben */
-  C.FLOORS = ['eg', 'og'];
-
   /** @const {number} Maximale Anzahl von Undo-Einträgen */
   C.MAX_UNDO = 20;
-
-  /** @const {number} Polling-Intervall in ms für Cloud-Sync */
-  C.SYNC_INTERVAL = 3000;
 
   /** @const {string} localStorage Key für Raumdaten */
   C.LOCAL_STORAGE_KEY = 'gR';
 
   /** @const {string} localStorage Key für Intro-Seen-Flag */
   C.INTRO_SEEN_KEY = 'gd';
-
-  /** @const {string} Supabase Tabellenname */
-  C.SUPABASE_TABLE = 'rooms';
-
-  /** @const {number} Supabase Row-ID – legacy, wird nicht mehr verwendet */
-  C.SUPABASE_ROW_ID = 1;
 
   // ===================================================================
   // Events
@@ -55,17 +43,11 @@ window.GR = window.GR || {};
   /** @const {string} Event-Name bei Edit-Mode-Änderungen */
   C.EVT_EDIT_MODE_CHANGED = 'editModeChanged';
 
-  /** @const {string} Event-Name bei Etagen-Wechsel */
-  C.EVT_FLOOR_CHANGED = 'floorChanged';
-
   /** @const {string} Event-Name bei Sync-Status */
   C.EVT_SYNC_STATUS_CHANGED = 'syncStatusChanged';
 
   /** @const {string} Event-Name bei Auth-Änderungen */
   C.EVT_AUTH_CHANGED = 'authChanged';
-
-  /** @const {string} Event-Name bei View-Wechsel (auth/dashboard/editor) */
-  C.EVT_VIEW_CHANGED = 'viewChanged';
 
   /** @const {string} Event-Name bei Projekt-Wechsel */
   C.EVT_PROJECT_CHANGED = 'projectChanged';
@@ -92,36 +74,8 @@ window.GR = window.GR || {};
   /** @const {number} Debounce-Zeit für Sucheingabe in ms */
   C.SEARCH_DEBOUNCE = 200;
 
-  // ===================================================================
-  // Raum-Typen
-  // ===================================================================
-
-  /** @const {Object} Raum-Typen mit Farbzuordnung */
-  C.ROOM_TYPES = {
-    'buero':       { label: 'Büro',           color: '#3b82f6' },
-    'besprechung': { label: 'Besprechung',     color: '#8b5cf6' },
-    'flur':        { label: 'Flur',            color: '#94a3b8' },
-    'kueche':      { label: 'Küche',           color: '#f59e0b' },
-    'wc':          { label: 'WC / Bad',        color: '#06b6d4' },
-    'lager':       { label: 'Lager',           color: '#78716c' },
-    'serverraum':  { label: 'Serverraum',      color: '#64748b' },
-    'empfang':     { label: 'Empfang',         color: '#ec4899' },
-    'pause':       { label: 'Pausenraum',      color: '#22c55e' },
-    'sonstige':    { label: 'Sonstige',        color: '#a3a3a3' }
-  };
-
   /** @const {string} Standard-Raum-Typ */
   C.ROOM_TYPE_DEFAULT = 'sonstige';
-
-  // ===================================================================
-  // Magnetisches Snappen
-  // ===================================================================
-
-  /** @const {number} Snap-Distanz in Pixeln (skaliert) */
-  C.SNAP_DISTANCE = 8;
-
-  /** @const {boolean} Snappen aktiviert */
-  C.SNAP_ENABLED = true;
 
   // ===================================================================
   // Dark Mode
@@ -131,11 +85,8 @@ window.GR = window.GR || {};
   C.DARK_MODE_KEY = 'gr_dark';
 
   // ===================================================================
-  // Presence
+  // Time Thresholds
   // ===================================================================
-
-  /** @const {string} Event-Name bei Presence-Änderung */
-  C.EVT_PRESENCE_CHANGED = 'presenceChanged';
 
   /** @const {number} Schwellwerte für "Zuletzt bearbeitet"-Anzeige in ms */
   C.TIME_THRESHOLD_MINUTE = 60000;

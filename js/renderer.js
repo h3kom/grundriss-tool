@@ -253,6 +253,4 @@ window.GR = window.GR || {};
     }
   });
 
-  Rdr.getScale = U.getScale;
-  Rdr.detectFloorId = U.detectFloorId;
 })(window.GR.renderer = window.GR.renderer || {});
