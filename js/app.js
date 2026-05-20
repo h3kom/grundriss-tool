@@ -421,9 +421,8 @@ window.GR = window.GR || {};
   };
 
   App.showFloorMenu = function(floorId) {
-    var choice = confirm('OK = Umbenennen, Abbrechen = Löschen');
+    var choice = confirm('OK = Umbenennen, Abbrechen = Abbrechen');
     if (choice) { App.handleRenameFloor(floorId); }
-    else { App.handleDeleteFloor(floorId); }
   };
 
   // ===================================================================
@@ -723,20 +722,26 @@ window.GR = window.GR || {};
 
   App.handleOpenProject = async function(projectId) {
     if (!projectId) return;
-    var success = await Proj.openProject(projectId);
-    if (success) {
-      var proj = S.get('currentProject');
-      var nameEl = document.getElementById('projectName');
-      if (nameEl && proj) nameEl.textContent = proj.name || '';
-      App.showView('editor');
-      var Rdr = window.GR.renderer;
-      if (Rdr && Rdr.render) Rdr.render();
-      Sync.updateTabBadges();
-      // Presence
-      if (Pres && Pres.joinProject && proj) Pres.joinProject(proj.id);
-    } else {
-      var UI = window.GR.ui;
-      if (UI && UI.toast) UI.toast('❌ Projekt konnte nicht geladen werden', 'error', 3000);
+    try {
+      var success = await Proj.openProject(projectId);
+      if (success) {
+        var proj = S.get('currentProject');
+        var nameEl = document.getElementById('projectName');
+        if (nameEl && proj) nameEl.textContent = proj.name || '';
+        App.showView('editor');
+        var Rdr = window.GR.renderer;
+        if (Rdr && Rdr.render) Rdr.render();
+        Sync.updateTabBadges();
+        // Presence
+        if (Pres && Pres.joinProject && proj) Pres.joinProject(proj.id);
+      } else {
+        var UI = window.GR.ui;
+        if (UI && UI.toast) UI.toast('❌ Projekt konnte nicht geladen werden', 'error', 3000);
+      }
+    } catch (e) {
+      console.error('[app] handleOpenProject error:', e);
+      var UI2 = window.GR.ui;
+      if (UI2 && UI2.toast) UI2.toast('❌ Fehler beim Öffnen des Projekts', 'error', 3000);
     }
   };
 
@@ -744,11 +749,17 @@ window.GR = window.GR || {};
     if (!projectId) return;
     if (!confirm('Projekt wirklich löschen? Alle Daten gehen verloren.')) return;
 
-    var result = await Proj.deleteProject(projectId);
-    if (result.ok) {
-      App.renderDashboard();
-      var UI = window.GR.ui;
-      if (UI && UI.toast) UI.toast('🗑️ Projekt gelöscht', 'success', 2000);
+    try {
+      var result = await Proj.deleteProject(projectId);
+      if (result.ok) {
+        App.renderDashboard();
+        var UI = window.GR.ui;
+        if (UI && UI.toast) UI.toast('🗑️ Projekt gelöscht', 'success', 2000);
+      }
+    } catch (e) {
+      console.error('[app] handleDeleteProject error:', e);
+      var UI2 = window.GR.ui;
+      if (UI2 && UI2.toast) UI2.toast('❌ Fehler beim Löschen des Projekts', 'error', 3000);
     }
   };
 

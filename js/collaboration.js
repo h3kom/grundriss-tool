@@ -213,10 +213,12 @@ window.GR = window.GR || {};
 
   /**
    * Rendert das Teilen-Modal.
+   * @param {string} [projectIdOverride] - Projekt-ID, falls nicht aus State gelesen
    */
-  Collab.showShareModal = async function() {
+  Collab.showShareModal = async function(projectIdOverride) {
     var project = S.get('currentProject');
-    if (!project) return;
+    var projectId = projectIdOverride || (project && project.id);
+    if (!projectId) return;
 
     var sb = Auth.getSupabase();
     var U = window.GR.utils;
@@ -231,7 +233,7 @@ window.GR = window.GR || {};
 
     body.innerHTML = '<p class="hint">⏳ Lade Mitglieder...</p>';
 
-    var members = await Collab.loadMembers(project.id);
+    var members = await Collab.loadMembers(projectId);
 
     var html =
       '<div class="share-section">' +
@@ -286,15 +288,7 @@ window.GR = window.GR || {};
    * @param {string} projectId
    */
   Collab.showShareModalForProject = async function(projectId) {
-    // Temporär currentProject setzen, damit showShareModal funktioniert
-    var prev = S.get('currentProject');
-    S.set('currentProject', { id: projectId });
-    try {
-      await Collab.showShareModal();
-    } finally {
-      // Immer wiederherstellen – verhindert State-Korruption
-      S.set('currentProject', prev);
-    }
+    await Collab.showShareModal(projectId);
   };
 
   /**
@@ -340,6 +334,8 @@ window.GR = window.GR || {};
         emailInput.value = '';
         // Member-Liste aktualisieren (await um Race-Condition zu vermeiden)
         await Collab.showShareModal();
+        // Button-Referenz nach Modal-Rebuild erneuern
+        inviteBtn = document.querySelector('[data-action="send-invite"]');
       } else {
         if (UI && UI.toast) UI.toast('❌ ' + result.error, 'error', 3000);
       }

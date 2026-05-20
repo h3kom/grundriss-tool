@@ -16,6 +16,7 @@ window.GR = window.GR || {};
 
   var _channel = null;
   var _onlineUsers = {};
+  var _retryTimer = null;
 
   /** @const {string[]} Farben für User-Avatare */
   var USER_COLORS = ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#78716c'];
@@ -75,7 +76,8 @@ window.GR = window.GR || {};
       } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
         console.warn('[presence] channel status:', status);
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          setTimeout(function() {
+          _retryTimer = setTimeout(function() {
+            _retryTimer = null;
             if (_channel) {
               _channel.track({
                 name: user.displayName || user.email || 'User',
@@ -93,6 +95,7 @@ window.GR = window.GR || {};
    * Verlässt den aktuellen Presence-Channel.
    */
   Pres.leaveProject = function() {
+    if (_retryTimer) { clearTimeout(_retryTimer); _retryTimer = null; }
     if (_channel) {
       _channel.untrack();
       _channel.unsubscribe();

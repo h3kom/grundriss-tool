@@ -83,7 +83,13 @@ window.GR = window.GR || {};
   window.addEventListener('unhandledrejection', function(event) {
     var reason = event.reason;
     var message = (reason && reason.message) ? reason.message : String(reason);
-    var formatted = formatError('Async', message, reason && reason.stack ? '' : '');
+    var stack = reason && reason.stack ? reason.stack : '';
+    var filename = '';
+    if (stack) {
+      var match = stack.match(/at\s+.+\((.+?):\d+:\d+\)/);
+      if (match) filename = match[1];
+    }
+    var formatted = formatError('Async', message, filename);
     logError(formatted);
     showError(formatted);
     // Nicht preventDefault – Fehler soll weiterhin in Konsole erscheinen

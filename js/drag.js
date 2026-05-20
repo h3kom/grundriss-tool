@@ -130,7 +130,8 @@ window.GR = window.GR || {};
       const nativeWidth = C.NATIVE_WIDTHS[U.detectFloorId(ds.wrapper.id)] || 1000;
       const room = rooms[ds.key];
       const clampedLeft = Math.max(0, Math.min(newLeft, nativeWidth - (room ? room.width : C.MIN_ROOM_SIZE)));
-      const clampedTop = Math.max(0, newTop);
+      const maxTop = 2000 - (room ? room.height : C.MIN_ROOM_SIZE);
+      const clampedTop = Math.max(0, Math.min(newTop, maxTop));
 
       rooms[ds.key].left = clampedLeft;
       rooms[ds.key].top = clampedTop;
