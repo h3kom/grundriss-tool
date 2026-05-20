@@ -3,6 +3,7 @@ name: Deploy GitHub Pages
 on:
   push:
     branches: [main, dev]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -17,14 +18,9 @@ jobs:
 
       - name: Generate prod config from secrets
         run: |
-          cat > config.local.js << 'EOF'
-          window._GR_CONFIG = {
-            SUPABASE_URL: '${{ secrets.PROD_SUPABASE_URL }}',
-            SUPABASE_ANON_KEY: '${{ secrets.PROD_SUPABASE_ANON_KEY }}'
-          };
-          EOF
-          # Remove .gitignore so config.local.js is deployed to gh-pages
-          rm .gitignore
+          printf 'window._GR_CONFIG = {\n  SUPABASE_URL: '"'"'%s'"'"',\n  SUPABASE_ANON_KEY: '"'"'%s'"'"'\n};\n' \
+            "${{ secrets.PROD_SUPABASE_URL }}" "${{ secrets.PROD_SUPABASE_ANON_KEY }}" > config.local.js
+          rm -f .gitignore
 
       - name: Deploy Prod to /prod/
         uses: peaceiris/actions-gh-pages@v4
@@ -44,14 +40,9 @@ jobs:
 
       - name: Generate dev config from secrets
         run: |
-          cat > config.local.js << 'EOF'
-          window._GR_CONFIG = {
-            SUPABASE_URL: '${{ secrets.DEV_SUPABASE_URL }}',
-            SUPABASE_ANON_KEY: '${{ secrets.DEV_SUPABASE_ANON_KEY }}'
-          };
-          EOF
-          # Remove .gitignore so config.local.js is deployed to gh-pages
-          rm .gitignore
+          printf 'window._GR_CONFIG = {\n  SUPABASE_URL: '"'"'%s'"'"',\n  SUPABASE_ANON_KEY: '"'"'%s'"'"'\n};\n' \
+            "${{ secrets.DEV_SUPABASE_URL }}" "${{ secrets.DEV_SUPABASE_ANON_KEY }}" > config.local.js
+          rm -f .gitignore
 
       - name: Deploy Dev to /dev/
         uses: peaceiris/actions-gh-pages@v4
