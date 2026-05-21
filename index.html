@@ -13,20 +13,22 @@
 </head>
 <body>
 
+  <a href="#dashProjects" class="skip-link">Zum Hauptinhalt springen</a>
+
   <!-- ============================================================ -->
   <!-- AUTH VIEW                                                     -->
   <!-- ============================================================ -->
   <div id="authView" class="view auth-view">
     <div class="auth-container">
       <div class="auth-header">
-        <h1>🏗️ Grundriss Tool</h1>
+        <h1>Grundriss Tool</h1>
         <p>Gebäude planen, Räume definieren, Projekte verwalten.</p>
       </div>
 
       <!-- Login Form -->
       <form id="loginForm" class="auth-form">
         <h2>Anmelden</h2>
-        <div id="loginError" class="auth-error"></div>
+        <div id="loginError" class="auth-error" role="alert"></div>
         <input type="email" id="loginEmail" placeholder="E-Mail" aria-label="E-Mail" autocomplete="email" required />
         <input type="password" id="loginPassword" placeholder="Passwort" aria-label="Passwort" autocomplete="current-password" required minlength="6" />
         <button data-action="do-login" class="auth-btn-primary">Anmelden</button>
@@ -39,7 +41,7 @@
       <!-- Register Form -->
       <form id="registerForm" class="auth-form" style="display:none">
         <h2>Registrieren</h2>
-        <div id="regError" class="auth-error"></div>
+        <div id="regError" class="auth-error" role="alert"></div>
         <input type="text" id="regName" placeholder="Name" aria-label="Name" autocomplete="name" required />
         <input type="email" id="regEmail" placeholder="E-Mail" aria-label="E-Mail" autocomplete="email" required />
         <input type="password" id="regPassword" placeholder="Passwort (mind. 6 Zeichen)" aria-label="Passwort" autocomplete="new-password" required minlength="6" />
@@ -52,7 +54,7 @@
       <!-- Reset Form -->
       <form id="resetForm" class="auth-form" style="display:none">
         <h2>Passwort zurücksetzen</h2>
-        <div id="resetError" class="auth-error"></div>
+        <div id="resetError" class="auth-error" role="alert"></div>
         <input type="email" id="resetEmail" placeholder="E-Mail" aria-label="E-Mail" autocomplete="email" required />
         <button data-action="do-reset" class="auth-btn-primary">Link senden</button>
         <div class="auth-links">
@@ -67,9 +69,9 @@
   <!-- ============================================================ -->
   <div id="dashboardView" class="view dashboard-view" style="display:none">
     <header class="dash-header">
-      <h1>🏗️ Grundriss Tool</h1>
+      <h1>Grundriss Tool</h1>
       <div id="dashUser" class="dash-user"></div>
-      <button data-action="open-settings" class="tb-btn" title="Einstellungen">⚙️</button>
+      <button data-action="open-settings" class="tb-btn" title="Einstellungen" aria-label="Einstellungen">⚙️</button>
     </header>
     <main id="dashProjects" class="dash-content"></main>
   </div>
@@ -220,7 +222,7 @@
   <!-- ============================================================ -->
   <!-- TOAST Container                                               -->
   <!-- ============================================================ -->
-  <div id="toasts" class="toast-container" role="alert" aria-live="assertive" aria-atomic="true"></div>
+  <div id="toasts" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
   <!-- ============================================================ -->
   <!-- INTRO Modal                                                   -->

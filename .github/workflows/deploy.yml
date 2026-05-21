@@ -21,6 +21,9 @@ jobs:
           sed -i "s|__SUPABASE_URL__|${{ secrets.PROD_SUPABASE_URL }}|g" js/constants.js
           sed -i "s|__SUPABASE_ANON_KEY__|${{ secrets.PROD_SUPABASE_ANON_KEY }}|g" js/constants.js
 
+      - name: Create empty config.local.js
+        run: echo "// no-op — secrets injected via constants.js" > config.local.js
+
       - name: Deploy Prod to /prod/
         uses: peaceiris/actions-gh-pages@v4
         with:
@@ -41,6 +44,9 @@ jobs:
         run: |
           sed -i "s|__SUPABASE_URL__|${{ secrets.DEV_SUPABASE_URL }}|g" js/constants.js
           sed -i "s|__SUPABASE_ANON_KEY__|${{ secrets.DEV_SUPABASE_ANON_KEY }}|g" js/constants.js
+
+      - name: Create empty config.local.js
+        run: echo "// no-op — secrets injected via constants.js" > config.local.js
 
       - name: Deploy Dev to /dev/
         uses: peaceiris/actions-gh-pages@v4
