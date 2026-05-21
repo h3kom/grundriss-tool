@@ -9,11 +9,11 @@ window.GR = window.GR || {};
 (function(C) {
   'use strict';
 
-  /** @const {string} Supabase-Projekt-URL (wird aus config.local.js geladen) */
-  C.SUPABASE_URL = (window._GR_CONFIG && window._GR_CONFIG.SUPABASE_URL) || '';
+  /** @const {string} Supabase-Projekt-URL (Platzhalter wird im CI/CD ersetzt) */
+  C.SUPABASE_URL = (window._GR_CONFIG && window._GR_CONFIG.SUPABASE_URL) || 'https://adxhzolvqxgrswttnaga.supabase.co';
 
-  /** @const {string} Supabase anonymer API-Key (wird aus config.local.js geladen) */
-  C.SUPABASE_ANON_KEY = (window._GR_CONFIG && window._GR_CONFIG.SUPABASE_ANON_KEY) || '';
+  /** @const {string} Supabase anonymer API-Key (Platzhalter wird im CI/CD ersetzt) */
+  C.SUPABASE_ANON_KEY = (window._GR_CONFIG && window._GR_CONFIG.SUPABASE_ANON_KEY) || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkeGh6b2x2cXhncnN3dHRuYWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1OTExNjUsImV4cCI6MjA5NDE2NzE2NX0.-iDqxI7rbOjqcaWwn0qo1znj18tkbl3KXmFURF6rh1k';
 
   /** @const {number} Mindestgröße für Räume in Pixeln */
   C.MIN_ROOM_SIZE = 20;
