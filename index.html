@@ -90,6 +90,7 @@
         <span id="presenceIndicator" class="presence-indicator" aria-label="Aktive Bearbeiter"></span>
         <button id="btnOv" class="tb-btn" title="Übersicht" aria-label="Raumübersicht" aria-pressed="false">📊</button>
         <button data-action="share-project" class="tb-btn" title="Teilen" aria-label="Projekt teilen">👥 <span class="btn-text">Teilen</span></button>
+        <button data-action="open-project-settings" class="tb-btn" title="Projekteinstellungen" aria-label="Projekteinstellungen">📦</button>
         <button id="btnEdit" class="tb-btn" title="Bearbeiten" aria-label="Bearbeitungsmodus" aria-pressed="false">✏️</button>
       </div>
     </div>
@@ -213,6 +214,24 @@
             <button data-action="ps-do-export" class="ps-btn ps-btn-secondary">💾 Aktuelles Projekt exportieren</button>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- RENAME MODAL                                                  -->
+  <!-- ============================================================ -->
+  <div id="rm" class="modal">
+    <div class="modal-backdrop" data-action="close-rename"></div>
+    <div class="modal-content">
+      <div class="share-header">
+        <h3>Raum umbenennen</h3>
+        <button data-action="close-rename" class="sb-c" title="Schließen">✕</button>
+      </div>
+      <input type="text" id="rn" class="rne" placeholder="Raumname" />
+      <div class="ps-actions" style="margin-top:16px">
+        <button data-action="close-rename" class="ps-btn ps-btn-secondary">Abbrechen</button>
+        <button data-action="confirm-rename" class="ps-btn ps-btn-primary">Umbenennen</button>
       </div>
     </div>
   </div>
