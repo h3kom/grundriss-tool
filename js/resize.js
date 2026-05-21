@@ -25,7 +25,7 @@ window.GR = window.GR || {};
     e.preventDefault();
     e.stopPropagation();
 
-    const raw = RS.getPointerPos(e);
+    const raw = U.getPointerPos(e);
     const wrapper = e.currentTarget.closest('.pw');
     const scale = U.getScale(wrapper);
     const room = S.get('rooms')[key];
@@ -77,7 +77,7 @@ window.GR = window.GR || {};
     const rs = S.get('resizeState');
     if (!rs) return;
     e.preventDefault();
-    const raw = RS.getPointerPos(e);
+    const raw = U.getPointerPos(e);
     const dx = raw.x - rs.startX;
     const dy = raw.y - rs.startY;
     const dl = dx / rs.scale;
@@ -166,12 +166,4 @@ window.GR = window.GR || {};
   RS.onResizeEnd = function() { onResizeEndCleanup(); };
   RS.onResizeEndTouch = function() { onResizeEndCleanup(); };
 
-  /**
-   * Ermittelt die Pointer-Position über die zentrale utils-Funktion.
-   * @param {Event} e
-   * @returns {{x:number, y:number}}
-   */
-  RS.getPointerPos = function(e) {
-    return U.getPointerPos(e);
-  };
 })(window.GR.resize = window.GR.resize || {});

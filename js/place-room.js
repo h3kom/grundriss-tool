@@ -64,9 +64,10 @@ window.GR = window.GR || {};
    */
   PR.startPlaceDraw = function(e) {
     if (!S.get('isPlacing')) return;
+    if (e.target.closest('.ro') || e.target.closest('.rh')) return;
     e.preventDefault();
 
-    const raw = PR.getPointerPos(e);
+    const raw = U.getPointerPos(e);
     const wrapper = e.currentTarget.closest('.pw');
     if (!wrapper) return;
 
@@ -113,7 +114,7 @@ window.GR = window.GR || {};
     if (!ps) return;
     e.preventDefault();
 
-    const raw = PR.getPointerPos(e);
+    const raw = U.getPointerPos(e);
     const piRect = ps.pi.getBoundingClientRect();
     const relX = raw.x - piRect.left;
     const relY = raw.y - piRect.top;
@@ -233,12 +234,4 @@ window.GR = window.GR || {};
     if (UI) UI.openRenameModal(key);
   };
 
-  /**
-   * Ermittelt die Pointer-Position über die zentrale utils-Funktion.
-   * @param {Event} e
-   * @returns {{x:number, y:number}}
-   */
-  PR.getPointerPos = function(e) {
-    return U.getPointerPos(e);
-  };
 })(window.GR.placeRoom = window.GR.placeRoom || {});

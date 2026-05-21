@@ -39,15 +39,4 @@ window.GR = window.GR || {};
   I.onPlaceDrawEndTouch = function() { var p = PR(); if (p) p.onPlaceDrawEndTouch(); };
   I.finishPlaceDraw = function() { var p = PR(); if (p) p.finishPlaceDraw(); };
 
-  /**
-   * Ermittelt die Pointer-Position über die zentrale utils-Funktion.
-   * @param {Event} e
-   * @returns {{x:number, y:number}}
-   */
-  I.getPointerPos = function(e) {
-    var u = window.GR.utils;
-    if (u && u.getPointerPos) return u.getPointerPos(e);
-    // Fallback wenn utils noch nicht geladen
-    return { x: e.clientX, y: e.clientY };
-  };
 })(window.GR.interaction = window.GR.interaction || {});
