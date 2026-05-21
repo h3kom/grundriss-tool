@@ -10,9 +10,10 @@ window.GR = window.GR || {};
 (function(OB) {
   'use strict';
 
-  var C = window.GR.constants;
-  var S = window.GR.state;
-  var U = window.GR.utils;
+  const C = window.GR.constants;
+  const S = window.GR.state;
+  const U = window.GR.utils;
+  const UI = window.GR.ui;
 
   // Als Properties am OB-Objekt, damit app.js sie lesen/schreiben kann
   OB._wizardFloors = [];
@@ -30,7 +31,7 @@ window.GR = window.GR || {};
     OB.addFloor('Erdgeschoss', '', 1000);
     OB.addFloor('Obergeschoss', '', 800);
     OB.renderWizard();
-    var el = document.getElementById('onboarding');
+    const el = document.getElementById('onboarding');
     if (el) el.classList.add('open');
   };
 
@@ -38,7 +39,7 @@ window.GR = window.GR || {};
    * Schließt den Wizard.
    */
   OB.closeWizard = function() {
-    var el = document.getElementById('onboarding');
+    const el = document.getElementById('onboarding');
     if (el) el.classList.remove('open');
     OB._wizardFloors = [];
   };
@@ -72,7 +73,7 @@ window.GR = window.GR || {};
    * Rendert den Wizard-Inhalt.
    */
   OB.renderWizard = function() {
-    var body = document.getElementById('obBody');
+    const body = document.getElementById('obBody');
     if (!body) return;
 
     if (OB._wizardStep === 1) {
@@ -99,7 +100,7 @@ window.GR = window.GR || {};
       '</div>';
 
     setTimeout(function() {
-      var input = document.getElementById('obProjectName');
+      const input = document.getElementById('obProjectName');
       if (input) {
         input.focus();
         // Projektname bei jeder Eingabe direkt speichern
@@ -117,10 +118,10 @@ window.GR = window.GR || {};
     // Projektname aus Step 1 lesen und merken (Input wird bei renderStep2 zerstört)
     // Fallback: falls der input-Listener nicht gefeuert hat, hier aus DOM lesen
     if (!OB._projectName) {
-      var nameInput = document.getElementById('obProjectName');
+      const nameInput = document.getElementById('obProjectName');
       OB._projectName = (nameInput ? nameInput.value : '').trim();
     }
-    var projectName = OB._projectName && OB._projectName.trim() ? OB._projectName.trim() : 'Unbenanntes Projekt';
+    const projectName = OB._projectName && OB._projectName.trim() ? OB._projectName.trim() : 'Unbenanntes Projekt';
 
     body.innerHTML =
       '<div class="ob-step">' +
@@ -145,13 +146,13 @@ window.GR = window.GR || {};
    * Rendert die Liste der Stockwerke.
    */
   OB.renderFloorList = function() {
-    var container = document.getElementById('obFloorList');
+    const container = document.getElementById('obFloorList');
     if (!container) return;
 
-    var html = '';
-    for (var i = 0; i < OB._wizardFloors.length; i++) {
-      var f = OB._wizardFloors[i];
-      var hasImage = f.imageFile || f.imageUrl;
+    let html = '';
+    for (let i = 0; i < OB._wizardFloors.length; i++) {
+      const f = OB._wizardFloors[i];
+      const hasImage = f.imageFile || f.imageUrl;
       html +=
         '<div class="ob-floor-item" data-floor-index="' + i + '">' +
           '<div class="ob-floor-header">' +
@@ -174,7 +175,7 @@ window.GR = window.GR || {};
     // Event: Floor-Name ändern
     container.querySelectorAll('.ob-floor-name').forEach(function(input) {
       input.addEventListener('input', function() {
-        var idx = parseInt(this.dataset.floorIndex);
+        const idx = parseInt(this.dataset.floorIndex);
         OB._wizardFloors[idx].name = this.value;
       });
     });
@@ -182,7 +183,7 @@ window.GR = window.GR || {};
     // Event: Breite ändern
     container.querySelectorAll('.ob-width-input').forEach(function(input) {
       input.addEventListener('input', function() {
-        var idx = parseInt(this.dataset.floorIndex);
+        const idx = parseInt(this.dataset.floorIndex);
         OB._wizardFloors[idx].nativeWidth = parseInt(this.value) || 1000;
       });
     });
@@ -204,9 +205,9 @@ window.GR = window.GR || {};
    */
   OB.createProjectFromWizard = async function() {
     // Projektname – mehrstufiger Fallback: OB._projectName → DOM → Default
-    var projectName = (OB._projectName && OB._projectName.trim()) ? OB._projectName.trim() : '';
+    let projectName = (OB._projectName && OB._projectName.trim()) ? OB._projectName.trim() : '';
     if (!projectName) {
-      var domInput = document.getElementById('obProjectName');
+      const domInput = document.getElementById('obProjectName');
       if (domInput && domInput.value && domInput.value.trim()) {
         projectName = domInput.value.trim();
         OB._projectName = projectName;
@@ -215,56 +216,54 @@ window.GR = window.GR || {};
     if (!projectName) projectName = 'Unbenanntes Projekt';
 
     // Floor-Namen aus Inputs lesen (falls zwischenzeitlich geändert)
-    var nameInputs = document.querySelectorAll('.ob-floor-name');
+    const nameInputs = document.querySelectorAll('.ob-floor-name');
     nameInputs.forEach(function(input) {
-      var idx = parseInt(input.dataset.floorIndex);
+      const idx = parseInt(input.dataset.floorIndex);
       if (idx >= 0 && idx < OB._wizardFloors.length) {
         OB._wizardFloors[idx].name = input.value || 'Stockwerk ' + (idx + 1);
       }
     });
 
-    var widthInputs = document.querySelectorAll('.ob-width-input');
+    const widthInputs = document.querySelectorAll('.ob-width-input');
     widthInputs.forEach(function(input) {
-      var idx = parseInt(input.dataset.floorIndex);
+      const idx = parseInt(input.dataset.floorIndex);
       if (idx >= 0 && idx < OB._wizardFloors.length) {
         OB._wizardFloors[idx].nativeWidth = parseInt(input.value) || 1000;
       }
     });
 
-    var Proj = window.GR.projects;
+    const Proj = window.GR.projects;
     if (!Proj) return;
 
     // Button disablen
-    var createBtn = document.querySelector('[data-action="ob-create"]');
+    const createBtn = document.querySelector('[data-action="ob-create"]');
     if (createBtn) {
       createBtn.disabled = true;
       createBtn.textContent = '⏳ Erstelle...';
     }
 
     try {
-      var result = await Proj.createProject(projectName, OB._wizardFloors);
+      const result = await Proj.createProject(projectName, OB._wizardFloors);
 
       if (result.ok) {
         OB.closeWizard();
-        var UI = window.GR.ui;
         if (UI && UI.toast) UI.toast('✅ Projekt "' + projectName + '" erstellt!', 'success', 3000);
 
         // Projekt öffnen
         await Proj.openProject(result.projectId);
 
         // Projektname in Top-Bar setzen
-        var nameEl = document.getElementById('projectName');
+        const nameEl = document.getElementById('projectName');
         if (nameEl) nameEl.textContent = projectName;
 
         // View wechseln zum Editor
-        var App = window.GR.app;
+        const App = window.GR.app;
         if (App && App.showView) App.showView('editor');
       } else {
         if (createBtn) {
           createBtn.disabled = false;
           createBtn.textContent = 'Projekt erstellen ✨';
         }
-        var UI = window.GR.ui;
         if (UI && UI.toast) UI.toast('❌ Fehler: ' + (result.error || 'Unbekannt'), 'error', 4000);
       }
     } catch (e) {
@@ -273,8 +272,7 @@ window.GR = window.GR || {};
         createBtn.disabled = false;
         createBtn.textContent = 'Projekt erstellen ✨';
       }
-      var UI2 = window.GR.ui;
-      if (UI2 && UI2.toast) UI2.toast('❌ Unerwarteter Fehler: ' + (e.message || 'Unbekannt'), 'error', 4000);
+      if (UI && UI.toast) UI.toast('❌ Unerwarteter Fehler: ' + (e.message || 'Unbekannt'), 'error', 4000);
     }
   };
 

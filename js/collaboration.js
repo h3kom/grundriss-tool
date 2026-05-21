@@ -9,9 +9,10 @@ window.GR = window.GR || {};
 (function(Collab) {
   'use strict';
 
-  var C = window.GR.constants;
-  var S = window.GR.state;
-  var Auth = window.GR.auth;
+  const C = window.GR.constants;
+  const S = window.GR.state;
+  const Auth = window.GR.auth;
+  const UI = window.GR.ui;
 
   /**
    * Lädt die Mitglieder eines Projekts.
@@ -19,11 +20,11 @@ window.GR = window.GR || {};
    * @returns {Promise<Array>}
    */
   Collab.loadMembers = async function(projectId) {
-    var sb = Auth.getSupabase();
+    const sb = Auth.getSupabase();
     if (!sb) return [];
 
     try {
-      var result = await sb.from('project_members')
+      const result = await sb.from('project_members')
         .select('id, user_id, role, invited_at, profiles(display_name, email)')
         .eq('project_id', projectId)
         .order('invited_at', { ascending: true });
@@ -54,11 +55,11 @@ window.GR = window.GR || {};
    * @returns {Promise<Object|null>}
    */
   Collab.findUserByEmail = async function(email) {
-    var sb = Auth.getSupabase();
+    const sb = Auth.getSupabase();
     if (!sb) return null;
 
     try {
-      var result = await sb.from('profiles')
+      const result = await sb.from('profiles')
         .select('id, display_name, email')
         .eq('email', email)
         .single();
@@ -77,15 +78,15 @@ window.GR = window.GR || {};
    * @returns {Promise<{ok: boolean, error?: string}>}
    */
   Collab.inviteMember = async function(projectId, email, role) {
-    var sb = Auth.getSupabase();
+    const sb = Auth.getSupabase();
     if (!sb) return { ok: false, error: 'Verbindung fehlgeschlagen' };
 
-    var currentUser = S.get('currentUser');
+    const currentUser = S.get('currentUser');
     if (!currentUser) return { ok: false, error: 'Nicht angemeldet' };
 
     try {
       // User per E-Mail finden
-      var userProfile = await Collab.findUserByEmail(email);
+      const userProfile = await Collab.findUserByEmail(email);
       if (!userProfile) {
         return { ok: false, error: 'Benutzer mit dieser E-Mail nicht gefunden' };
       }
@@ -94,7 +95,7 @@ window.GR = window.GR || {};
       }
 
       // Prüfen ob bereits Mitglied
-      var existing = await sb.from('project_members')
+      const existing = await sb.from('project_members')
         .select('id')
         .eq('project_id', projectId)
         .eq('user_id', userProfile.id)
@@ -105,7 +106,7 @@ window.GR = window.GR || {};
       }
 
       // Mitglied hinzufügen
-      var result = await sb.from('project_members').insert({
+      const result = await sb.from('project_members').insert({
         project_id: projectId,
         user_id: userProfile.id,
         role: role
@@ -127,14 +128,14 @@ window.GR = window.GR || {};
    * @returns {Promise<boolean>}
    */
   async function _isProjectOwner(projectId) {
-    var currentUser = S.get('currentUser');
+    const currentUser = S.get('currentUser');
     if (!currentUser) return false;
 
-    var sb = Auth.getSupabase();
+    const sb = Auth.getSupabase();
     if (!sb) return false;
 
     try {
-      var result = await sb.from('project_members')
+      const result = await sb.from('project_members')
         .select('role')
         .eq('project_id', projectId)
         .eq('user_id', currentUser.id)
@@ -152,15 +153,15 @@ window.GR = window.GR || {};
    * @returns {Promise<{ok: boolean, error?: string}>}
    */
   Collab.removeMember = async function(projectId, memberId) {
-    var sb = Auth.getSupabase();
+    const sb = Auth.getSupabase();
     if (!sb) return { ok: false, error: 'Verbindung fehlgeschlagen' };
 
     // Client-seitige Owner-Prüfung (Defense-in-Depth, RLS enforced server-side)
-    var isOwner = await _isProjectOwner(projectId);
+    const isOwner = await _isProjectOwner(projectId);
     if (!isOwner) return { ok: false, error: 'Nur der Projekt-Owner darf Mitglieder entfernen' };
 
     try {
-      var result = await sb.from('project_members')
+      const result = await sb.from('project_members')
         .delete()
         .eq('id', memberId)
         .eq('project_id', projectId);
@@ -183,11 +184,11 @@ window.GR = window.GR || {};
    * @returns {Promise<{ok: boolean, error?: string}>}
    */
   Collab.changeRole = async function(projectId, memberId, newRole) {
-    var sb = Auth.getSupabase();
+    const sb = Auth.getSupabase();
     if (!sb) return { ok: false, error: 'Verbindung fehlgeschlagen' };
 
     // Client-seitige Owner-Prüfung (Defense-in-Depth, RLS enforced server-side)
-    var isOwner = await _isProjectOwner(projectId);
+    const isOwner = await _isProjectOwner(projectId);
     if (!isOwner) return { ok: false, error: 'Nur der Projekt-Owner darf Rollen ändern' };
 
     // Role-Wert validieren
@@ -196,7 +197,7 @@ window.GR = window.GR || {};
     }
 
     try {
-      var result = await sb.from('project_members')
+      const result = await sb.from('project_members')
         .update({ role: newRole })
         .eq('id', memberId)
         .eq('project_id', projectId);
@@ -213,38 +214,36 @@ window.GR = window.GR || {};
 
   /**
    * Rendert das Teilen-Modal.
-   * @param {string} [projectIdOverride] - Projekt-ID, falls nicht aus State gelesen
    */
-  Collab.showShareModal = async function(projectIdOverride) {
-    var project = S.get('currentProject');
-    var projectId = projectIdOverride || (project && project.id);
-    if (!projectId) return;
+  Collab.showShareModal = async function() {
+    const project = S.get('currentProject');
+    if (!project) return;
 
-    var sb = Auth.getSupabase();
-    var U = window.GR.utils;
+    const sb = Auth.getSupabase();
+    const U = window.GR.utils;
 
     // Modal anzeigen
-    var modal = document.getElementById('shareModal');
+    const modal = document.getElementById('shareModal');
     if (!modal) return;
     modal.classList.add('open');
 
-    var body = document.getElementById('shareBody');
+    const body = document.getElementById('shareBody');
     if (!body) return;
 
     body.innerHTML = '<p class="hint">⏳ Lade Mitglieder...</p>';
 
-    var members = await Collab.loadMembers(projectId);
+    const members = await Collab.loadMembers(project.id);
 
-    var html =
+    let html =
       '<div class="share-section">' +
         '<h4>Mitglieder</h4>' +
         '<div class="member-list">';
 
-    for (var i = 0; i < members.length; i++) {
-      var m = members[i];
-      var isOwner = m.role === 'owner';
-      var currentUser = S.get('currentUser');
-      var isSelf = currentUser && m.userId === currentUser.id;
+    for (let i = 0; i < members.length; i++) {
+      const m = members[i];
+      const isOwner = m.role === 'owner';
+      const currentUser = S.get('currentUser');
+      const isSelf = currentUser && m.userId === currentUser.id;
 
       html +=
         '<div class="member-item">' +
@@ -288,14 +287,22 @@ window.GR = window.GR || {};
    * @param {string} projectId
    */
   Collab.showShareModalForProject = async function(projectId) {
-    await Collab.showShareModal(projectId);
+    // Temporär currentProject setzen, damit showShareModal funktioniert
+    const prev = S.get('currentProject');
+    S.set('currentProject', { id: projectId });
+    try {
+      await Collab.showShareModal();
+    } finally {
+      // Immer wiederherstellen – verhindert State-Korruption
+      S.set('currentProject', prev);
+    }
   };
 
   /**
    * Schließt das Teilen-Modal.
    */
   Collab.closeShareModal = function() {
-    var modal = document.getElementById('shareModal');
+    const modal = document.getElementById('shareModal');
     if (modal) modal.classList.remove('open');
   };
 
@@ -303,39 +310,35 @@ window.GR = window.GR || {};
    * Sendet eine Einladung aus dem Modal.
    */
   Collab.sendInviteFromModal = async function() {
-    var project = S.get('currentProject');
+    const project = S.get('currentProject');
     if (!project) return;
 
-    var emailInput = document.getElementById('inviteEmail');
-    var roleSelect = document.getElementById('inviteRole');
+    const emailInput = document.getElementById('inviteEmail');
+    const roleSelect = document.getElementById('inviteRole');
     if (!emailInput || !roleSelect) return;
 
-    var email = emailInput.value.trim();
-    var role = roleSelect.value;
+    const email = emailInput.value.trim();
+    const role = roleSelect.value;
 
     if (!email) {
-      var UI = window.GR.ui;
       if (UI && UI.toast) UI.toast('Bitte E-Mail eingeben', 'error', 2000);
       return;
     }
 
     // Invite-Button deaktivieren, um doppelte Einladungen zu verhindern
-    var inviteBtn = document.querySelector('[data-action="send-invite"]');
+    const inviteBtn = document.querySelector('[data-action="send-invite"]');
     if (inviteBtn) {
       inviteBtn.disabled = true;
       inviteBtn.textContent = 'Einladen\u2026';
     }
 
     try {
-      var result = await Collab.inviteMember(project.id, email, role);
-      var UI = window.GR.ui;
+      const result = await Collab.inviteMember(project.id, email, role);
       if (result.ok) {
         if (UI && UI.toast) UI.toast('✅ ' + (result.displayName || email) + ' eingeladen!', 'success', 3000);
         emailInput.value = '';
         // Member-Liste aktualisieren (await um Race-Condition zu vermeiden)
         await Collab.showShareModal();
-        // Button-Referenz nach Modal-Rebuild erneuern
-        inviteBtn = document.querySelector('[data-action="send-invite"]');
       } else {
         if (UI && UI.toast) UI.toast('❌ ' + result.error, 'error', 3000);
       }
