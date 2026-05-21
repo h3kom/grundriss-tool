@@ -19,8 +19,6 @@ window.GR = window.GR || {};
 
   // DOM element cache – avoids repeated getElementById calls
   var _dom = {};
-  // Expose for cleanup module
-  UI._dom = _dom;
   function $(id) {
     if (!_dom[id]) _dom[id] = document.getElementById(id);
     // Fallback: element may have been replaced in the DOM
@@ -387,10 +385,6 @@ window.GR = window.GR || {};
         case 'switch-floor':
           UI.switchFloor(target.dataset.floor);
           break;
-        case 'place-new-room':
-          var I = window.GR.interaction;
-          if (I && I.enablePlaceNewRoom) I.enablePlaceNewRoom(target.dataset.floor, target.dataset.roomType);
-          break;
         case 'cancel-place':
           var PR = window.GR.placeRoom;
           if (PR && PR.cancelPlaceNewRoom) PR.cancelPlaceNewRoom();
@@ -400,20 +394,6 @@ window.GR = window.GR || {};
           break;
         case 'close-sidebar':
           UI.closeSidebar();
-          break;
-        case 'show-overview':
-        case 'toggle-overview':
-          UI.toggleOverview();
-          break;
-        case 'close-intro':
-        case 'intro-close':
-          UI.closeIntro();
-          break;
-        case 'close-rename':
-          UI.closeRenameModal();
-          break;
-        case 'confirm-rename':
-          UI.confirmRename();
           break;
         case 'execute-confirm':
           UI.executeConfirm();
@@ -496,10 +476,6 @@ window.GR = window.GR || {};
             R.addComment(key);
             _refreshDetail(key);
           }
-          break;
-        case 'search-overview':
-          var OR = window.GR.overviewRenderer;
-          if (OR) OR.debouncedSearch();
           break;
       }
     });
