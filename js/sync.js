@@ -81,10 +81,6 @@ window.GR = window.GR || {};
     }
   });
 
-  S.subscribe(C.EVT_ROOMS_CHANGED, function() {
-    Sync.updateTabBadges();
-  });
-
   S.subscribe(C.EVT_PROJECT_CHANGED, function() {
     Sync.updateTabBadges();
   });

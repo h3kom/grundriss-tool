@@ -18,6 +18,7 @@ window.GR = window.GR || {};
   var demoRoomsEg = {
     'raum': {
       title: 'Büro',
+      type: 'sonstige',
       floor: 'eg',
       left: 100,
       top: 80,
@@ -30,6 +31,7 @@ window.GR = window.GR || {};
     },
     'raum1': {
       title: 'Konferenzraum',
+      type: 'sonstige',
       floor: 'eg',
       left: 350,
       top: 80,
@@ -42,6 +44,7 @@ window.GR = window.GR || {};
     },
     'raum2': {
       title: 'Küche',
+      type: 'sonstige',
       floor: 'eg',
       left: 650,
       top: 100,
@@ -54,6 +57,7 @@ window.GR = window.GR || {};
     },
     'raum3': {
       title: 'Empfang',
+      type: 'sonstige',
       floor: 'eg',
       left: 100,
       top: 300,
@@ -66,6 +70,7 @@ window.GR = window.GR || {};
     },
     'raum4': {
       title: 'Lagerraum',
+      type: 'sonstige',
       floor: 'eg',
       left: 650,
       top: 280,
@@ -84,6 +89,7 @@ window.GR = window.GR || {};
   var demoRoomsOg = {
     'raum5': {
       title: 'Meetingraum',
+      type: 'sonstige',
       floor: 'og',
       left: 80,
       top: 60,
@@ -96,6 +102,7 @@ window.GR = window.GR || {};
     },
     'raum6': {
       title: 'Fokus-Raum',
+      type: 'sonstige',
       floor: 'og',
       left: 300,
       top: 60,
@@ -108,6 +115,7 @@ window.GR = window.GR || {};
     },
     'raum7': {
       title: 'Büro 2',
+      type: 'sonstige',
       floor: 'og',
       left: 500,
       top: 80,
@@ -129,7 +137,6 @@ window.GR = window.GR || {};
   DT.getDemoRooms = function(floors) {
     var U = window.GR.utils;
     var rooms = {};
-    var keyCounter = 0;
 
     // Map demo rooms to the first two floors of the project
     var floorId1 = floors.length > 0 ? floors[0].id : 'floor0';
