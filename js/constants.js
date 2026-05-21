@@ -9,11 +9,11 @@ window.GR = window.GR || {};
 (function(C) {
   'use strict';
 
-  /** @const {string} Supabase-Projekt-URL (wird aus config.local.js geladen) */
-  C.SUPABASE_URL = (window._GR_CONFIG && window._GR_CONFIG.SUPABASE_URL) || '';
+  /** @const {string} Supabase-Projekt-URL (Platzhalter wird im CI/CD ersetzt) */
+  C.SUPABASE_URL = (window._GR_CONFIG && window._GR_CONFIG.SUPABASE_URL) || '__SUPABASE_URL__';
 
-  /** @const {string} Supabase anonymer API-Key (wird aus config.local.js geladen) */
-  C.SUPABASE_ANON_KEY = (window._GR_CONFIG && window._GR_CONFIG.SUPABASE_ANON_KEY) || '';
+  /** @const {string} Supabase anonymer API-Key (Platzhalter wird im CI/CD ersetzt) */
+  C.SUPABASE_ANON_KEY = (window._GR_CONFIG && window._GR_CONFIG.SUPABASE_ANON_KEY) || '__SUPABASE_ANON_KEY__';
 
   /** @const {number} Mindestgröße für Räume in Pixeln */
   C.MIN_ROOM_SIZE = 20;
