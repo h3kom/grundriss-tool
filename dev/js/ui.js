@@ -575,4 +575,26 @@ window.GR = window.GR || {};
   // Init
   setupEventDelegation();
 
+  // ===================================================================
+  // Button Loading State
+  // ===================================================================
+
+  UI.setButtonLoading = function(btn, loading, text) {
+    if (!btn) return;
+    if (loading) {
+      btn._origHtml = btn.innerHTML;
+      btn.disabled = true;
+      var isLight = getComputedStyle(btn).color === 'rgb(255, 255, 255)' ||
+                    btn.classList.contains('dash-btn-new') ||
+                    btn.classList.contains('auth-btn-primary') ||
+                    btn.classList.contains('ob-btn-primary') ||
+                    btn.classList.contains('ps-btn-primary') ||
+                    btn.classList.contains('dup-btn');
+      btn.innerHTML = '<span class="spinner' + (isLight ? '' : ' dark') + '"></span>' + (text || 'Bitte warten...');
+    } else {
+      btn.disabled = false;
+      btn.innerHTML = btn._origHtml || text || btn.innerHTML;
+    }
+  };
+
 })(window.GR.ui = window.GR.ui || {});

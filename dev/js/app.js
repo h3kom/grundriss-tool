@@ -27,26 +27,31 @@ window.GR = window.GR || {};
   App.showView = function(view) {
     S.set('currentView', view);
 
-    var authView = document.getElementById('authView');
-    var dashboardView = document.getElementById('dashboardView');
-    var editorView = document.getElementById('editorView');
+    var views = document.querySelectorAll('.view');
+    var targetId = view + 'View';
+    var target = document.getElementById(targetId);
 
-    if (authView) authView.style.display = 'none';
-    if (dashboardView) dashboardView.style.display = 'none';
-    if (editorView) editorView.style.display = 'none';
+    views.forEach(function(v) {
+      if (v.id === targetId) return;
+      v.classList.remove('active');
+      v.classList.add('exiting');
+    });
 
-    switch (view) {
-      case 'auth':
-        if (authView) authView.style.display = '';
-        break;
-      case 'dashboard':
-        if (dashboardView) dashboardView.style.display = '';
-        App.renderDashboard();
-        break;
-      case 'editor':
-        if (editorView) editorView.style.display = '';
-        break;
-    }
+    setTimeout(function() {
+      views.forEach(function(v) {
+        if (v.id === targetId) return;
+        v.style.display = 'none';
+        v.classList.remove('exiting');
+      });
+
+      if (target) {
+        target.style.display = '';
+        void target.offsetHeight;
+        target.classList.add('active');
+      }
+
+      if (view === 'dashboard') App.renderDashboard();
+    }, 150);
   };
 
   // ===================================================================
@@ -379,6 +384,9 @@ window.GR = window.GR || {};
       el = document.createElement('div');
       el.id = 'floorRenameModal';
       el.className = 'mo';
+      el.setAttribute('role', 'dialog');
+      el.setAttribute('aria-modal', 'true');
+      el.setAttribute('aria-label', 'Stockwerk umbenennen');
       el.innerHTML =
         '<div class="mb">' +
           '<h3>Stockwerk umbenennen</h3>' +
@@ -722,17 +730,18 @@ window.GR = window.GR || {};
     if (!email || !password) { if (errorEl) errorEl.textContent = 'Bitte E-Mail und Passwort eingeben'; return; }
 
     var btn = document.querySelector('[data-action="do-login"]');
-    if (btn) { btn.disabled = true; btn.textContent = '⏳ Anmelden...'; }
+    var UI_load = window.GR.ui;
+    if (UI_load && UI_load.setButtonLoading && btn) UI_load.setButtonLoading(btn, true, 'Anmelden...');
 
     try {
       var result = await Auth.login(email, password);
       if (!result.ok) {
         if (errorEl) errorEl.textContent = result.error || 'Anmeldung fehlgeschlagen';
-        if (btn) { btn.disabled = false; btn.textContent = 'Anmelden'; }
+        if (UI_load && UI_load.setButtonLoading && btn) UI_load.setButtonLoading(btn, false, 'Anmelden');
       }
     } catch (e) {
       if (errorEl) errorEl.textContent = 'Unerwarteter Fehler: ' + e.message;
-      if (btn) { btn.disabled = false; btn.textContent = 'Anmelden'; }
+      if (UI_load && UI_load.setButtonLoading && btn) UI_load.setButtonLoading(btn, false, 'Anmelden');
     }
   };
 
@@ -746,22 +755,23 @@ window.GR = window.GR || {};
     if (password.length < 6) { if (errorEl) errorEl.textContent = 'Passwort muss mind. 6 Zeichen haben'; return; }
 
     var btn = document.querySelector('[data-action="do-register"]');
-    if (btn) { btn.disabled = true; btn.textContent = '⏳ Registrieren...'; }
+    var UI_reg = window.GR.ui;
+    if (UI_reg && UI_reg.setButtonLoading && btn) UI_reg.setButtonLoading(btn, true, 'Registrieren...');
 
     try {
       var result = await Auth.register(email, password, name);
       if (!result.ok) {
         if (errorEl) errorEl.textContent = result.error || 'Registrierung fehlgeschlagen';
-        if (btn) { btn.disabled = false; btn.textContent = 'Registrieren'; }
+        if (UI_reg && UI_reg.setButtonLoading && btn) UI_reg.setButtonLoading(btn, false, 'Registrieren');
       } else if (result.needsConfirmation) {
         var UI = window.GR.ui;
-        if (UI && UI.toast) UI.toast('✅ Registrierung erfolgreich! Bitte bestätige deine E-Mail-Adresse.', 'success', 5000);
-        if (btn) { btn.disabled = false; btn.textContent = 'Registrieren'; }
+        if (UI && UI.toast) UI.toast('Registrierung erfolgreich! Bitte bestätige deine E-Mail-Adresse.', 'success', 5000);
+        if (UI_reg && UI_reg.setButtonLoading && btn) UI_reg.setButtonLoading(btn, false, 'Registrieren');
         App.toggleAuthForm('login');
       }
     } catch (e) {
       if (errorEl) errorEl.textContent = 'Unerwarteter Fehler: ' + e.message;
-      if (btn) { btn.disabled = false; btn.textContent = 'Registrieren'; }
+      if (UI_reg && UI_reg.setButtonLoading && btn) UI_reg.setButtonLoading(btn, false, 'Registrieren');
     }
   };
 
@@ -805,20 +815,43 @@ window.GR = window.GR || {};
 
   App.handleDeleteProject = async function(projectId) {
     if (!projectId) return;
-    if (!confirm('Projekt wirklich löschen? Alle Daten gehen verloren.')) return;
 
-    try {
-      var result = await Proj.deleteProject(projectId);
-      if (result.ok) {
-        App.renderDashboard();
-        var UI = window.GR.ui;
-        if (UI && UI.toast) UI.toast('🗑️ Projekt gelöscht', 'success', 2000);
+    var overlay = document.createElement('div');
+    overlay.className = 'dash-confirm-overlay';
+    overlay.innerHTML =
+      '<div class="dash-confirm-box">' +
+        '<p>Projekt wirklich löschen? Alle Daten gehen verloren.</p>' +
+        '<div class="dash-confirm-actions">' +
+          '<button class="dash-confirm-cancel" id="dashConfirmCancel">Abbrechen</button>' +
+          '<button class="dash-confirm-delete" id="dashConfirmDelete">Löschen</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+
+    var cancelled = false;
+    document.getElementById('dashConfirmCancel').onclick = function() {
+      cancelled = true;
+      overlay.remove();
+    };
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) { cancelled = true; overlay.remove(); }
+    });
+
+    document.getElementById('dashConfirmDelete').onclick = async function() {
+      overlay.remove();
+      try {
+        var result = await Proj.deleteProject(projectId);
+        if (result.ok) {
+          App.renderDashboard();
+          var UI = window.GR.ui;
+          if (UI && UI.toast) UI.toast('Projekt gelöscht', 'success', 2000);
+        }
+      } catch (e) {
+        console.error('[app] handleDeleteProject error:', e);
+        var UI2 = window.GR.ui;
+        if (UI2 && UI2.toast) UI2.toast('Fehler beim Löschen', 'error', 3000);
       }
-    } catch (e) {
-      console.error('[app] handleDeleteProject error:', e);
-      var UI2 = window.GR.ui;
-      if (UI2 && UI2.toast) UI2.toast('❌ Fehler beim Löschen des Projekts', 'error', 3000);
-    }
+    };
   };
 
   App.handleLogout = async function() {
@@ -847,20 +880,24 @@ window.GR = window.GR || {};
     var rect = btnEl.getBoundingClientRect();
     var menu = document.createElement('div');
     menu.id = 'projectContextMenu';
-    menu.style.cssText = 'position:fixed;z-index:300;background:var(--card);border:1px solid var(--border);border-radius:var(--rm);box-shadow:0 8px 24px rgba(0,0,0,.15);padding:4px 0;min-width:180px';
+    menu.className = 'context-menu';
+    menu.setAttribute('role', 'menu');
+    menu.setAttribute('aria-label', 'Projekt-Aktionen');
     menu.style.top = rect.bottom + 4 + 'px';
     menu.style.right = (window.innerWidth - rect.right) + 'px';
     menu.innerHTML =
-      '<div data-action="project-rename" data-project-id="' + U.escAttr(projectId) + '" style="padding:10px 16px;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:8px">✏️ Umbenennen</div>' +
-      '<div data-action="project-share" data-project-id="' + U.escAttr(projectId) + '" style="padding:10px 16px;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:8px">👥 Teilen</div>' +
-      '<div style="border-top:1px solid var(--border);margin:4px 0"></div>' +
-      '<div data-action="project-export" data-project-id="' + U.escAttr(projectId) + '" style="padding:10px 16px;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:8px">💾 Als JSON exportieren</div>' +
-      '<div data-action="project-import" data-project-id="' + U.escAttr(projectId) + '" style="padding:10px 16px;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:8px">📂 JSON importieren</div>' +
-      '<div style="border-top:1px solid var(--border);margin:4px 0"></div>' +
-      '<div data-action="project-delete" data-project-id="' + U.escAttr(projectId) + '" style="padding:10px 16px;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:8px;color:var(--red)">🗑️ Löschen</div>';
+      '<div data-action="project-rename" data-project-id="' + U.escAttr(projectId) + '" role="menuitem" tabindex="0">Umbenennen</div>' +
+      '<div data-action="project-share" data-project-id="' + U.escAttr(projectId) + '" role="menuitem" tabindex="0">Teilen</div>' +
+      '<div class="divider"></div>' +
+      '<div data-action="project-export" data-project-id="' + U.escAttr(projectId) + '" role="menuitem" tabindex="0">Als JSON exportieren</div>' +
+      '<div data-action="project-import" data-project-id="' + U.escAttr(projectId) + '" role="menuitem" tabindex="0">JSON importieren</div>' +
+      '<div class="divider"></div>' +
+      '<div data-action="project-delete" data-project-id="' + U.escAttr(projectId) + '" class="danger" role="menuitem" tabindex="0">Löschen</div>';
     document.body.appendChild(menu);
     setTimeout(function() {
       document.addEventListener('click', App._closeMenuOnOutside);
+      var first = menu.querySelector('[role="menuitem"]');
+      if (first) first.focus();
     }, 10);
   };
 
@@ -877,21 +914,45 @@ window.GR = window.GR || {};
 
   App.handleDashboardRename = async function(projectId) {
     App.closeProjectMenu();
-    var newName = prompt('Neuer Projektname:');
-    if (!newName || !newName.trim()) return;
-    if (Proj && Proj.updateProjectName) {
-      await Proj.updateProjectName(projectId, newName.trim());
-    }
-    var proj = S.get('currentProject');
-    if (proj && proj.id === projectId) {
-      proj.name = newName.trim();
-      S.set('currentProject', proj);
-      var nameEl = document.getElementById('projectName');
-      if (nameEl) nameEl.textContent = newName.trim();
-    }
-    App.renderDashboard();
-    var UI = window.GR.ui;
-    if (UI && UI.toast) UI.toast('✅ Umbenannt', 'success', 1500);
+    var card = document.querySelector('[data-project-id="' + projectId + '"] .dash-card-name');
+    if (!card) return;
+    var currentName = card.textContent;
+
+    card.innerHTML = '<input type="text" class="dash-rename-input" value="' + U.escAttr(currentName) + '" />';
+    var input = card.querySelector('.dash-rename-input');
+    if (!input) return;
+    input.focus();
+    input.select();
+
+    var saved = false;
+    var save = async function() {
+      if (saved) return;
+      saved = true;
+      var newName = input.value.trim();
+      if (!newName || newName === currentName) {
+        card.textContent = currentName;
+        return;
+      }
+      if (Proj && Proj.updateProjectName) {
+        await Proj.updateProjectName(projectId, newName);
+      }
+      var proj = S.get('currentProject');
+      if (proj && proj.id === projectId) {
+        proj.name = newName;
+        S.set('currentProject', proj);
+        var nameEl = document.getElementById('projectName');
+        if (nameEl) nameEl.textContent = newName;
+      }
+      App.renderDashboard();
+      var UI = window.GR.ui;
+      if (UI && UI.toast) UI.toast('Umbenannt', 'success', 1500);
+    };
+
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.preventDefault(); save(); }
+      if (e.key === 'Escape') { saved = true; card.textContent = currentName; }
+    });
+    input.addEventListener('blur', function() { setTimeout(save, 100); });
   };
 
   App.handleDashboardShare = function(projectId) {
