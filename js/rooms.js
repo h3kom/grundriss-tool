@@ -65,7 +65,6 @@ window.GR = window.GR || {};
     room.tasks.splice(idx, 1);
     const newDone = {};
     for (const k of Object.keys(room.done)) {
-      if (!Object.prototype.hasOwnProperty.call(room.done, k)) continue;
       const ki = parseInt(k);
       if (ki < idx) newDone[k] = room.done[k];
       else if (ki > idx) newDone[(ki - 1).toString()] = room.done[k];

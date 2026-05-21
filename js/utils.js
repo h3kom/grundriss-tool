@@ -97,6 +97,19 @@ window.GR = window.GR || {};
   };
 
   /**
+   * Baut den HTML-Block "Zuletzt bearbeitet".
+   * Geteilt zwischen detail-renderer und overview-renderer.
+   * @param {number} [lastSaveTs] - Timestamp der letzten Speicherung
+   * @returns {string} HTML-String oder Leerstring
+   */
+  U.buildLastEditInfo = function(lastSaveTs) {
+    var text = U.formatLastEdit(lastSaveTs);
+    return text
+      ? '<div style="margin-top:10px;font-size:11px;color:var(--muted);text-align:center;">' + U.escHtml(text) + '</div>'
+      : '';
+  };
+
+  /**
    * Formatiert die "Zuletzt bearbeitet"-Anzeige.
    * Zentralisiert, um Duplikate in detail-renderer und overview-renderer zu vermeiden.
    * @param {number} lastSaveTs - Timestamp der letzten Speicherung

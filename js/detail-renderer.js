@@ -33,7 +33,7 @@ window.GR = window.GR || {};
     html += DR.buildNoteSection(key, room);
     html += DR.buildCommentSection(key, room);
     if (S.get('editMode')) html += DR.buildActionButtons(key);
-    html += DR.buildLastEditInfo();
+    html += U.buildLastEditInfo(S.get('lastSaveTs'));
 
     sc.innerHTML = html;
   };
@@ -150,10 +150,4 @@ window.GR = window.GR || {};
     return '<div class="is"><button class="drb" data-action="delete-room" data-key="' + U.escAttr(key) + '">🗑️ Löschen</button></div>';
   };
 
-  DR.buildLastEditInfo = function() {
-    var text = U.formatLastEdit(S.get('lastSaveTs'));
-    return text
-      ? '<div style="margin-top:10px;font-size:11px;color:var(--muted);text-align:center;">' + U.escHtml(text) + '</div>'
-      : '';
-  };
 })(window.GR.detailRenderer = window.GR.detailRenderer || {});
