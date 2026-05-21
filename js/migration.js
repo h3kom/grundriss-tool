@@ -10,11 +10,11 @@ window.GR = window.GR || {};
 (function(Mig) {
   'use strict';
 
-  var C = window.GR.constants;
-  var S = window.GR.state;
+  const C = window.GR.constants;
+  const S = window.GR.state;
 
   /** @const {string} Key für Migrations-Flag */
-  var MIGRATION_KEY = 'gr_migrated_v2';
+  const MIGRATION_KEY = 'gr_migrated_v2';
 
   /**
    * Prüft, ob die Migration bereits durchgeführt wurde.
@@ -36,17 +36,17 @@ window.GR = window.GR || {};
   Mig.migrateLocalData = async function() {
     if (Mig.isMigrated()) return { ok: true };
 
-    var Auth = window.GR.auth;
-    var Proj = window.GR.projects;
+    const Auth = window.GR.auth;
+    const Proj = window.GR.projects;
     if (!Auth || !Proj) return { ok: false };
 
-    var user = S.get('currentUser');
+    const user = S.get('currentUser');
     if (!user) return { ok: false };
 
     // Bestehende Daten laden
-    var localData = null;
+    let localData = null;
     try {
-      var raw = localStorage.getItem(C.LOCAL_STORAGE_KEY);
+      const raw = localStorage.getItem(C.LOCAL_STORAGE_KEY);
       if (raw) localData = JSON.parse(raw);
     } catch (e) {
       localData = null;
@@ -59,11 +59,11 @@ window.GR = window.GR || {};
     }
 
     try {
-      var sb = Auth.getSupabase();
+      const sb = Auth.getSupabase();
       if (!sb) return { ok: false };
 
       // Projekt "Altes Projekt (migriert)" erstellen
-      var projResult = await sb.from('projects').insert({
+      const projResult = await sb.from('projects').insert({
         owner_id: user.id,
         name: 'Altes Projekt (migriert)'
       }).select('id').single();
@@ -72,27 +72,27 @@ window.GR = window.GR || {};
         console.warn('[migration] project creation failed:', projResult.error?.message);
         return { ok: false };
       }
-      var projectId = projResult.data.id;
+      const projectId = projResult.data.id;
 
       // Standard-Floors erstellen (EG/OG mit lokalen Bildern)
-      var floorRecords = [
+      const floorRecords = [
         { project_id: projectId, name: 'Erdgeschoss', image_url: 'EG.png', native_width: 1000, sort_order: 0 },
         { project_id: projectId, name: 'Obergeschoss', image_url: 'OG.png', native_width: 800, sort_order: 1 }
       ];
 
-      var floorResult = await sb.from('floors').insert(floorRecords).select('id, name, sort_order');
+      const floorResult = await sb.from('floors').insert(floorRecords).select('id, name, sort_order');
       if (floorResult.error) {
         console.warn('[migration] floor insert failed:', floorResult.error.message);
         return { ok: false };
       }
-      var floors = floorResult.data || [];
+      const floors = floorResult.data || [];
 
       // Alte Raumdaten: Floor-IDs von 'eg'/'og' auf neue Floor-IDs mappen
-      var migratedRooms = JSON.parse(JSON.stringify(localData));
-      var egFloor = floors.find(function(f) { return f.sort_order === 0; });
-      var ogFloor = floors.find(function(f) { return f.sort_order === 1; });
+      const migratedRooms = JSON.parse(JSON.stringify(localData));
+      const egFloor = floors.find(function(f) { return f.sort_order === 0; });
+      const ogFloor = floors.find(function(f) { return f.sort_order === 1; });
 
-      for (var key of Object.keys(migratedRooms)) {
+      for (const key of Object.keys(migratedRooms)) {
         if (migratedRooms[key].floor === 'eg' && egFloor) {
           migratedRooms[key].floor = egFloor.id;
         } else if (migratedRooms[key].floor === 'og' && ogFloor) {
@@ -101,7 +101,7 @@ window.GR = window.GR || {};
       }
 
       // Räume in Supabase speichern
-      var roomsResult = await sb.from('rooms').insert({
+      const roomsResult = await sb.from('rooms').insert({
         project_id: projectId,
         data: migratedRooms
       });
@@ -111,7 +111,7 @@ window.GR = window.GR || {};
       }
 
       // Owner als Member hinzufügen
-      var memberResult = await sb.from('project_members').insert({
+      const memberResult = await sb.from('project_members').insert({
         project_id: projectId,
         user_id: user.id,
         role: 'owner'

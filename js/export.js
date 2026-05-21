@@ -10,28 +10,28 @@ window.GR = window.GR || {};
 (function(Exp) {
   'use strict';
 
-  var S = window.GR.state;
-  var U = window.GR.utils;
+  const S = window.GR.state;
+  const U = window.GR.utils;
+  const UI = window.GR.ui;
 
   /** Aktuelle Export-Version */
-  var EXPORT_VERSION = 1;
+  const EXPORT_VERSION = 1;
 
   // ===================================================================
   // Export
   // ===================================================================
 
   Exp.exportProject = function() {
-    var proj = S.get('currentProject');
-    var floors = S.get('currentProjectFloors') || [];
-    var rooms = S.get('rooms') || {};
+    const proj = S.get('currentProject');
+    const floors = S.get('currentProjectFloors') || [];
+    const rooms = S.get('rooms') || {};
 
     if (!proj) {
-      var UI = window.GR.ui;
       if (UI && UI.toast) UI.toast('Kein Projekt geöffnet', 'error', 2000);
       return;
     }
 
-    var exportData = {
+    const exportData = {
       version: EXPORT_VERSION,
       exportDate: new Date().toISOString(),
       appName: 'Grundriss Tool',
@@ -44,17 +44,17 @@ window.GR = window.GR || {};
       }
     };
 
-    var json = JSON.stringify(exportData, null, 2);
-    var blob = new Blob([json], { type: 'application/json' });
-    var url = URL.createObjectURL(blob);
+    const json = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
 
-    var safeName = (proj.name || 'grundriss')
+    const safeName = (proj.name || 'grundriss')
       .replace(/[^a-zA-Z0-9äöüÄÖÜß\s\-_]/g, '')
       .replace(/\s+/g, '_')
       .substring(0, 50);
-    var filename = safeName + '_' + new Date().toISOString().slice(0, 10) + '.json';
+    const filename = safeName + '_' + new Date().toISOString().slice(0, 10) + '.json';
 
-    var a = document.createElement('a');
+    const a = document.createElement('a');
     a.href = url;
     a.download = filename;
     document.body.appendChild(a);
@@ -62,11 +62,10 @@ window.GR = window.GR || {};
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    var roomCount = Object.keys(rooms).length;
-    var floorCount = floors.length;
-    var UI2 = window.GR.ui;
-    if (UI2 && UI2.toast) {
-      UI2.toast('📦 Export: ' + floorCount + ' Stockwerk(e), ' + roomCount + ' Raum/Räume', 'success', 3000);
+    const roomCount = Object.keys(rooms).length;
+    const floorCount = floors.length;
+    if (UI && UI.toast) {
+      UI.toast('📦 Export: ' + floorCount + ' Stockwerk(e), ' + roomCount + ' Raum/Räume', 'success', 3000);
     }
   };
 
@@ -80,39 +79,39 @@ window.GR = window.GR || {};
    * Strategie: nach sortOrder (Position im Array).
    */
   Exp._mapFloorIds = function(importedRooms, importedFloors) {
-    var currentFloors = S.get('currentProjectFloors') || [];
+    const currentFloors = S.get('currentProjectFloors') || [];
     if (currentFloors.length === 0) return importedRooms;
 
-    var floorMap = {};
+    const floorMap = {};
 
     if (importedFloors && importedFloors.length > 0) {
-      var sortedImported = importedFloors.slice().sort(function(a, b) {
+      const sortedImported = importedFloors.slice().sort(function(a, b) {
         return (a.sortOrder || 0) - (b.sortOrder || 0);
       });
-      var sortedCurrent = currentFloors.slice().sort(function(a, b) {
+      const sortedCurrent = currentFloors.slice().sort(function(a, b) {
         return (a.sortOrder || 0) - (b.sortOrder || 0);
       });
-      for (var i = 0; i < sortedImported.length && i < sortedCurrent.length; i++) {
+      for (let i = 0; i < sortedImported.length && i < sortedCurrent.length; i++) {
         floorMap[sortedImported[i].id] = sortedCurrent[i].id;
       }
     } else {
       // Kein Floor-Info im Import → Räume auf Floor 1 des Projekts setzen
       if (currentFloors.length > 0) {
-        var allFloorIds = Object.keys(importedRooms).map(function(k) { return importedRooms[k].floor; });
-        var uniqueFloors = [];
+        const allFloorIds = Object.keys(importedRooms).map(function(k) { return importedRooms[k].floor; });
+        const uniqueFloors = [];
         allFloorIds.forEach(function(f) { if (f && uniqueFloors.indexOf(f) === -1) uniqueFloors.push(f); });
         uniqueFloors.sort();
-        for (var j = 0; j < uniqueFloors.length && j < currentFloors.length; j++) {
+        for (let j = 0; j < uniqueFloors.length && j < currentFloors.length; j++) {
           floorMap[uniqueFloors[j]] = currentFloors[j].id;
         }
       }
     }
 
     // Floor-IDs in Räumen umschreiben
-    var mappedRooms = JSON.parse(JSON.stringify(importedRooms));
-    var keys = Object.keys(mappedRooms);
-    for (var k = 0; k < keys.length; k++) {
-      var room = mappedRooms[keys[k]];
+    const mappedRooms = JSON.parse(JSON.stringify(importedRooms));
+    const keys = Object.keys(mappedRooms);
+    for (let k = 0; k < keys.length; k++) {
+      const room = mappedRooms[keys[k]];
       if (room.floor && floorMap[room.floor]) {
         room.floor = floorMap[room.floor];
       } else {
@@ -128,18 +127,18 @@ window.GR = window.GR || {};
    * Zentrale Import-Funktion: Mappt Floors, setzt Räume, speichert, rendert.
    */
   Exp._applyImport = async function(data, toast) {
-    var roomCount = Object.keys(data.project.rooms).length;
-    var mappedRooms = Exp._mapFloorIds(data.project.rooms, data.project.floors);
+    const roomCount = Object.keys(data.project.rooms).length;
+    const mappedRooms = Exp._mapFloorIds(data.project.rooms, data.project.floors);
 
     S.set('rooms', mappedRooms);
 
-    var St = window.GR.storage;
+    const St = window.GR.storage;
     if (St && St.saveData) await St.saveData();
 
-    var Rdr = window.GR.renderer;
+    const Rdr = window.GR.renderer;
     if (Rdr && Rdr.render) Rdr.render();
 
-    var Sync = window.GR.sync;
+    const Sync = window.GR.sync;
     if (Sync && Sync.updateTabBadges) Sync.updateTabBadges();
 
     toast('✅ Import erfolgreich! ' + roomCount + ' Raum/Räume importiert', 'success', 3000);
@@ -162,7 +161,7 @@ window.GR = window.GR || {};
     if (Array.isArray(data.project.rooms)) {
       return { valid: false, error: '"project.rooms" muss ein Objekt sein, kein Array' };
     }
-    var roomKeys = Object.keys(data.project.rooms);
+    const roomKeys = Object.keys(data.project.rooms);
     if (roomKeys.length === 0) {
       return { valid: false, error: 'Keine Räume in der Datei enthalten' };
     }
@@ -170,14 +169,14 @@ window.GR = window.GR || {};
       return { valid: false, error: 'Zu viele Räume (max. 500). Datei: ' + roomKeys.length };
     }
     // Validate each room has required properties with correct types
-    var requiredProps = ['title', 'left', 'top', 'width', 'height', 'floor'];
-    for (var i = 0; i < roomKeys.length; i++) {
-      var room = data.project.rooms[roomKeys[i]];
+    const requiredProps = ['title', 'left', 'top', 'width', 'height', 'floor'];
+    for (let i = 0; i < roomKeys.length; i++) {
+      const room = data.project.rooms[roomKeys[i]];
       if (!room || typeof room !== 'object') {
         return { valid: false, error: 'Raum "' + roomKeys[i] + '" ist kein gültiges Objekt' };
       }
-      for (var j = 0; j < requiredProps.length; j++) {
-        var prop = requiredProps[j];
+      for (let j = 0; j < requiredProps.length; j++) {
+        const prop = requiredProps[j];
         if (!(prop in room)) {
           return { valid: false, error: 'Raum "' + roomKeys[i] + '" fehlt Eigenschaft "' + prop + '"' };
         }
@@ -198,8 +197,8 @@ window.GR = window.GR || {};
       if (!Array.isArray(data.project.floors)) {
         return { valid: false, error: '"project.floors" muss ein Array sein' };
       }
-      for (var f = 0; f < data.project.floors.length; f++) {
-        var floor = data.project.floors[f];
+      for (let f = 0; f < data.project.floors.length; f++) {
+        const floor = data.project.floors[f];
         if (!floor || typeof floor !== 'object' || !floor.id) {
           return { valid: false, error: 'Floor-Eintrag ' + f + ' fehlt "id"' };
         }
@@ -212,21 +211,21 @@ window.GR = window.GR || {};
   // Project Settings Modal (Drag & Drop Import)
   // ===================================================================
 
-  var _pendingImport = null;
+  let _pendingImport = null;
 
   Exp.openProjectSettings = function() {
     _pendingImport = null;
-    var modal = document.getElementById('projectSettingsModal');
+    const modal = document.getElementById('projectSettingsModal');
     if (!modal) return;
 
-    var dropZone = document.getElementById('psDropZone');
-    var preview = document.getElementById('psPreview');
-    var importBtn = document.getElementById('psImportBtn');
+    const dropZone = document.getElementById('psDropZone');
+    const preview = document.getElementById('psPreview');
+    const importBtn = document.getElementById('psImportBtn');
     if (dropZone) {
       dropZone.classList.remove('has-file');
-      var icon = dropZone.querySelector('.ps-dropzone-icon');
-      var text = dropZone.querySelector('.ps-dropzone-text');
-      var sub = dropZone.querySelector('.ps-dropzone-sub');
+      const icon = dropZone.querySelector('.ps-dropzone-icon');
+      const text = dropZone.querySelector('.ps-dropzone-text');
+      const sub = dropZone.querySelector('.ps-dropzone-sub');
       if (icon) icon.textContent = '📂';
       if (text) text.textContent = 'JSON-Datei hier ablegen oder klicken';
       if (sub) sub.style.display = '';
@@ -243,14 +242,14 @@ window.GR = window.GR || {};
   };
 
   Exp.closeProjectSettings = function() {
-    var modal = document.getElementById('projectSettingsModal');
+    const modal = document.getElementById('projectSettingsModal');
     if (modal) modal.classList.remove('open');
     _pendingImport = null;
   };
 
   Exp._setupProjectSettingsEvents = function() {
-    var dropZone = document.getElementById('psDropZone');
-    var fileInput = document.getElementById('psFileInput');
+    const dropZone = document.getElementById('psDropZone');
+    const fileInput = document.getElementById('psFileInput');
     if (!dropZone || !fileInput) return;
 
     dropZone.addEventListener('dragover', function(e) {
@@ -264,7 +263,7 @@ window.GR = window.GR || {};
     dropZone.addEventListener('drop', function(e) {
       e.preventDefault(); e.stopPropagation();
       dropZone.classList.remove('dragover');
-      var files = e.dataTransfer && e.dataTransfer.files;
+      const files = e.dataTransfer && e.dataTransfer.files;
       if (files && files.length > 0) Exp._handlePsFile(files[0]);
     });
     dropZone.addEventListener('click', function(e) {
@@ -279,32 +278,32 @@ window.GR = window.GR || {};
 
   Exp._handlePsFile = function(file) {
     if (!file) return;
-    var dropZone = document.getElementById('psDropZone');
-    var preview = document.getElementById('psPreview');
-    var importBtn = document.getElementById('psImportBtn');
+    const dropZone = document.getElementById('psDropZone');
+    const preview = document.getElementById('psPreview');
+    const importBtn = document.getElementById('psImportBtn');
 
-    var reader = new FileReader();
+    const reader = new FileReader();
     reader.onload = function(ev) {
       try {
-        var data = JSON.parse(ev.target.result);
-        var validation = Exp._validateImportData(data);
+        const data = JSON.parse(ev.target.result);
+        const validation = Exp._validateImportData(data);
 
         if (validation.valid) {
           _pendingImport = data;
           if (dropZone) {
             dropZone.classList.add('has-file');
-            var icon = dropZone.querySelector('.ps-dropzone-icon');
-            var textEl = dropZone.querySelector('.ps-dropzone-text');
-            var sub = dropZone.querySelector('.ps-dropzone-sub');
+            const icon = dropZone.querySelector('.ps-dropzone-icon');
+            const textEl = dropZone.querySelector('.ps-dropzone-text');
+            const sub = dropZone.querySelector('.ps-dropzone-sub');
             if (icon) icon.textContent = '✅';
             if (textEl) textEl.textContent = file.name;
             if (sub) sub.style.display = 'none';
           }
           if (preview) {
-            var roomCount = Object.keys(data.project.rooms).length;
-            var floorCount = data.project.floors ? data.project.floors.length : 0;
-            var floorNames = data.project.floors ? data.project.floors.map(function(f) { return f.name; }).join(', ') : '';
-            var html = '<div class="ps-preview-title">📋 ' + U.escHtml(data.project.name || 'Unbenanntes Projekt') + '</div>';
+            const roomCount = Object.keys(data.project.rooms).length;
+            const floorCount = data.project.floors ? data.project.floors.length : 0;
+            const floorNames = data.project.floors ? data.project.floors.map(function(f) { return f.name; }).join(', ') : '';
+            let html = '<div class="ps-preview-title">📋 ' + U.escHtml(data.project.name || 'Unbenanntes Projekt') + '</div>';
             html += '<div class="ps-preview-info">';
             html += 'Räume: <span>' + roomCount + '</span><br>';
             html += 'Stockwerke: <span>' + floorCount + '</span>';
@@ -334,28 +333,26 @@ window.GR = window.GR || {};
     reader.readAsText(file);
   };
 
-  var _importConfirmed = false;
+  let _importConfirmed = false;
 
   Exp.doProjectSettingsImport = async function() {
     if (!_pendingImport) {
-      var UI = window.GR.ui;
       if (UI && UI.toast) UI.toast('❌ Keine Datei ausgewählt', 'error', 2000);
       return;
     }
 
-    var data = _pendingImport;
-    var proj = S.get('currentProject');
+    const data = _pendingImport;
+    const proj = S.get('currentProject');
     if (!proj) {
-      var UI2 = window.GR.ui;
-      if (UI2 && UI2.toast) UI2.toast('❌ Kein Projekt geöffnet', 'error', 2000);
+      if (UI && UI.toast) UI.toast('❌ Kein Projekt geöffnet', 'error', 2000);
       return;
     }
 
     // Two-step confirmation instead of native confirm()
-    var importBtn = document.getElementById('psImportBtn');
+    const importBtn = document.getElementById('psImportBtn');
     if (!_importConfirmed) {
       _importConfirmed = true;
-      var roomCount = Object.keys(data.project.rooms).length;
+      const roomCount = Object.keys(data.project.rooms).length;
       if (importBtn) {
         importBtn.textContent = '⚠️ Bestätigen: ' + roomCount + ' Räume überschreiben';
         importBtn.classList.add('confirm-warn');
@@ -378,8 +375,7 @@ window.GR = window.GR || {};
       importBtn.classList.remove('confirm-warn');
     }
 
-    var UI3 = window.GR.ui;
-    var toast = UI3 && UI3.toast ? UI3.toast : function() {};
+    const toast = UI && UI.toast ? UI.toast : function() {};
 
     await Exp._applyImport(data, toast);
 
