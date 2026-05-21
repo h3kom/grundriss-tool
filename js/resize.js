@@ -25,11 +25,10 @@ window.GR = window.GR || {};
     e.preventDefault();
     e.stopPropagation();
 
-    const raw = RS.getPointerPos(e);
+    const raw = U.getPointerPos(e);
     const wrapper = e.currentTarget.closest('.pw');
     const scale = U.getScale(wrapper);
     const room = S.get('rooms')[key];
-    if (!room) return;
     const el = e.currentTarget.closest('.ro');
 
     S.set('resizeState', {
@@ -78,7 +77,7 @@ window.GR = window.GR || {};
     const rs = S.get('resizeState');
     if (!rs) return;
     e.preventDefault();
-    const raw = RS.getPointerPos(e);
+    const raw = U.getPointerPos(e);
     const dx = raw.x - rs.startX;
     const dy = raw.y - rs.startY;
     const dl = dx / rs.scale;
@@ -101,13 +100,9 @@ window.GR = window.GR || {};
       nt = rs.origTop + rs.origHeight - nh;
     }
 
-    // Grenzenprüfung: Positionen dürfen nicht negativ werden, Größe begrenzen
+    // Grenzenprüfung: Positionen dürfen nicht negativ werden
     nl = Math.max(0, nl);
     nt = Math.max(0, nt);
-    var maxW = 2000 - nl;
-    var maxH = 2000 - nt;
-    nw = Math.min(nw, maxW);
-    nh = Math.min(nh, maxH);
 
     // Store raw values (cheap – runs every event)
     rs.currentLeft = nl;
@@ -171,17 +166,4 @@ window.GR = window.GR || {};
   RS.onResizeEnd = function() { onResizeEndCleanup(); };
   RS.onResizeEndTouch = function() { onResizeEndCleanup(); };
 
-  // Cleanup bei Tab-Wechsel/Fokusverlust
-  document.addEventListener('visibilitychange', function() {
-    if (document.hidden && S.get('resizeState')) onResizeEndCleanup();
-  });
-
-  /**
-   * Ermittelt die Pointer-Position über die zentrale utils-Funktion.
-   * @param {Event} e
-   * @returns {{x:number, y:number}}
-   */
-  RS.getPointerPos = function(e) {
-    return U.getPointerPos(e);
-  };
 })(window.GR.resize = window.GR.resize || {});
