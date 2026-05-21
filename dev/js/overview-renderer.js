@@ -18,8 +18,6 @@ window.GR = window.GR || {};
    * Zeigt die Übersicht aller Räume an.
    */
   OR.showOverview = function() {
-    if (S.get('overview')) return;
-    S.set('overview', true);
     S.set('selectedRoom', null);
     document.getElementById('btnOv')?.classList.add('active');
     S.notify(C.EVT_ROOMS_CHANGED);
@@ -78,7 +76,7 @@ window.GR = window.GR || {};
     }
 
     html += '</div>';
-    html += OR.buildLastEditInfo();
+    html += U.buildLastEditInfo(S.get('lastSaveTs'));
 
     var sc = document.getElementById('sc');
     if (sc) sc.innerHTML = html;
@@ -92,14 +90,4 @@ window.GR = window.GR || {};
     S.set('debounceTimer', setTimeout(function() { OR.renderOverviewContent(); }, C.SEARCH_DEBOUNCE));
   };
 
-  /**
-   * Baut die "Zuletzt bearbeitet"-Info.
-   * @returns {string} HTML
-   */
-  OR.buildLastEditInfo = function() {
-    var text = U.formatLastEdit(S.get('lastSaveTs'));
-    return text
-      ? '<div style="margin-top:10px;font-size:11px;color:var(--muted);text-align:center;">' + U.escHtml(text) + '</div>'
-      : '';
-  };
 })(window.GR.overviewRenderer = window.GR.overviewRenderer || {});

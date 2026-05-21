@@ -22,7 +22,7 @@ window.GR = window.GR || {};
 
   D.startDrag = function(e, key) {
     if (!S.get('editMode')) return;
-    const raw = D.getPointerPos(e);
+    const raw = U.getPointerPos(e);
     const wrapper = e.currentTarget.closest('.pw');
     const rooms = S.get('rooms');
     if (!rooms[key]) return;
@@ -47,7 +47,7 @@ window.GR = window.GR || {};
     document.addEventListener('touchend', D.onDragEndTouch, D._touchOptions);
   };
 
-  D._doDragUpdate = function(e) {
+  D._doDragUpdate = function() {
     _dragRafPending = false;
     const ds = S.get('dragState');
     if (!ds || !ds.isDragging) return;
@@ -63,7 +63,7 @@ window.GR = window.GR || {};
   D.onDragMove = function(e) {
     const ds = S.get('dragState');
     if (!ds) return;
-    const raw = D.getPointerPos(e);
+    const raw = U.getPointerPos(e);
     const dx = raw.x - ds.startX;
     const dy = raw.y - ds.startY;
 
@@ -87,7 +87,7 @@ window.GR = window.GR || {};
     // Throttle DOM writes to rAF (max once per frame)
     if (!_dragRafPending) {
       _dragRafPending = true;
-      requestAnimationFrame(function() { D._doDragUpdate(e); });
+      requestAnimationFrame(function() { D._doDragUpdate(); });
     }
   };
 
@@ -130,8 +130,7 @@ window.GR = window.GR || {};
       const nativeWidth = C.NATIVE_WIDTHS[U.detectFloorId(ds.wrapper.id)] || 1000;
       const room = rooms[ds.key];
       const clampedLeft = Math.max(0, Math.min(newLeft, nativeWidth - (room ? room.width : C.MIN_ROOM_SIZE)));
-      const maxTop = 2000 - (room ? room.height : C.MIN_ROOM_SIZE);
-      const clampedTop = Math.max(0, Math.min(newTop, maxTop));
+      const clampedTop = Math.max(0, newTop);
 
       rooms[ds.key].left = clampedLeft;
       rooms[ds.key].top = clampedTop;
@@ -144,12 +143,4 @@ window.GR = window.GR || {};
   D.onDragEnd = function() { onDragEndCleanup(); };
   D.onDragEndTouch = function() { onDragEndCleanup(); };
 
-  // Cleanup bei Tab-Wechsel/Fokusverlust
-  document.addEventListener('visibilitychange', function() {
-    if (document.hidden && S.get('dragState')) onDragEndCleanup();
-  });
-
-  D.getPointerPos = function(e) {
-    return U.getPointerPos(e);
-  };
 })(window.GR.drag = window.GR.drag || {});

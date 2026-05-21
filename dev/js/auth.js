@@ -10,14 +10,14 @@ window.GR = window.GR || {};
 (function(Auth) {
   'use strict';
 
-  var C = window.GR.constants;
-  var S = window.GR.state;
+  const C = window.GR.constants;
+  const S = window.GR.state;
 
   /** @type {Object|null} Supabase Client Instanz */
-  var _sb = null;
+  let _sb = null;
 
   /** @type {Object|null} Auth state subscription (for cleanup) */
-  var _authSubscription = null;
+  let _authSubscription = null;
 
   /**
    * Initialisiert den Supabase Client.
@@ -28,17 +28,13 @@ window.GR = window.GR || {};
       console.warn('[auth] Supabase JS Client nicht geladen. Auth deaktiviert.');
       return;
     }
-    if (!C.SUPABASE_URL || !C.SUPABASE_ANON_KEY) {
-      console.warn('[auth] Supabase URL/Key nicht konfiguriert. Auth deaktiviert.');
-      return;
-    }
     // Prevent duplicate listeners on re-init
     if (_authSubscription) {
       try { _authSubscription.unsubscribe(); } catch (e) { /* noop */ }
     }
     _sb = window.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY);
     // Listener für Auth-Status-Änderungen
-    var { data } = _sb.auth.onAuthStateChange(function(event, session) {
+    const { data } = _sb.auth.onAuthStateChange(function(event, session) {
       if (event === 'SIGNED_IN' && session) {
         Auth.onSignIn(session.user);
       } else if (event === 'TOKEN_REFRESHED' && session) {
@@ -78,10 +74,25 @@ window.GR = window.GR || {};
   Auth.getSession = async function() {
     if (!_sb) return null;
     try {
-      var result = await _sb.auth.getSession();
+      const result = await _sb.auth.getSession();
       return result.data.session;
     } catch (e) {
       console.warn('[auth] getSession error:', e.message);
+      return null;
+    }
+  };
+
+  /**
+   * Holt den aktuellen User.
+   * @returns {Promise<Object|null>}
+   */
+  Auth.getCurrentUser = async function() {
+    if (!_sb) return null;
+    try {
+      const result = await _sb.auth.getUser();
+      return result.data.user;
+    } catch (e) {
+      console.warn('[auth] getUser error:', e.message);
       return null;
     }
   };
@@ -100,7 +111,7 @@ window.GR = window.GR || {};
   Auth.register = async function(email, password, displayName) {
     if (!_sb) return { ok: false, error: 'Auth nicht verfügbar' };
     try {
-      var result = await _sb.auth.signUp({
+      const result = await _sb.auth.signUp({
         email: email,
         password: password,
         options: {
@@ -128,7 +139,7 @@ window.GR = window.GR || {};
    */
   function translateError(msg) {
     if (!msg) return 'Unbekannter Fehler';
-    var lower = msg.toLowerCase();
+    const lower = msg.toLowerCase();
     if (lower.includes('invalid login credentials')) return 'E-Mail oder Passwort falsch';
     if (lower.includes('email not confirmed')) return 'Bitte bestätige zuerst deine E-Mail-Adresse';
     if (lower.includes('user already registered')) return 'Diese E-Mail ist bereits registriert';
@@ -149,7 +160,7 @@ window.GR = window.GR || {};
   Auth.login = async function(email, password) {
     if (!_sb) return { ok: false, error: 'Auth nicht verfügbar' };
     try {
-      var result = await _sb.auth.signInWithPassword({
+      const result = await _sb.auth.signInWithPassword({
         email: email,
         password: password
       });
@@ -218,7 +229,7 @@ window.GR = window.GR || {};
   Auth.resetPassword = async function(email) {
     if (!_sb) return { ok: false, error: 'Auth nicht verfügbar' };
     try {
-      var result = await _sb.auth.resetPasswordForEmail(email, {
+      const result = await _sb.auth.resetPasswordForEmail(email, {
         redirectTo: window.location.origin + window.location.pathname
       });
       if (result.error) {

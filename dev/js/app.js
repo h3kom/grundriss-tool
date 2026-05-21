@@ -19,6 +19,7 @@ window.GR = window.GR || {};
   const Proj = window.GR.projects;
   const Mig = window.GR.migration;
   const Pres = window.GR.presence;
+  const UI = window.GR.ui;
 
   // ===================================================================
   // View Management
@@ -27,31 +28,26 @@ window.GR = window.GR || {};
   App.showView = function(view) {
     S.set('currentView', view);
 
-    var views = document.querySelectorAll('.view');
-    var targetId = view + 'View';
-    var target = document.getElementById(targetId);
+    var authView = document.getElementById('authView');
+    var dashboardView = document.getElementById('dashboardView');
+    var editorView = document.getElementById('editorView');
 
-    views.forEach(function(v) {
-      if (v.id === targetId) return;
-      v.classList.remove('active');
-      v.classList.add('exiting');
-    });
+    if (authView) authView.style.display = 'none';
+    if (dashboardView) dashboardView.style.display = 'none';
+    if (editorView) editorView.style.display = 'none';
 
-    setTimeout(function() {
-      views.forEach(function(v) {
-        if (v.id === targetId) return;
-        v.style.display = 'none';
-        v.classList.remove('exiting');
-      });
-
-      if (target) {
-        target.style.display = '';
-        void target.offsetHeight;
-        target.classList.add('active');
-      }
-
-      if (view === 'dashboard') App.renderDashboard();
-    }, 150);
+    switch (view) {
+      case 'auth':
+        if (authView) authView.style.display = '';
+        break;
+      case 'dashboard':
+        if (dashboardView) dashboardView.style.display = '';
+        App.renderDashboard();
+        break;
+      case 'editor':
+        if (editorView) editorView.style.display = '';
+        break;
+    }
   };
 
   // ===================================================================
@@ -199,7 +195,6 @@ window.GR = window.GR || {};
     App.showView('editor');
 
     if (!localStorage.getItem(C.INTRO_SEEN_KEY)) {
-      var UI = window.GR.ui;
       if (UI && UI.showIntro) UI.showIntro();
     }
 
@@ -263,9 +258,6 @@ window.GR = window.GR || {};
       '<button data-action="confirm-rename-project" class="tb-btn-sm" title="Speichern">✅</button>' +
       '<button data-action="cancel-rename-project" class="tb-btn-sm" title="Abbrechen">❌</button>';
 
-    var renameBtn = document.querySelector('[data-action="rename-project"]');
-    if (renameBtn) renameBtn.style.display = 'none';
-
     var input = document.getElementById('renameProjectInput');
     if (input) { input.focus(); input.select(); }
   };
@@ -274,7 +266,7 @@ window.GR = window.GR || {};
     var input = document.getElementById('renameProjectInput');
     if (!input) return;
     var newName = input.value.trim();
-    if (!newName) { var UI = window.GR.ui; if (UI && UI.toast) UI.toast('Name darf nicht leer sein', 'error', 2000); return; }
+    if (!newName) { if (UI && UI.toast) UI.toast('Name darf nicht leer sein', 'error', 2000); return; }
 
     var proj = S.get('currentProject');
     if (!proj) return;
@@ -287,17 +279,12 @@ window.GR = window.GR || {};
 
     var nameEl = document.getElementById('projectName');
     if (nameEl) nameEl.textContent = newName;
-
-    var renameBtn = document.querySelector('[data-action="rename-project"]');
-    if (renameBtn) renameBtn.style.display = '';
   };
 
   App.cancelRenameProject = function() {
     var proj = S.get('currentProject');
     var nameEl = document.getElementById('projectName');
     if (nameEl && proj) nameEl.textContent = proj.name || '';
-    var renameBtn = document.querySelector('[data-action="rename-project"]');
-    if (renameBtn) renameBtn.style.display = '';
   };
 
   // ===================================================================
@@ -322,8 +309,7 @@ window.GR = window.GR || {};
     var Rdr = window.GR.renderer;
     if (Rdr && Rdr.render) Rdr.render();
 
-    var UI = window.GR.ui;
-    if (UI && UI.toast) UI.toast('📋 Raum dupliziert', 'success', 1500);
+    if (UI && UI.toast) UI.toast('Raum dupliziert', 'success', 1500);
   };
 
   // ===================================================================
@@ -333,8 +319,7 @@ window.GR = window.GR || {};
   App.handleAddFloor = async function() {
     var proj = S.get('currentProject');
     if (!proj || proj.id === 'legacy') {
-      var UI = window.GR.ui;
-      if (UI && UI.toast) UI.toast('Stockwerke können nur in Cloud-Projekten verwaltet werden', 'warning', 3000);
+      if (UI && UI.toast) UI.toast('Stockwerke koennen nur in Cloud-Projekten verwaltet werden', 'warning', 3000);
       return;
     }
 
@@ -351,8 +336,7 @@ window.GR = window.GR || {};
     }).select('id, name, image_url, native_width, sort_order');
 
     if (result.error) {
-      var UI2 = window.GR.ui;
-      if (UI2 && UI2.toast) UI2.toast('❌ Fehler: ' + result.error.message, 'error', 3000);
+      if (UI && UI.toast) UI.toast('Fehler: ' + result.error.message, 'error', 3000);
       return;
     }
 
@@ -369,8 +353,7 @@ window.GR = window.GR || {};
       S.set('currentProjectFloors', floors);
       if (Proj && Proj.buildFloorUI) Proj.buildFloorUI(floors);
 
-      var UI3 = window.GR.ui;
-      if (UI3 && UI3.toast) UI3.toast('✅ ' + floorName + ' hinzugefügt', 'success', 2000);
+      if (UI && UI.toast) UI.toast(floorName + ' hinzugefuegt', 'success', 2000);
     }
   };
 
@@ -378,90 +361,30 @@ window.GR = window.GR || {};
     var floors = S.get('currentProjectFloors') || [];
     var floor = floors.find(function(f) { return f.id === floorId; });
     if (!floor) return;
-
-    var el = document.getElementById('floorRenameModal');
-    if (!el) {
-      el = document.createElement('div');
-      el.id = 'floorRenameModal';
-      el.className = 'mo';
-      el.setAttribute('role', 'dialog');
-      el.setAttribute('aria-modal', 'true');
-      el.setAttribute('aria-label', 'Stockwerk umbenennen');
-      el.innerHTML =
-        '<div class="mb">' +
-          '<h3>Stockwerk umbenennen</h3>' +
-          '<input type="text" id="floorRenameInput" class="ob-input" style="margin-bottom:0" />' +
-          '<div class="ma" style="margin-top:16px">' +
-            '<button data-action="cancel-floor-rename" style="padding:10px 24px;border-radius:var(--rm);cursor:pointer;font-size:14px;font-weight:500;border:1px solid var(--border);background:var(--input);color:var(--text);min-height:44px">Abbrechen</button>' +
-            '<button data-action="confirm-floor-rename" class="p" style="padding:10px 24px;border-radius:var(--rm);cursor:pointer;font-size:14px;font-weight:500;border:none;background:var(--blue);color:#fff;min-height:44px">Speichern</button>' +
-          '</div>' +
-        '</div>';
-      document.body.appendChild(el);
-    }
-
-    var input = document.getElementById('floorRenameInput');
-    if (input) {
-      input.value = floor.name;
-      input.setAttribute('data-floor-id', floorId);
-    }
-    el.classList.add('open');
-    setTimeout(function() {
-      if (input) { input.focus(); input.select(); }
-    }, 100);
-  };
-
-  App.cancelFloorRename = function() {
-    var el = document.getElementById('floorRenameModal');
-    if (el) el.classList.remove('open');
-  };
-
-  App.confirmFloorRename = async function() {
-    var input = document.getElementById('floorRenameInput');
-    if (!input) return;
-    var floorId = input.getAttribute('data-floor-id');
-    var newName = input.value.trim();
-    if (!newName) {
-      var UI = window.GR.ui;
-      if (UI && UI.toast) UI.toast('Name darf nicht leer sein', 'error', 2000);
-      return;
-    }
-    if (!floorId) return;
+    var newName = prompt('Neuer Name für Stockwerk:', floor.name);
+    if (!newName || !newName.trim()) return;
 
     var sb = Auth.getSupabase();
     if (!sb) return;
 
-    await sb.from('floors').update({ name: newName }).eq('id', floorId);
-
-    var floors = S.get('currentProjectFloors') || [];
-    var floor = floors.find(function(f) { return f.id === floorId; });
-    if (floor) floor.name = newName;
+    await sb.from('floors').update({ name: newName.trim() }).eq('id', floorId);
+    floor.name = newName.trim();
 
     var tab = document.getElementById('tab-' + floorId);
     if (tab) {
       var label = tab.querySelector('.ft-label');
-      if (label) label.textContent = newName;
+      if (label) label.textContent = newName.trim();
     }
-
-    App.cancelFloorRename();
   };
 
   App.handleDeleteFloor = async function(floorId) {
     var floors = S.get('currentProjectFloors') || [];
     if (floors.length <= 1) {
-      var UI = window.GR.ui;
       if (UI && UI.toast) UI.toast('Mindestens ein Stockwerk erforderlich', 'warning', 2000);
       return;
     }
-    var UI3 = window.GR.ui;
-    if (UI3 && UI3.confirm) {
-      UI3.confirm('Stockwerk wirklich löschen? Alle Räume auf diesem Stockwerk werden ebenfalls gelöscht.', function() {
-        App._executeDeleteFloor(floorId);
-      });
-    }
-  };
+    if (!confirm('Stockwerk wirklich loeschen?')) return;
 
-  App._executeDeleteFloor = async function(floorId) {
-    var floors = S.get('currentProjectFloors') || [];
     var sb = Auth.getSupabase();
     if (!sb) return;
 
@@ -479,13 +402,14 @@ window.GR = window.GR || {};
 
     if (Proj && Proj.buildFloorUI) Proj.buildFloorUI(newFloors);
     if (S.get('activeFloor') === floorId && newFloors.length > 0) {
-      var UI2 = window.GR.ui;
-      if (UI2 && UI2.switchFloor) UI2.switchFloor(newFloors[0].id);
+      if (UI && UI.switchFloor) UI.switchFloor(newFloors[0].id);
     }
   };
 
   App.showFloorMenu = function(floorId) {
-    App.handleRenameFloor(floorId);
+    var choice = confirm('OK = Umbenennen, Abbrechen = Löschen');
+    if (choice) { App.handleRenameFloor(floorId); }
+    else { App.handleDeleteFloor(floorId); }
   };
 
   // ===================================================================
@@ -568,8 +492,6 @@ window.GR = window.GR || {};
         case 'manage-floor': App.showFloorMenu(target.dataset.floorId); break;
         case 'rename-floor': App.handleRenameFloor(target.dataset.floorId); break;
         case 'delete-floor': App.handleDeleteFloor(target.dataset.floorId); break;
-        case 'confirm-floor-rename': App.confirmFloorRename(); break;
-        case 'cancel-floor-rename': App.cancelFloorRename(); break;
         case 'duplicate-room':
           if (selectedRoom) App.duplicateRoom(selectedRoom);
           break;
@@ -666,14 +588,13 @@ window.GR = window.GR || {};
       else if (id === 'regEmail' || id === 'regPassword' || id === 'regName') { App.handleRegister(); }
       else if (id === 'resetEmail') { App.handleReset(); }
       else if (id === 'renameProjectInput') { App.confirmRenameProject(); }
-      else if (id === 'floorRenameInput') { App.confirmFloorRename(); }
     });
 
     // Keyboard Shortcuts
     document.addEventListener('keydown', function(e) {
       var selectedRoom = S.get('selectedRoom');
       if (!selectedRoom) return;
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
       if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
         e.preventDefault();
@@ -689,7 +610,6 @@ window.GR = window.GR || {};
     document.addEventListener('click', function(e) {
       var planEl = e.target.closest('.pw');
       if (planEl && !e.target.closest('.ro') && !e.target.closest('.rh')) {
-        var UI = window.GR.ui;
         if (UI) {
           S.set('selectedRoom', null);
           UI.closeSidebar();
@@ -702,8 +622,7 @@ window.GR = window.GR || {};
     // Details-Toggle: Sidebar öffnen/schließen
     document.addEventListener('click', function(e) {
       if (e.target.closest('#sbToggle')) {
-        var _UI = window.GR.ui;
-        if (_UI && _UI.toggleSidebar) _UI.toggleSidebar();
+        if (UI && UI.toggleSidebar) UI.toggleSidebar();
       }
     });
   };
@@ -730,18 +649,17 @@ window.GR = window.GR || {};
     if (!email || !password) { if (errorEl) errorEl.textContent = 'Bitte E-Mail und Passwort eingeben'; return; }
 
     var btn = document.querySelector('[data-action="do-login"]');
-    var UI_load = window.GR.ui;
-    if (UI_load && UI_load.setButtonLoading && btn) UI_load.setButtonLoading(btn, true, 'Anmelden...');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Anmelden...'; }
 
     try {
       var result = await Auth.login(email, password);
       if (!result.ok) {
         if (errorEl) errorEl.textContent = result.error || 'Anmeldung fehlgeschlagen';
-        if (UI_load && UI_load.setButtonLoading && btn) UI_load.setButtonLoading(btn, false, 'Anmelden');
+        if (btn) { btn.disabled = false; btn.textContent = 'Anmelden'; }
       }
     } catch (e) {
       if (errorEl) errorEl.textContent = 'Unerwarteter Fehler: ' + e.message;
-      if (UI_load && UI_load.setButtonLoading && btn) UI_load.setButtonLoading(btn, false, 'Anmelden');
+      if (btn) { btn.disabled = false; btn.textContent = 'Anmelden'; }
     }
   };
 
@@ -755,23 +673,21 @@ window.GR = window.GR || {};
     if (password.length < 6) { if (errorEl) errorEl.textContent = 'Passwort muss mind. 6 Zeichen haben'; return; }
 
     var btn = document.querySelector('[data-action="do-register"]');
-    var UI_reg = window.GR.ui;
-    if (UI_reg && UI_reg.setButtonLoading && btn) UI_reg.setButtonLoading(btn, true, 'Registrieren...');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Registrieren...'; }
 
     try {
       var result = await Auth.register(email, password, name);
       if (!result.ok) {
         if (errorEl) errorEl.textContent = result.error || 'Registrierung fehlgeschlagen';
-        if (UI_reg && UI_reg.setButtonLoading && btn) UI_reg.setButtonLoading(btn, false, 'Registrieren');
+        if (btn) { btn.disabled = false; btn.textContent = 'Registrieren'; }
       } else if (result.needsConfirmation) {
-        var UI = window.GR.ui;
-        if (UI && UI.toast) UI.toast('Registrierung erfolgreich! Bitte bestätige deine E-Mail-Adresse.', 'success', 5000);
-        if (UI_reg && UI_reg.setButtonLoading && btn) UI_reg.setButtonLoading(btn, false, 'Registrieren');
+        if (UI && UI.toast) UI.toast('Registrierung erfolgreich! Bitte bestaetige deine E-Mail-Adresse.', 'success', 5000);
+        if (btn) { btn.disabled = false; btn.textContent = 'Registrieren'; }
         App.toggleAuthForm('login');
       }
     } catch (e) {
       if (errorEl) errorEl.textContent = 'Unerwarteter Fehler: ' + e.message;
-      if (UI_reg && UI_reg.setButtonLoading && btn) UI_reg.setButtonLoading(btn, false, 'Registrieren');
+      if (btn) { btn.disabled = false; btn.textContent = 'Registrieren'; }
     }
   };
 
@@ -790,68 +706,31 @@ window.GR = window.GR || {};
 
   App.handleOpenProject = async function(projectId) {
     if (!projectId) return;
-    try {
-      var success = await Proj.openProject(projectId);
-      if (success) {
-        var proj = S.get('currentProject');
-        var nameEl = document.getElementById('projectName');
-        if (nameEl && proj) nameEl.textContent = proj.name || '';
-        App.showView('editor');
-        var Rdr = window.GR.renderer;
-        if (Rdr && Rdr.render) Rdr.render();
-        Sync.updateTabBadges();
-        // Presence
-        if (Pres && Pres.joinProject && proj) Pres.joinProject(proj.id);
-      } else {
-        var UI = window.GR.ui;
-        if (UI && UI.toast) UI.toast('❌ Projekt konnte nicht geladen werden', 'error', 3000);
-      }
-    } catch (e) {
-      console.error('[app] handleOpenProject error:', e);
-      var UI2 = window.GR.ui;
-      if (UI2 && UI2.toast) UI2.toast('❌ Fehler beim Öffnen des Projekts', 'error', 3000);
+    var success = await Proj.openProject(projectId);
+    if (success) {
+      var proj = S.get('currentProject');
+      var nameEl = document.getElementById('projectName');
+      if (nameEl && proj) nameEl.textContent = proj.name || '';
+      App.showView('editor');
+      var Rdr = window.GR.renderer;
+      if (Rdr && Rdr.render) Rdr.render();
+      Sync.updateTabBadges();
+      // Presence
+      if (Pres && Pres.joinProject && proj) Pres.joinProject(proj.id);
+    } else {
+      if (UI && UI.toast) UI.toast('Projekt konnte nicht geladen werden', 'error', 3000);
     }
   };
 
   App.handleDeleteProject = async function(projectId) {
     if (!projectId) return;
+    if (!confirm('Projekt wirklich loeschen? Alle Daten gehen verloren.')) return;
 
-    var overlay = document.createElement('div');
-    overlay.className = 'dash-confirm-overlay';
-    overlay.innerHTML =
-      '<div class="dash-confirm-box">' +
-        '<p>Projekt wirklich löschen? Alle Daten gehen verloren.</p>' +
-        '<div class="dash-confirm-actions">' +
-          '<button class="dash-confirm-cancel" id="dashConfirmCancel">Abbrechen</button>' +
-          '<button class="dash-confirm-delete" id="dashConfirmDelete">Löschen</button>' +
-        '</div>' +
-      '</div>';
-    document.body.appendChild(overlay);
-
-    var cancelled = false;
-    document.getElementById('dashConfirmCancel').onclick = function() {
-      cancelled = true;
-      overlay.remove();
-    };
-    overlay.addEventListener('click', function(e) {
-      if (e.target === overlay) { cancelled = true; overlay.remove(); }
-    });
-
-    document.getElementById('dashConfirmDelete').onclick = async function() {
-      overlay.remove();
-      try {
-        var result = await Proj.deleteProject(projectId);
-        if (result.ok) {
-          App.renderDashboard();
-          var UI = window.GR.ui;
-          if (UI && UI.toast) UI.toast('Projekt gelöscht', 'success', 2000);
-        }
-      } catch (e) {
-        console.error('[app] handleDeleteProject error:', e);
-        var UI2 = window.GR.ui;
-        if (UI2 && UI2.toast) UI2.toast('Fehler beim Löschen', 'error', 3000);
-      }
-    };
+    var result = await Proj.deleteProject(projectId);
+    if (result.ok) {
+      App.renderDashboard();
+      if (UI && UI.toast) UI.toast('Projekt geloescht', 'success', 2000);
+    }
   };
 
   App.handleLogout = async function() {
@@ -880,24 +759,20 @@ window.GR = window.GR || {};
     var rect = btnEl.getBoundingClientRect();
     var menu = document.createElement('div');
     menu.id = 'projectContextMenu';
-    menu.className = 'context-menu';
-    menu.setAttribute('role', 'menu');
-    menu.setAttribute('aria-label', 'Projekt-Aktionen');
+    menu.style.cssText = 'position:fixed;z-index:300;background:var(--card);border:1px solid var(--border);border-radius:var(--rm);box-shadow:0 8px 24px rgba(0,0,0,.15);padding:4px 0;min-width:180px';
     menu.style.top = rect.bottom + 4 + 'px';
     menu.style.right = (window.innerWidth - rect.right) + 'px';
     menu.innerHTML =
-      '<div data-action="project-rename" data-project-id="' + U.escAttr(projectId) + '" role="menuitem" tabindex="0">Umbenennen</div>' +
-      '<div data-action="project-share" data-project-id="' + U.escAttr(projectId) + '" role="menuitem" tabindex="0">Teilen</div>' +
-      '<div class="divider"></div>' +
-      '<div data-action="project-export" data-project-id="' + U.escAttr(projectId) + '" role="menuitem" tabindex="0">Als JSON exportieren</div>' +
-      '<div data-action="project-import" data-project-id="' + U.escAttr(projectId) + '" role="menuitem" tabindex="0">JSON importieren</div>' +
-      '<div class="divider"></div>' +
-      '<div data-action="project-delete" data-project-id="' + U.escAttr(projectId) + '" class="danger" role="menuitem" tabindex="0">Löschen</div>';
+      '<div data-action="project-rename" data-project-id="' + U.escAttr(projectId) + '" style="padding:10px 16px;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:8px">✏️ Umbenennen</div>' +
+      '<div data-action="project-share" data-project-id="' + U.escAttr(projectId) + '" style="padding:10px 16px;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:8px">👥 Teilen</div>' +
+      '<div style="border-top:1px solid var(--border);margin:4px 0"></div>' +
+      '<div data-action="project-export" data-project-id="' + U.escAttr(projectId) + '" style="padding:10px 16px;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:8px">💾 Als JSON exportieren</div>' +
+      '<div data-action="project-import" data-project-id="' + U.escAttr(projectId) + '" style="padding:10px 16px;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:8px">📂 JSON importieren</div>' +
+      '<div style="border-top:1px solid var(--border);margin:4px 0"></div>' +
+      '<div data-action="project-delete" data-project-id="' + U.escAttr(projectId) + '" style="padding:10px 16px;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:8px;color:var(--red)">🗑️ Löschen</div>';
     document.body.appendChild(menu);
     setTimeout(function() {
       document.addEventListener('click', App._closeMenuOnOutside);
-      var first = menu.querySelector('[role="menuitem"]');
-      if (first) first.focus();
     }, 10);
   };
 
@@ -914,45 +789,20 @@ window.GR = window.GR || {};
 
   App.handleDashboardRename = async function(projectId) {
     App.closeProjectMenu();
-    var card = document.querySelector('[data-project-id="' + projectId + '"] .dash-card-name');
-    if (!card) return;
-    var currentName = card.textContent;
-
-    card.innerHTML = '<input type="text" class="dash-rename-input" value="' + U.escAttr(currentName) + '" />';
-    var input = card.querySelector('.dash-rename-input');
-    if (!input) return;
-    input.focus();
-    input.select();
-
-    var saved = false;
-    var save = async function() {
-      if (saved) return;
-      saved = true;
-      var newName = input.value.trim();
-      if (!newName || newName === currentName) {
-        card.textContent = currentName;
-        return;
-      }
-      if (Proj && Proj.updateProjectName) {
-        await Proj.updateProjectName(projectId, newName);
-      }
-      var proj = S.get('currentProject');
-      if (proj && proj.id === projectId) {
-        proj.name = newName;
-        S.set('currentProject', proj);
-        var nameEl = document.getElementById('projectName');
-        if (nameEl) nameEl.textContent = newName;
-      }
-      App.renderDashboard();
-      var UI = window.GR.ui;
-      if (UI && UI.toast) UI.toast('Umbenannt', 'success', 1500);
-    };
-
-    input.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') { e.preventDefault(); save(); }
-      if (e.key === 'Escape') { saved = true; card.textContent = currentName; }
-    });
-    input.addEventListener('blur', function() { setTimeout(save, 100); });
+    var newName = prompt('Neuer Projektname:');
+    if (!newName || !newName.trim()) return;
+    if (Proj && Proj.updateProjectName) {
+      await Proj.updateProjectName(projectId, newName.trim());
+    }
+    var proj = S.get('currentProject');
+    if (proj && proj.id === projectId) {
+      proj.name = newName.trim();
+      S.set('currentProject', proj);
+      var nameEl = document.getElementById('projectName');
+      if (nameEl) nameEl.textContent = newName.trim();
+    }
+    App.renderDashboard();
+    if (UI && UI.toast) UI.toast('Umbenannt', 'success', 1500);
   };
 
   App.handleDashboardShare = function(projectId) {
@@ -967,36 +817,66 @@ window.GR = window.GR || {};
 
   App.handleDashboardExport = async function(projectId) {
     App.closeProjectMenu();
-    var savedState = {
-      project: S.get('currentProject'),
-      floors: S.get('currentProjectFloors'),
-      rooms: S.get('rooms'),
-      activeFloor: S.get('activeFloor')
-    };
-    var success = await Proj.openProject(projectId);
-    if (!success) {
-      var UI = window.GR.ui;
-      if (UI && UI.toast) UI.toast('❌ Projekt konnte nicht geladen werden', 'error', 3000);
+    var sb = Auth.getSupabase();
+    if (!sb) {
+      if (UI && UI.toast) UI.toast('Verbindung fehlgeschlagen', 'error', 3000);
       return;
     }
-    var Exp = window.GR.exportMod;
-    if (Exp && Exp.exportProject) Exp.exportProject();
-    // Restore previous state
-    if (savedState.project) {
-      S.set('currentProject', savedState.project);
-      S.set('currentProjectFloors', savedState.floors);
-      S.set('rooms', savedState.rooms);
-      S.set('activeFloor', savedState.activeFloor);
+
+    try {
+      // Load project data from Supabase, then delegate to export.js
+      // (avoids openProject which mutates DOM and global state)
+      var projResult = await sb.from('projects').select('*').eq('id', projectId).single();
+      if (projResult.error || !projResult.data) {
+        if (UI && UI.toast) UI.toast('Projekt konnte nicht geladen werden', 'error', 3000);
+        return;
+      }
+
+      var floorsResult = await sb.from('floors')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('sort_order', { ascending: true });
+
+      var roomsResult = await sb.from('rooms')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('updated_at', { ascending: false })
+        .limit(1);
+      var roomsData = (roomsResult.data && roomsResult.data.length > 0) ? roomsResult.data[0].data : {};
+
+      // Temporarily set state so exportProject() can read it
+      var prevProject = S.get('currentProject');
+      var prevFloors = S.get('currentProjectFloors');
+      var prevRooms = S.get('rooms');
+
+      S.set('currentProject', {
+        id: projectId,
+        name: projResult.data.name,
+        ownerId: projResult.data.owner_id
+      });
+      S.set('currentProjectFloors', (floorsResult.data || []).map(function(f) {
+        return { id: f.id, name: f.name, imageUrl: f.image_url, nativeWidth: f.native_width, sortOrder: f.sort_order };
+      }));
+      S.set('rooms', roomsData || {});
+
+      var Exp = window.GR.exportMod;
+      if (Exp && Exp.exportProject) Exp.exportProject();
+
+      // Restore previous state
+      S.set('currentProject', prevProject);
+      S.set('currentProjectFloors', prevFloors);
+      S.set('rooms', prevRooms);
+    } catch (e) {
+      console.error('[app] handleDashboardExport error:', e);
+      if (UI && UI.toast) UI.toast('Export fehlgeschlagen', 'error', 3000);
     }
-    App.showView('dashboard');
   };
 
   App.handleDashboardImport = async function(projectId) {
     App.closeProjectMenu();
     var success = await Proj.openProject(projectId);
     if (!success) {
-      var UI = window.GR.ui;
-      if (UI && UI.toast) UI.toast('❌ Projekt konnte nicht geladen werden', 'error', 3000);
+      if (UI && UI.toast) UI.toast('Projekt konnte nicht geladen werden', 'error', 3000);
       return;
     }
     var proj = S.get('currentProject');
@@ -1009,6 +889,9 @@ window.GR = window.GR || {};
     var ExpPS = window.GR.exportMod;
     if (ExpPS && ExpPS.openProjectSettings) ExpPS.openProjectSettings();
   };
+
+  // Details-Toggle: Klick auf #sbToggle öffnet/schließt Sidebar
+  App._detailToggleInit = false;
 
   // ===================================================================
   // Auto-Init bei DOM Ready
