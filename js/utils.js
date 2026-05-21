@@ -87,6 +87,29 @@ window.GR = window.GR || {};
   };
 
   /**
+   * Validiert, dass ein Raum-Key nur sichere Zeichen enthält.
+   * Verhindert Injection über Raum-Schlüssel.
+   * @param {string} key - Zu prüfender Schlüssel
+   * @returns {boolean} True wenn der Key sicher ist
+   */
+  U.isValidKey = function(key) {
+    return typeof key === 'string' && /^[a-zA-Z0-9_\-]+$/.test(key);
+  };
+
+  /**
+   * Baut den HTML-Block "Zuletzt bearbeitet".
+   * Geteilt zwischen detail-renderer und overview-renderer.
+   * @param {number} [lastSaveTs] - Timestamp der letzten Speicherung
+   * @returns {string} HTML-String oder Leerstring
+   */
+  U.buildLastEditInfo = function(lastSaveTs) {
+    var text = U.formatLastEdit(lastSaveTs);
+    return text
+      ? '<div style="margin-top:10px;font-size:11px;color:var(--muted);text-align:center;">' + U.escHtml(text) + '</div>'
+      : '';
+  };
+
+  /**
    * Formatiert die "Zuletzt bearbeitet"-Anzeige.
    * Zentralisiert, um Duplikate in detail-renderer und overview-renderer zu vermeiden.
    * @param {number} lastSaveTs - Timestamp der letzten Speicherung
@@ -156,7 +179,7 @@ window.GR = window.GR || {};
     if (cached && (now - cached.stamp) < C.SCALE_CACHE_TTL) return cached.value;
     const img = wrapper.querySelector('img');
     if (!img) return 1;
-    const nativeWidth = img.naturalWidth || C.NATIVE_WIDTHS[U.detectFloorId(wrapper.id)] || 1000;
+    const nativeWidth = C.NATIVE_WIDTHS[U.detectFloorId(wrapper.id)] || 1000;
     const displayWidth = img.getBoundingClientRect().width;
     const value = displayWidth > 0 && nativeWidth > 0 ? displayWidth / nativeWidth : 1;
     _scaleCache.set(wrapper, { value, stamp: now });
@@ -180,4 +203,18 @@ window.GR = window.GR || {};
     return { x: e.clientX, y: e.clientY };
   };
 
+  /**
+   * Generiert oder liest eine eindeutige Geräte-ID (UUID) aus dem localStorage.
+   * Wird für die Benutzerisolierung bei Supabase-Zeilen verwendet.
+   * @returns {string} Geräte-UUID
+   */
+  U.getDeviceId = function() {
+    const KEY = 'gr_device_id';
+    let id = localStorage.getItem(KEY);
+    if (!id) {
+      id = 'd' + Date.now().toString(36) + Math.random().toString(36).substring(2, 10);
+      localStorage.setItem(KEY, id);
+    }
+    return id;
+  };
 })(window.GR.utils = window.GR.utils || {});
