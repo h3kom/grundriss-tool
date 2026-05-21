@@ -19,6 +19,7 @@ window.GR = window.GR || {};
   const Proj = window.GR.projects;
   const Mig = window.GR.migration;
   const Pres = window.GR.presence;
+  const UI = window.GR.ui;
 
   // ===================================================================
   // View Management
@@ -194,7 +195,6 @@ window.GR = window.GR || {};
     App.showView('editor');
 
     if (!localStorage.getItem(C.INTRO_SEEN_KEY)) {
-      var UI = window.GR.ui;
       if (UI && UI.showIntro) UI.showIntro();
     }
 
@@ -258,9 +258,6 @@ window.GR = window.GR || {};
       '<button data-action="confirm-rename-project" class="tb-btn-sm" title="Speichern">✅</button>' +
       '<button data-action="cancel-rename-project" class="tb-btn-sm" title="Abbrechen">❌</button>';
 
-    var renameBtn = document.querySelector('[data-action="rename-project"]');
-    if (renameBtn) renameBtn.style.display = 'none';
-
     var input = document.getElementById('renameProjectInput');
     if (input) { input.focus(); input.select(); }
   };
@@ -269,7 +266,7 @@ window.GR = window.GR || {};
     var input = document.getElementById('renameProjectInput');
     if (!input) return;
     var newName = input.value.trim();
-    if (!newName) { var UI = window.GR.ui; if (UI && UI.toast) UI.toast('Name darf nicht leer sein', 'error', 2000); return; }
+    if (!newName) { if (UI && UI.toast) UI.toast('Name darf nicht leer sein', 'error', 2000); return; }
 
     var proj = S.get('currentProject');
     if (!proj) return;
@@ -282,17 +279,12 @@ window.GR = window.GR || {};
 
     var nameEl = document.getElementById('projectName');
     if (nameEl) nameEl.textContent = newName;
-
-    var renameBtn = document.querySelector('[data-action="rename-project"]');
-    if (renameBtn) renameBtn.style.display = '';
   };
 
   App.cancelRenameProject = function() {
     var proj = S.get('currentProject');
     var nameEl = document.getElementById('projectName');
     if (nameEl && proj) nameEl.textContent = proj.name || '';
-    var renameBtn = document.querySelector('[data-action="rename-project"]');
-    if (renameBtn) renameBtn.style.display = '';
   };
 
   // ===================================================================
@@ -317,8 +309,7 @@ window.GR = window.GR || {};
     var Rdr = window.GR.renderer;
     if (Rdr && Rdr.render) Rdr.render();
 
-    var UI = window.GR.ui;
-    if (UI && UI.toast) UI.toast('📋 Raum dupliziert', 'success', 1500);
+    if (UI && UI.toast) UI.toast('Raum dupliziert', 'success', 1500);
   };
 
   // ===================================================================
@@ -328,8 +319,7 @@ window.GR = window.GR || {};
   App.handleAddFloor = async function() {
     var proj = S.get('currentProject');
     if (!proj || proj.id === 'legacy') {
-      var UI = window.GR.ui;
-      if (UI && UI.toast) UI.toast('Stockwerke können nur in Cloud-Projekten verwaltet werden', 'warning', 3000);
+      if (UI && UI.toast) UI.toast('Stockwerke koennen nur in Cloud-Projekten verwaltet werden', 'warning', 3000);
       return;
     }
 
@@ -346,8 +336,7 @@ window.GR = window.GR || {};
     }).select('id, name, image_url, native_width, sort_order');
 
     if (result.error) {
-      var UI2 = window.GR.ui;
-      if (UI2 && UI2.toast) UI2.toast('❌ Fehler: ' + result.error.message, 'error', 3000);
+      if (UI && UI.toast) UI.toast('Fehler: ' + result.error.message, 'error', 3000);
       return;
     }
 
@@ -364,8 +353,7 @@ window.GR = window.GR || {};
       S.set('currentProjectFloors', floors);
       if (Proj && Proj.buildFloorUI) Proj.buildFloorUI(floors);
 
-      var UI3 = window.GR.ui;
-      if (UI3 && UI3.toast) UI3.toast('✅ ' + floorName + ' hinzugefügt', 'success', 2000);
+      if (UI && UI.toast) UI.toast(floorName + ' hinzugefuegt', 'success', 2000);
     }
   };
 
@@ -392,11 +380,10 @@ window.GR = window.GR || {};
   App.handleDeleteFloor = async function(floorId) {
     var floors = S.get('currentProjectFloors') || [];
     if (floors.length <= 1) {
-      var UI = window.GR.ui;
       if (UI && UI.toast) UI.toast('Mindestens ein Stockwerk erforderlich', 'warning', 2000);
       return;
     }
-    if (!confirm('Stockwerk wirklich löschen?')) return;
+    if (!confirm('Stockwerk wirklich loeschen?')) return;
 
     var sb = Auth.getSupabase();
     if (!sb) return;
@@ -415,8 +402,7 @@ window.GR = window.GR || {};
 
     if (Proj && Proj.buildFloorUI) Proj.buildFloorUI(newFloors);
     if (S.get('activeFloor') === floorId && newFloors.length > 0) {
-      var UI2 = window.GR.ui;
-      if (UI2 && UI2.switchFloor) UI2.switchFloor(newFloors[0].id);
+      if (UI && UI.switchFloor) UI.switchFloor(newFloors[0].id);
     }
   };
 
@@ -624,7 +610,6 @@ window.GR = window.GR || {};
     document.addEventListener('click', function(e) {
       var planEl = e.target.closest('.pw');
       if (planEl && !e.target.closest('.ro') && !e.target.closest('.rh')) {
-        var UI = window.GR.ui;
         if (UI) {
           S.set('selectedRoom', null);
           UI.closeSidebar();
@@ -637,8 +622,7 @@ window.GR = window.GR || {};
     // Details-Toggle: Sidebar öffnen/schließen
     document.addEventListener('click', function(e) {
       if (e.target.closest('#sbToggle')) {
-        var _UI = window.GR.ui;
-        if (_UI && _UI.toggleSidebar) _UI.toggleSidebar();
+        if (UI && UI.toggleSidebar) UI.toggleSidebar();
       }
     });
   };
@@ -697,8 +681,7 @@ window.GR = window.GR || {};
         if (errorEl) errorEl.textContent = result.error || 'Registrierung fehlgeschlagen';
         if (btn) { btn.disabled = false; btn.textContent = 'Registrieren'; }
       } else if (result.needsConfirmation) {
-        var UI = window.GR.ui;
-        if (UI && UI.toast) UI.toast('✅ Registrierung erfolgreich! Bitte bestätige deine E-Mail-Adresse.', 'success', 5000);
+        if (UI && UI.toast) UI.toast('Registrierung erfolgreich! Bitte bestaetige deine E-Mail-Adresse.', 'success', 5000);
         if (btn) { btn.disabled = false; btn.textContent = 'Registrieren'; }
         App.toggleAuthForm('login');
       }
@@ -735,20 +718,18 @@ window.GR = window.GR || {};
       // Presence
       if (Pres && Pres.joinProject && proj) Pres.joinProject(proj.id);
     } else {
-      var UI = window.GR.ui;
-      if (UI && UI.toast) UI.toast('❌ Projekt konnte nicht geladen werden', 'error', 3000);
+      if (UI && UI.toast) UI.toast('Projekt konnte nicht geladen werden', 'error', 3000);
     }
   };
 
   App.handleDeleteProject = async function(projectId) {
     if (!projectId) return;
-    if (!confirm('Projekt wirklich löschen? Alle Daten gehen verloren.')) return;
+    if (!confirm('Projekt wirklich loeschen? Alle Daten gehen verloren.')) return;
 
     var result = await Proj.deleteProject(projectId);
     if (result.ok) {
       App.renderDashboard();
-      var UI = window.GR.ui;
-      if (UI && UI.toast) UI.toast('🗑️ Projekt gelöscht', 'success', 2000);
+      if (UI && UI.toast) UI.toast('Projekt geloescht', 'success', 2000);
     }
   };
 
@@ -821,8 +802,7 @@ window.GR = window.GR || {};
       if (nameEl) nameEl.textContent = newName.trim();
     }
     App.renderDashboard();
-    var UI = window.GR.ui;
-    if (UI && UI.toast) UI.toast('✅ Umbenannt', 'success', 1500);
+    if (UI && UI.toast) UI.toast('Umbenannt', 'success', 1500);
   };
 
   App.handleDashboardShare = function(projectId) {
@@ -837,23 +817,66 @@ window.GR = window.GR || {};
 
   App.handleDashboardExport = async function(projectId) {
     App.closeProjectMenu();
-    var success = await Proj.openProject(projectId);
-    if (!success) {
-      var UI = window.GR.ui;
-      if (UI && UI.toast) UI.toast('❌ Projekt konnte nicht geladen werden', 'error', 3000);
+    var sb = Auth.getSupabase();
+    if (!sb) {
+      if (UI && UI.toast) UI.toast('Verbindung fehlgeschlagen', 'error', 3000);
       return;
     }
-    var Exp = window.GR.exportMod;
-    if (Exp && Exp.exportProject) Exp.exportProject();
-    App.showView('dashboard');
+
+    try {
+      // Load project data from Supabase, then delegate to export.js
+      // (avoids openProject which mutates DOM and global state)
+      var projResult = await sb.from('projects').select('*').eq('id', projectId).single();
+      if (projResult.error || !projResult.data) {
+        if (UI && UI.toast) UI.toast('Projekt konnte nicht geladen werden', 'error', 3000);
+        return;
+      }
+
+      var floorsResult = await sb.from('floors')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('sort_order', { ascending: true });
+
+      var roomsResult = await sb.from('rooms')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('updated_at', { ascending: false })
+        .limit(1);
+      var roomsData = (roomsResult.data && roomsResult.data.length > 0) ? roomsResult.data[0].data : {};
+
+      // Temporarily set state so exportProject() can read it
+      var prevProject = S.get('currentProject');
+      var prevFloors = S.get('currentProjectFloors');
+      var prevRooms = S.get('rooms');
+
+      S.set('currentProject', {
+        id: projectId,
+        name: projResult.data.name,
+        ownerId: projResult.data.owner_id
+      });
+      S.set('currentProjectFloors', (floorsResult.data || []).map(function(f) {
+        return { id: f.id, name: f.name, imageUrl: f.image_url, nativeWidth: f.native_width, sortOrder: f.sort_order };
+      }));
+      S.set('rooms', roomsData || {});
+
+      var Exp = window.GR.exportMod;
+      if (Exp && Exp.exportProject) Exp.exportProject();
+
+      // Restore previous state
+      S.set('currentProject', prevProject);
+      S.set('currentProjectFloors', prevFloors);
+      S.set('rooms', prevRooms);
+    } catch (e) {
+      console.error('[app] handleDashboardExport error:', e);
+      if (UI && UI.toast) UI.toast('Export fehlgeschlagen', 'error', 3000);
+    }
   };
 
   App.handleDashboardImport = async function(projectId) {
     App.closeProjectMenu();
     var success = await Proj.openProject(projectId);
     if (!success) {
-      var UI = window.GR.ui;
-      if (UI && UI.toast) UI.toast('❌ Projekt konnte nicht geladen werden', 'error', 3000);
+      if (UI && UI.toast) UI.toast('Projekt konnte nicht geladen werden', 'error', 3000);
       return;
     }
     var proj = S.get('currentProject');
