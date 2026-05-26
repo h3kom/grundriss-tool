@@ -25,13 +25,20 @@ jobs:
         run: echo "// no-op — secrets injected via constants.js" > config.local.js
 
       - name: Deploy Prod to /prod/
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./
-          publish_branch: gh-pages
-          destination_dir: prod
-          keep_files: false
+        env:
+          DEST_DIR: prod
+        run: |
+          cd $RUNNER_TEMP
+          git clone --branch gh-pages --single-branch "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" deploy
+          rm -rf "deploy/${DEST_DIR}" || true
+          mkdir -p "deploy/${DEST_DIR}"
+          cp -r "${{ github.workspace }}"/. "deploy/${DEST_DIR}/"
+          cd deploy
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "deploy: ${{ github.sha }}" || true
+          git push
 
   deploy-dev:
     name: Dev → /dev/
@@ -49,10 +56,17 @@ jobs:
         run: echo "// no-op — secrets injected via constants.js" > config.local.js
 
       - name: Deploy Dev to /dev/
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./
-          publish_branch: gh-pages
-          destination_dir: dev
-          keep_files: false
+        env:
+          DEST_DIR: dev
+        run: |
+          cd $RUNNER_TEMP
+          git clone --branch gh-pages --single-branch "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" deploy
+          rm -rf "deploy/${DEST_DIR}" || true
+          mkdir -p "deploy/${DEST_DIR}"
+          cp -r "${{ github.workspace }}"/. "deploy/${DEST_DIR}/"
+          cd deploy
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "deploy: ${{ github.sha }}" || true
+          git push
