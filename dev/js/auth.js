@@ -208,6 +208,7 @@ window.GR = window.GR || {};
     });
     S.set('isAuthenticated', true);
     S.notify(C.EVT_AUTH_CHANGED, { authenticated: true, user: user });
+    _ensureProfile(user);
   };
 
   /**
@@ -220,6 +221,20 @@ window.GR = window.GR || {};
     S.set('currentProjectFloors', []);
     S.notify(C.EVT_AUTH_CHANGED, { authenticated: false });
   };
+
+  async function _ensureProfile(user) {
+    if (!_sb) return;
+    try {
+      const { data } = await _sb.from('profiles').select('id').eq('id', user.id).single();
+      if (!data) {
+        await _sb.from('profiles').insert({
+          id: user.id,
+          email: user.email,
+          display_name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User'
+        });
+      }
+    } catch (e) { /* non-critical */ }
+  }
 
   /**
    * Passwort-Reset anfordern.
