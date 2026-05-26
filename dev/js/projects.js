@@ -74,10 +74,9 @@ window.GR = window.GR || {};
       // Geteilte Projekte (über project_members)
       const memberResult = await sb.from('project_members')
         .select('role, projects(id, name, created_at, updated_at, owner_id, profiles(display_name))')
-        .eq('user_id', user.id)
-        .neq('projects.owner_id', user.id);
+        .eq('user_id', user.id);
       const shared = (memberResult.data || [])
-        .filter(function(m) { return m.projects; })
+        .filter(function(m) { return m.projects && m.projects.owner_id !== user.id; })
         .map(function(m) {
           return {
             id: m.projects.id,
