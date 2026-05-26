@@ -496,21 +496,6 @@ window.GR = window.GR || {};
           if (selectedRoom) App.duplicateRoom(selectedRoom);
           break;
 
-        case 'open-project-settings':
-          var ExpPS = window.GR.exportMod;
-          if (ExpPS && ExpPS.openProjectSettings) ExpPS.openProjectSettings();
-          break;
-        case 'close-project-settings':
-          var ExpCS = window.GR.exportMod;
-          if (ExpCS && ExpCS.closeProjectSettings) ExpCS.closeProjectSettings();
-          break;
-        case 'ps-dropzone-click':
-          // Handled by export.js event listeners (drag & drop + click)
-          break;
-        case 'ps-do-import':
-          var ExpImp = window.GR.exportMod;
-          if (ExpImp && ExpImp.doProjectSettingsImport) ExpImp.doProjectSettingsImport();
-          break;
         case 'ps-do-export':
           var ExpExp = window.GR.exportMod;
           if (ExpExp && ExpExp.exportProject) ExpExp.exportProject();
