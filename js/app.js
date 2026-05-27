@@ -54,6 +54,31 @@ window.GR = window.GR || {};
   // Dashboard Rendering
   // ===================================================================
 
+  var _avatarColors = ['#3b82f6','#ef4444','#22c55e','#f59e0b','#8b5cf6','#ec4899','#14b8a6','#f97316'];
+
+  function _getInitials(name) {
+    if (!name || name === 'Unbekannt') return '?';
+    var parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    return name.substring(0, 2).toUpperCase();
+  }
+
+  function _renderMemberAvatars(members) {
+    if (!members || members.length === 0) return '';
+    var maxShow = 3;
+    var html = '<div class="dash-card-members" title="' + members.length + ' Mitglied' + (members.length > 1 ? 'er' : '') + '">';
+    for (var i = 0; i < Math.min(members.length, maxShow); i++) {
+      var m = members[i];
+      var color = _avatarColors[i % _avatarColors.length];
+      html += '<span class="dash-avatar" style="background:' + color + '">' + _getInitials(m.displayName) + '</span>';
+    }
+    if (members.length > maxShow) {
+      html += '<span class="dash-avatar dash-avatar-more">+' + (members.length - maxShow) + '</span>';
+    }
+    html += '</div>';
+    return html;
+  }
+
   App.renderDashboard = async function() {
     var container = document.getElementById('dashProjects');
     var userInfo = document.getElementById('dashUser');
@@ -86,7 +111,10 @@ window.GR = window.GR || {};
             '<div class="dash-card-icon">🏢</div>' +
             '<div class="dash-card-info">' +
               '<div class="dash-card-name">' + U.escHtml(p.name) + '</div>' +
-              '<div class="dash-card-date">' + dateStr + '</div>' +
+              '<div class="dash-card-meta">' +
+                '<span class="dash-card-date">' + dateStr + '</span>' +
+                _renderMemberAvatars(p.members) +
+              '</div>' +
             '</div>' +
             '<div class="dash-card-actions">' +
               '<button data-action="project-menu" data-project-id="' + U.escAttr(p.id) + '" class="dash-card-delete" title="Mehr">⋯</button>' +
@@ -107,7 +135,10 @@ window.GR = window.GR || {};
             '<div class="dash-card-icon">🤝</div>' +
             '<div class="dash-card-info">' +
               '<div class="dash-card-name">' + U.escHtml(s.name) + '</div>' +
-              '<div class="dash-card-date">Von ' + U.escHtml(s.ownerName) + ' · ' + dateStr2 + '</div>' +
+              '<div class="dash-card-meta">' +
+                '<span class="dash-card-date">Von ' + U.escHtml(s.ownerName) + ' · ' + dateStr2 + '</span>' +
+                _renderMemberAvatars(s.members) +
+              '</div>' +
             '</div>' +
           '</div>';
       }
