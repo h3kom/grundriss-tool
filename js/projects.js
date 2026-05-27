@@ -284,8 +284,14 @@ window.GR = window.GR || {};
 
       S.notify(C.EVT_PROJECT_CHANGED, projectId);
 
-      // Rolle laden und im State speichern
-      const role = await Proj.getProjectRole(projectId);
+      // Rolle bestimmen: Owner direkt aus Projektdaten, sonst DB-Query
+      const currentUser = S.get('currentUser');
+      let role = '';
+      if (currentUser && projResult.data.owner_id === currentUser.id) {
+        role = 'owner';
+      } else {
+        role = await Proj.getProjectRole(projectId);
+      }
       S.set('currentProjectRole', role);
 
       return true;
