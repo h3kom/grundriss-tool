@@ -88,37 +88,6 @@ window.GR = window.GR || {};
           };
         });
 
-      // Mitglieder pro Projekt laden (owned + shared)
-      var allIds = owned.map(function(p) { return p.id; })
-        .concat(shared.map(function(p) { return p.id; }));
-
-      var membersMap = {};
-      if (allIds.length > 0) {
-        var membersResult = await sb.from('project_members')
-          .select('project_id, user_id, role, profiles(display_name)')
-          .in('project_id', allIds);
-        if (membersResult.data) {
-          for (var k = 0; k < membersResult.data.length; k++) {
-            var mr = membersResult.data[k];
-            var pid = mr.project_id;
-            if (!membersMap[pid]) membersMap[pid] = [];
-            membersMap[pid].push({
-              userId: mr.user_id,
-              role: mr.role,
-              displayName: mr.profiles?.display_name || 'Unbekannt'
-            });
-          }
-        }
-      }
-
-      // Mitglieder an Projekte anhängen
-      for (var i = 0; i < owned.length; i++) {
-        owned[i].members = membersMap[owned[i].id] || [];
-      }
-      for (var j = 0; j < shared.length; j++) {
-        shared[j].members = membersMap[shared[j].id] || [];
-      }
-
       return { owned: owned, shared: shared };
     } catch (e) {
       console.warn('[projects] loadProjects error:', e.message);
