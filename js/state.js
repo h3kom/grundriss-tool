@@ -50,6 +50,7 @@ window.GR = window.GR || {};
     // === Project ===
     currentProject: null,        // { id, name, ownerId, roomsRowId }
     currentProjectFloors: [],    // [{ id, name, imageUrl, nativeWidth, sortOrder }]
+    currentProjectRole: '',      // 'owner' | 'editor' | 'viewer' | ''
 
     // === Rooms ===
     rooms: {},

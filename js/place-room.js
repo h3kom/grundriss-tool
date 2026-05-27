@@ -24,6 +24,7 @@ window.GR = window.GR || {};
    */
   PR.enablePlaceNewRoom = function(floor, roomType) {
     if (!S.get('editMode')) return;
+    if (window.GR.app && !window.GR.app.canEdit()) return;
     S.set('isPlacing', true);
     S.set('placeFloor', floor);
     S.set('placeRoomType', roomType || null);

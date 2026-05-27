@@ -13,10 +13,8 @@
 -- 1) Die rekursive Policy sofort entfernen
 DROP POLICY IF EXISTS "Members can view all project members" ON project_members;
 
--- 2) SECURITY DEFINER Function: gibt alle project_ids zurueck,
---    in denen der aktuelle User Mitglied ist.
---    SECURITY DEFINER umgeht RLS -> keine Rekursion.
-CREATE OR REPLACE FUNCTION auth.my_project_ids()
+-- 2) SECURITY DEFINER Function im public-Schema (auth ist gesperrt)
+CREATE OR REPLACE FUNCTION public.my_project_ids()
 RETURNS SETOF uuid
 LANGUAGE sql
 SECURITY DEFINER
@@ -30,5 +28,5 @@ $$;
 CREATE POLICY "Members can view all project members"
   ON project_members FOR SELECT
   USING (
-    project_id IN (SELECT auth.my_project_ids())
+    project_id IN (SELECT public.my_project_ids())
   );

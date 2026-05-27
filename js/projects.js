@@ -316,6 +316,11 @@ window.GR = window.GR || {};
       }
 
       S.notify(C.EVT_PROJECT_CHANGED, projectId);
+
+      // Rolle laden und im State speichern
+      const role = await Proj.getProjectRole(projectId);
+      S.set('currentProjectRole', role);
+
       return true;
     } catch (e) {
       console.error('[projects] openProject error:', e);

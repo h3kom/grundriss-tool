@@ -22,6 +22,7 @@ window.GR = window.GR || {};
 
   D.startDrag = function(e, key) {
     if (!S.get('editMode')) return;
+    if (window.GR.app && !window.GR.app.canEdit()) return;
     const raw = U.getPointerPos(e);
     const wrapper = e.currentTarget.closest('.pw');
     const rooms = S.get('rooms');
