@@ -75,7 +75,7 @@ window.GR = window.GR || {};
     if (!isAuthenticated || !project) return;
 
     // Viewer duerfen nicht in die Cloud speichern
-    if (window.GR.app && !window.GR.app.canEdit()) return;
+    if (window.GR.permissions && !window.GR.permissions.canEdit()) return;
 
     var rooms = S.get('rooms');
 

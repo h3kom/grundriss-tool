@@ -223,11 +223,7 @@ window.GR = window.GR || {};
    * Zentralisiert den in drag, resize und place-room duplizierten Guard.
    * @returns {boolean} True wenn Bearbeitung erlaubt
    */
-  U.requireEdit = function() {
-    if (!window.GR.state.get('editMode')) return false;
-    if (window.GR.app && !window.GR.app.canEdit()) return false;
-    return true;
-  };
+  // requireEdit moved to js/permissions.js
 
   /**
    * Registriert mousemove/mouseup + touchmove/touchend Listener mit automatischem Cleanup.

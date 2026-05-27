@@ -20,7 +20,7 @@ window.GR = window.GR || {};
    * @param {string} floor - Etagen-Kürzel ('eg' | 'og')
    */
   PR.enablePlaceNewRoom = function(floor, roomType) {
-    if (!U.requireEdit()) return;
+    if (!window.GR.permissions.requireEdit()) return;
     S.set('isPlacing', true);
     S.set('placeFloor', floor);
     S.set('placeRoomType', roomType || null);

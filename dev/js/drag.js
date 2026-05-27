@@ -18,7 +18,7 @@ window.GR = window.GR || {};
   var _dragRafPending = false;
 
   D.startDrag = function(e, key) {
-    if (!U.requireEdit()) return;
+    if (!window.GR.permissions.requireEdit()) return;
     const raw = U.getPointerPos(e);
     const wrapper = e.currentTarget.closest('.pw');
     const rooms = S.get('rooms');

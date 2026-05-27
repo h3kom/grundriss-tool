@@ -21,17 +21,9 @@ window.GR = window.GR || {};
   const Pres = window.GR.presence;
   const UI = window.GR.ui;
 
-  /** Prueft ob der aktuelle User Aenderungen vornehmen darf (owner oder editor). */
-  function canEdit() {
-    var role = S.get('currentProjectRole');
-    return role === 'owner' || role === 'editor';
-  }
-  // canEdit als globale Function verfuegbar machen fuer andere Module
-  App.canEdit = canEdit;
-
-  // ===================================================================
-  // View Management
-  // ===================================================================
+  var Perm = window.GR.permissions;
+  function canEdit() { return Perm.canEdit(); }
+  App.canEdit = Perm.canEdit;
 
   App.showView = function(view) {
     S.set('currentView', view);
