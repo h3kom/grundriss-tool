@@ -18,7 +18,7 @@ window.GR = window.GR || {};
    * @param {string} handle - Handle-Name (nw, n, ne, e, se, s, sw, w)
    */
   RS.startResize = function(e, key, handle) {
-    if (!U.requireEdit()) return;
+    if (!window.GR.permissions.requireEdit()) return;
     e.preventDefault();
     e.stopPropagation();
 
