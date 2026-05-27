@@ -16,7 +16,7 @@ window.GR = window.GR || {};
   const C = window.GR.constants;
 
   function _canEdit() {
-    return window.GR.app && window.GR.app.canEdit();
+    return S.get('editMode') && window.GR.app && window.GR.app.canEdit();
   }
 
   R.toggleTask = function(key, idx, checked) {
