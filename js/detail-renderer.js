@@ -15,9 +15,14 @@ window.GR = window.GR || {};
   const U = window.GR.utils;
   const C = window.GR.constants;
 
-  /** editMode + Rolle: fuer alle Inhalte (Tasks, Notizen, Kommentare). */
-  function _canEdit() {
-    return S.get('editMode') && window.GR.app && window.GR.app.canEdit();
+  /** Rollen-Check: Owner/Editor kann Content bearbeiten (Tasks abhaken, Kommentare). */
+  function _canEditContent() {
+    return window.GR.app && window.GR.app.canEdit();
+  }
+
+  /** editMode + Rolle: fuer Raeume-Aktionen, Notizen, neue Aufgaben. */
+  function _canEditSpatial() {
+    return S.get('editMode') && _canEditContent();
   }
 
   /**
@@ -37,7 +42,7 @@ window.GR = window.GR || {};
     html += DR.buildTaskSection(key, room, progress);
     html += DR.buildNoteSection(key, room);
     html += DR.buildCommentSection(key, room);
-    if (_canEdit()) html += DR.buildActionButtons(key);
+    if (_canEditSpatial()) html += DR.buildActionButtons(key);
     html += U.buildLastEditInfo(S.get('lastSaveTs'));
 
     sc.innerHTML = html;
@@ -50,7 +55,7 @@ window.GR = window.GR || {};
     return '<div class="rdh">' +
       '<button class="bb" data-action="close-sidebar">\u2190</button>' +
       '<h3>' + U.escHtml(room.title) + '</h3>' +
-      (_canEdit() ? '<button class="rb" data-action="open-rename" data-key="' + U.escAttr(key) + '" title="Umbenennen">\u270F\uFE0F</button>' : '') +
+      (_canEditSpatial() ? '<button class="rb" data-action="open-rename" data-key="' + U.escAttr(key) + '" title="Umbenennen">\u270F\uFE0F</button>' : '') +
       '<span class="rk">' + U.escHtml(key) + '</span>' +
     '</div>';
   };
@@ -76,16 +81,16 @@ window.GR = window.GR || {};
         var checked = (room.done || {})[i] || false;
         html += '<div class="ti' + (checked ? ' done' : '') + '">' +
           '<input type="checkbox"' + (checked ? ' checked' : '') +
-          (_canEdit() ? '' : ' disabled') +
+          (_canEditContent() ? '' : ' disabled') +
           ' data-action-change="toggle-task" data-key="' + safeKey + '" data-idx="' + i + '">' +
           '<label>' + U.escHtml(room.tasks[i]) + '</label>' +
-          (_canEdit() ? '<button class="td" data-action="delete-task" data-key="' + safeKey + '" data-idx="' + i + '">\u00D7</button>' : '') +
+          (_canEditContent() ? '<button class="td" data-action="delete-task" data-key="' + safeKey + '" data-idx="' + i + '">\u00D7</button>' : '') +
         '</div>';
       }
       html += '</div>';
     }
 
-    if (_canEdit()) {
+    if (_canEditSpatial()) {
       html += '<div class="atr">' +
         '<input type="text" id="nti-' + safeKey + '" placeholder="Neue Aufgabe\u2026" data-action-enter="add-task" data-key="' + safeKey + '">' +
         '<button data-action="add-task" data-key="' + safeKey + '">+</button>' +
@@ -99,7 +104,7 @@ window.GR = window.GR || {};
   DR.buildNoteSection = function(key, room) {
     var safeKey = U.escAttr(key);
     var html = '<div class="is"><h4>Notiz</h4>';
-    if (_canEdit()) {
+    if (_canEditSpatial()) {
       html += '<textarea class="rne" data-action-change="save-note" data-key="' + safeKey + '">' + U.escHtml(room.note || '') + '</textarea>';
     } else {
       html += '<p class="empty-hint" style="font-size:14px;text-align:left;">' + U.escHtml(room.note || 'Keine Notiz.') + '</p>';
@@ -123,7 +128,7 @@ window.GR = window.GR || {};
           : '';
         var userName = c.user || 'Unbekannt';
         html += '<div class="ci">' +
-          (_canEdit() ? '<button class="cd" data-action="delete-comment" data-key="' + safeKey + '" data-idx="' + i + '">\u00D7</button>' : '') +
+          (_canEditContent() ? '<button class="cd" data-action="delete-comment" data-key="' + safeKey + '" data-idx="' + i + '">\u00D7</button>' : '') +
           '<div class="cm"><strong>' + U.escHtml(userName) + '</strong> · ' + U.escHtml(timeStr) + '</div>' +
           '<div class="ct">' + U.escHtml(c.text) + '</div>' +
         '</div>';
@@ -133,7 +138,7 @@ window.GR = window.GR || {};
     }
 
     html += '</div>';
-    if (_canEdit()) {
+    if (_canEditContent()) {
       html += '<div class="acr">' +
         '<input type="text" id="nci-' + safeKey + '" placeholder="Kommentar\u2026" data-action-enter="add-comment" data-key="' + safeKey + '">' +
         '<button data-action="add-comment" data-key="' + safeKey + '">Senden</button>' +
