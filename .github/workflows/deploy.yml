@@ -32,7 +32,7 @@ jobs:
           git clone --branch gh-pages --single-branch "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" deploy
           rm -rf "deploy/${DEST_DIR}" || true
           mkdir -p "deploy/${DEST_DIR}"
-          cp -r "${{ github.workspace }}"/. "deploy/${DEST_DIR}/"
+          rsync -a --exclude='.git' --exclude='node_modules' --exclude='.github' --exclude='.claude' "${{ github.workspace }}/" "deploy/${DEST_DIR}/"
           cd deploy
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -63,7 +63,7 @@ jobs:
           git clone --branch gh-pages --single-branch "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" deploy
           rm -rf "deploy/${DEST_DIR}" || true
           mkdir -p "deploy/${DEST_DIR}"
-          cp -r "${{ github.workspace }}"/. "deploy/${DEST_DIR}/"
+          rsync -a --exclude='.git' --exclude='node_modules' --exclude='.github' --exclude='.claude' "${{ github.workspace }}/" "deploy/${DEST_DIR}/"
           cd deploy
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
