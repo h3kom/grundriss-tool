@@ -17,9 +17,9 @@ window.GR = window.GR || {};
     return role === 'owner' || role === 'editor';
   };
 
-  /** Content editing: Tasks abhaken/loeschen, Kommentare schreiben/loeschen. Nur Role-Check. */
+  /** Content editing: Tasks abhaken/loeschen, Kommentare schreiben/loeschen. editMode + Role. */
   Perm.canEditContent = function() {
-    return Perm.canEdit();
+    return S.get('editMode') && Perm.canEdit();
   };
 
   /** Spatial editing: Raeume ziehen/erstellen/loeschen, Notizen, neue Aufgaben. editMode + Role. */
