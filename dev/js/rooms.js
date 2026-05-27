@@ -15,12 +15,16 @@ window.GR = window.GR || {};
   const U = window.GR.utils;
   const C = window.GR.constants;
 
-  function _canEdit() {
-    return S.get('editMode') && window.GR.app && window.GR.app.canEdit();
+  function _canEditContent() {
+    return window.GR.app && window.GR.app.canEdit();
+  }
+
+  function _canEditSpatial() {
+    return S.get('editMode') && _canEditContent();
   }
 
   R.toggleTask = function(key, idx, checked) {
-    if (!_canEdit()) return;
+    if (!_canEditContent()) return;
     const room = S.get('rooms')[key];
     if (!room) return;
     if (!room.done) room.done = {};
@@ -33,7 +37,7 @@ window.GR = window.GR || {};
    * @param {string} key - Raumschlüssel
    */
   R.addTask = function(key) {
-    if (!_canEdit()) return;
+    if (!_canEditSpatial()) return;
     const input = document.getElementById(`nti-${key}`);
     const text = input?.value?.trim();
     if (!text) return;
@@ -58,7 +62,7 @@ window.GR = window.GR || {};
    * @param {number} idx - Aufgaben-Index
    */
   R.deleteTask = function(key, idx) {
-    if (!_canEdit()) return;
+    if (!_canEditContent()) return;
     const room = S.get('rooms')[key];
     if (!room) return;
     if (!room.tasks) room.tasks = [];
@@ -83,7 +87,7 @@ window.GR = window.GR || {};
    * @param {string} value - Notiztext
    */
   R.saveNote = function(key, value) {
-    if (!_canEdit()) return;
+    if (!_canEditSpatial()) return;
     var room = S.get('rooms')[key];
     if (!room) return;
     room.note = value;
@@ -99,7 +103,7 @@ window.GR = window.GR || {};
    * @param {string} key - Raumschlüssel
    */
   R.addComment = function(key) {
-    if (!_canEdit()) return;
+    if (!_canEditContent()) return;
     const input = document.getElementById(`nci-${key}`);
     const text = input?.value?.trim();
     if (!text) return;
@@ -126,7 +130,7 @@ window.GR = window.GR || {};
    * @param {number} idx - Kommentar-Index
    */
   R.deleteComment = function(key, idx) {
-    if (!_canEdit()) return;
+    if (!_canEditContent()) return;
     const rooms = S.get('rooms');
     if (!rooms[key]) return;
     if (!rooms[key].comments) rooms[key].comments = [];
@@ -143,7 +147,7 @@ window.GR = window.GR || {};
    * @param {string} key - Raumschlüssel
    */
   R.deleteRoom = function(key) {
-    if (!_canEdit()) return;
+    if (!_canEditSpatial()) return;
     const rooms = S.get('rooms');
     const roomTitle = rooms[key]?.title || 'Unbekannt';
     const UI = window.GR.ui;
