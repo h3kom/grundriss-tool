@@ -201,6 +201,8 @@ window.GR = window.GR || {};
 
   UI.setEditMode = function(enabled) {
     if (S.get('editMode') === enabled) return;
+    // Viewer duerfen editMode nicht aktivieren
+    if (enabled && window.GR.app && !window.GR.app.canEdit()) return;
     S.set('editMode', enabled);
 
     var btnEdit = $('btnEdit');

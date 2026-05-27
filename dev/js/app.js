@@ -21,6 +21,14 @@ window.GR = window.GR || {};
   const Pres = window.GR.presence;
   const UI = window.GR.ui;
 
+  /** Prueft ob der aktuelle User Aenderungen vornehmen darf (owner oder editor). */
+  function canEdit() {
+    var role = S.get('currentProjectRole');
+    return role === 'owner' || role === 'editor';
+  }
+  // canEdit als globale Function verfuegbar machen fuer andere Module
+  App.canEdit = canEdit;
+
   // ===================================================================
   // View Management
   // ===================================================================
@@ -248,7 +256,7 @@ window.GR = window.GR || {};
   // ===================================================================
 
   App.handleRenameProject = function() {
-    if (!S.get('editMode')) return;
+    if (!S.get('editMode') || !canEdit()) return;
     var proj = S.get('currentProject');
     if (!proj) return;
     var nameEl = document.getElementById('projectName');
@@ -292,6 +300,7 @@ window.GR = window.GR || {};
   // ===================================================================
 
   App.duplicateRoom = function(key) {
+    if (!canEdit()) return;
     var rooms = S.get('rooms');
     if (!rooms || !rooms[key]) return;
     var room = rooms[key];
@@ -317,6 +326,7 @@ window.GR = window.GR || {};
   // ===================================================================
 
   App.handleAddFloor = async function() {
+    if (!canEdit()) return;
     var proj = S.get('currentProject');
     if (!proj || proj.id === 'legacy') {
       if (UI && UI.toast) UI.toast('Stockwerke koennen nur in Cloud-Projekten verwaltet werden', 'warning', 3000);
@@ -358,6 +368,7 @@ window.GR = window.GR || {};
   };
 
   App.handleRenameFloor = async function(floorId) {
+    if (!canEdit()) return;
     var floors = S.get('currentProjectFloors') || [];
     var floor = floors.find(function(f) { return f.id === floorId; });
     if (!floor) return;
@@ -378,6 +389,7 @@ window.GR = window.GR || {};
   };
 
   App.handleDeleteFloor = async function(floorId) {
+    if (!canEdit()) return;
     var floors = S.get('currentProjectFloors') || [];
     if (floors.length <= 1) {
       if (UI && UI.toast) UI.toast('Mindestens ein Stockwerk erforderlich', 'warning', 2000);
@@ -697,6 +709,14 @@ window.GR = window.GR || {};
       var nameEl = document.getElementById('projectName');
       if (nameEl && proj) nameEl.textContent = proj.name || '';
       App.showView('editor');
+
+      // Viewer: Edit-Button und Stockwerk-Button verstecken
+      var isViewer = !canEdit();
+      var btnEdit = document.getElementById('btnEdit');
+      var btnAddFloor = document.getElementById('btnAddFloor');
+      if (btnEdit) btnEdit.style.display = isViewer ? 'none' : '';
+      if (btnAddFloor) btnAddFloor.style.display = isViewer ? 'none' : '';
+
       var Rdr = window.GR.renderer;
       if (Rdr && Rdr.render) Rdr.render();
       Sync.updateTabBadges();

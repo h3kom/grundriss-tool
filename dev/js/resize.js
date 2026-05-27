@@ -22,6 +22,7 @@ window.GR = window.GR || {};
    */
   RS.startResize = function(e, key, handle) {
     if (!S.get('editMode')) return;
+    if (window.GR.app && !window.GR.app.canEdit()) return;
     e.preventDefault();
     e.stopPropagation();
 
