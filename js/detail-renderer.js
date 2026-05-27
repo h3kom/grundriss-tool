@@ -15,14 +15,9 @@ window.GR = window.GR || {};
   const U = window.GR.utils;
   const C = window.GR.constants;
 
-  /** Role-based check: owner or editor can edit content (tasks, notes, comments). */
+  /** editMode + Rolle: fuer alle Inhalte (Tasks, Notizen, Kommentare). */
   function _canEdit() {
-    return window.GR.app && window.GR.app.canEdit();
-  }
-
-  /** Spatial check: editMode must be on AND user must have edit role. */
-  function _editable() {
-    return S.get('editMode') && _canEdit();
+    return S.get('editMode') && window.GR.app && window.GR.app.canEdit();
   }
 
   /**
@@ -42,7 +37,7 @@ window.GR = window.GR || {};
     html += DR.buildTaskSection(key, room, progress);
     html += DR.buildNoteSection(key, room);
     html += DR.buildCommentSection(key, room);
-    if (_editable()) html += DR.buildActionButtons(key);
+    if (_canEdit()) html += DR.buildActionButtons(key);
     html += U.buildLastEditInfo(S.get('lastSaveTs'));
 
     sc.innerHTML = html;
@@ -55,7 +50,7 @@ window.GR = window.GR || {};
     return '<div class="rdh">' +
       '<button class="bb" data-action="close-sidebar">\u2190</button>' +
       '<h3>' + U.escHtml(room.title) + '</h3>' +
-      (_editable() ? '<button class="rb" data-action="open-rename" data-key="' + U.escAttr(key) + '" title="Umbenennen">\u270F\uFE0F</button>' : '') +
+      (_canEdit() ? '<button class="rb" data-action="open-rename" data-key="' + U.escAttr(key) + '" title="Umbenennen">\u270F\uFE0F</button>' : '') +
       '<span class="rk">' + U.escHtml(key) + '</span>' +
     '</div>';
   };
