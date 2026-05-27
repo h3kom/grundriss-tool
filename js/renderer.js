@@ -141,7 +141,7 @@ window.GR = window.GR || {};
     });
     div.addEventListener('touchstart', function(e) {
       if (I && I.startDrag) I.startDrag(e, key);
-    }, { passive: true });
+    }, { passive: false });
 
     // Label
     const label = document.createElement('div');
