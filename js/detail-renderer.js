@@ -57,7 +57,7 @@ window.GR = window.GR || {};
 
   DR.buildProgressBar = function(progress) {
     if (progress.total === 0) return '';
-    return '<div style="font-size:13px;color:var(--muted);margin-bottom:2px;">' +
+    return '<div class="progress-text">' +
       progress.done + '/' + progress.total + ' Aufgaben (' + progress.percent + '%)' +
     '</div>' +
     '<div class="pbw"><div class="pbf" style="width:' + progress.percent + '%"></div></div>';
@@ -69,7 +69,7 @@ window.GR = window.GR || {};
       '<h4>Aufgaben' + (progress.total > 0 ? ' <span class="cnt">' + progress.done + '/' + progress.total + '</span>' : '') + '</h4>';
 
     if (!room.tasks || room.tasks.length === 0) {
-      html += '<p style="font-size:13px;color:var(--muted);margin:0;">Keine Aufgaben.</p>';
+      html += '<p class="empty-hint">Keine Aufgaben.</p>';
     } else {
       html += '<div>';
       for (var i = 0; i < room.tasks.length; i++) {
@@ -102,7 +102,7 @@ window.GR = window.GR || {};
     if (_editable()) {
       html += '<textarea class="rne" data-action-change="save-note" data-key="' + safeKey + '">' + U.escHtml(room.note || '') + '</textarea>';
     } else {
-      html += '<p style="margin:0;font-size:14px;text-align:left;">' + U.escHtml(room.note || 'Keine Notiz.') + '</p>';
+      html += '<p class="empty-hint" style="font-size:14px;text-align:left;">' + U.escHtml(room.note || 'Keine Notiz.') + '</p>';
     }
     html += '</div>';
     return html;
@@ -129,7 +129,7 @@ window.GR = window.GR || {};
         '</div>';
       }
     } else {
-      html += '<p style="font-size:13px;color:var(--muted);margin:0;">Keine Kommentare.</p>';
+      html += '<p class="empty-hint">Keine Kommentare.</p>';
     }
 
     html += '</div>';
@@ -148,14 +148,10 @@ window.GR = window.GR || {};
    * Baut Aktions-Buttons (Duplizieren + Löschen).
    */
   DR.buildActionButtons = function(key) {
-    return '<div class="is" style="display:flex;gap:8px;">' +
-      '<button class="dup-btn" data-action="duplicate-room" style="flex:1;">📋 Duplizieren</button>' +
-      '<button class="drb" data-action="delete-room" data-key="' + U.escAttr(key) + '" style="flex:1;">🗑️ Löschen</button>' +
+    return '<div class="is is-flex">' +
+      '<button class="dup-btn" data-action="duplicate-room">📋 Duplizieren</button>' +
+      '<button class="drb" data-action="delete-room" data-key="' + U.escAttr(key) + '">🗑️ Löschen</button>' +
     '</div>';
-  };
-
-  DR.buildDeleteSection = function(key) {
-    return '<div class="is"><button class="drb" data-action="delete-room" data-key="' + U.escAttr(key) + '">🗑️ Löschen</button></div>';
   };
 
 })(window.GR.detailRenderer = window.GR.detailRenderer || {});

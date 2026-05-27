@@ -105,7 +105,7 @@ window.GR = window.GR || {};
   U.buildLastEditInfo = function(lastSaveTs) {
     var text = U.formatLastEdit(lastSaveTs);
     return text
-      ? '<div style="margin-top:10px;font-size:11px;color:var(--muted);text-align:center;">' + U.escHtml(text) + '</div>'
+      ? '<div class="last-edit-info">' + U.escHtml(text) + '</div>'
       : '';
   };
 
@@ -216,5 +216,40 @@ window.GR = window.GR || {};
       localStorage.setItem(KEY, id);
     }
     return id;
+  };
+
+  /**
+   * Prueft, ob der aktuelle Benutzer Bearbeitungsrechte hat.
+   * Zentralisiert den in drag, resize und place-room duplizierten Guard.
+   * @returns {boolean} True wenn Bearbeitung erlaubt
+   */
+  U.requireEdit = function() {
+    if (!window.GR.state.get('editMode')) return false;
+    if (window.GR.app && !window.GR.app.canEdit()) return false;
+    return true;
+  };
+
+  /**
+   * Registriert mousemove/mouseup + touchmove/touchend Listener mit automatischem Cleanup.
+   * Zentralisiert den in drag, resize und place-room duplizierten Listener-Boilerplate.
+   * @param {Function} onMove - Handler fuer pointer-Bewegung
+   * @param {Function} onEnd - Handler fuer pointer-Ende (loest automatisch cleanup aus)
+   * @returns {Function} cleanup-Funktion zum vorzeitigen Entfernen der Listener
+   */
+  U.trackPointer = function(onMove, onEnd) {
+    var _touchOpts = { passive: false };
+    function moveHandler(e) { onMove(e); }
+    function endHandler(e) { onEnd(e); cleanup(); }
+    function cleanup() {
+      document.removeEventListener('mousemove', moveHandler);
+      document.removeEventListener('mouseup', endHandler);
+      document.removeEventListener('touchmove', moveHandler, _touchOpts);
+      document.removeEventListener('touchend', endHandler, _touchOpts);
+    }
+    document.addEventListener('mousemove', moveHandler);
+    document.addEventListener('mouseup', endHandler);
+    document.addEventListener('touchmove', moveHandler, _touchOpts);
+    document.addEventListener('touchend', endHandler, _touchOpts);
+    return cleanup;
   };
 })(window.GR.utils = window.GR.utils || {});

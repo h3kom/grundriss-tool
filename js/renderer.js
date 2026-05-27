@@ -38,6 +38,7 @@ window.GR = window.GR || {};
     if (!container) return;
 
     const wrapper = document.getElementById(floor + '-w');
+    if (!wrapper) return;
     const scale = U.getScale(wrapper);
     const rooms = S.get('rooms');
     const selectedKey = S.get('selectedRoom');
@@ -67,12 +68,12 @@ window.GR = window.GR || {};
         element.style.height = Math.round(room.height * scale) + 'px';
 
         const isSelected = selectedKey === key;
-        element.classList.toggle('sel', isSelected);
-        element.classList.toggle('em', editMode);
+        element.classList.toggle(C.CLASS_SELECTED, isSelected);
+        element.classList.toggle(C.CLASS_EDIT_MODE, editMode);
 
 
         const progress = U.taskProgress(room);
-        const existingLabel = element.querySelector('.rl');
+        const existingLabel = element.querySelector('.' + C.CLASS_ROOM_LABEL);
         if (existingLabel) {
           const newHtml = progress.total > 0
             ? U.escHtml(room.title) + '<span class="pm">' + progress.percent + '%</span>'
@@ -96,7 +97,7 @@ window.GR = window.GR || {};
     const isSelected = S.get('selectedRoom') === key;
     const editMode = S.get('editMode');
 
-    div.className = 'ro' + (isSelected ? ' sel' : '') + (editMode ? ' em' : '');
+    div.className = C.CLASS_ROOM + (isSelected ? ' ' + C.CLASS_SELECTED : '') + (editMode ? ' ' + C.CLASS_EDIT_MODE : '');
     div.style.left = Math.round(room.left * scale) + 'px';
     div.style.top = Math.round(room.top * scale) + 'px';
     div.style.width = Math.round(room.width * scale) + 'px';
@@ -118,7 +119,7 @@ window.GR = window.GR || {};
         return;
       }
       Rdr.showRoom(key);
-      if (window.innerWidth < 768) {
+      if (window.innerWidth < C.MOBILE_BREAKPOINT) {
         const UI = window.GR.ui;
         if (UI) UI.openSidebar();
       }
@@ -144,7 +145,7 @@ window.GR = window.GR || {};
 
     // Label
     const label = document.createElement('div');
-    label.className = 'rl';
+    label.className = C.CLASS_ROOM_LABEL;
     const progress = U.taskProgress(room);
     label.innerHTML = progress.total > 0
       ? U.escHtml(room.title) + '<span class="pm">' + progress.percent + '%</span>'
@@ -153,7 +154,7 @@ window.GR = window.GR || {};
 
     // Selection dot
     const sdot = document.createElement('div');
-    sdot.className = 'sd';
+    sdot.className = C.CLASS_SELECT_DOT;
     div.appendChild(sdot);
 
     // Resize handles
@@ -166,7 +167,7 @@ window.GR = window.GR || {};
     const handleNames = C.HANDLE_DIRECTIONS;
     for (const handle of handleNames) {
       const hdl = document.createElement('div');
-      hdl.className = 'rh ' + handle;
+      hdl.className = C.CLASS_RESIZE_HANDLE + ' ' + handle;
       const I = window.GR.interaction;
       hdl.addEventListener('mousedown', function(ev) {
         if (I && I.startResize) I.startResize(ev, key, handle);
@@ -197,7 +198,7 @@ window.GR = window.GR || {};
     const DetailRdr = window.GR.detailRenderer;
     if (DetailRdr) DetailRdr.renderDetail(key);
     Rdr.scrollToRoom(key);
-    if (window.innerWidth < 768) {
+    if (window.innerWidth < C.MOBILE_BREAKPOINT) {
       const UI = window.GR.ui;
       if (UI) UI.openSidebar();
     }
@@ -205,7 +206,7 @@ window.GR = window.GR || {};
 
   Rdr.scrollToRoom = function(key) {
     var el = null;
-    var roomEls = document.querySelectorAll('.ro');
+    var roomEls = document.querySelectorAll('.' + C.CLASS_ROOM);
     for (var i = 0; i < roomEls.length; i++) {
       if (roomEls[i].getAttribute('data-key') === key) { el = roomEls[i]; break; }
     }
@@ -232,7 +233,7 @@ window.GR = window.GR || {};
     Rdr.render();
     const DetailRdr = window.GR.detailRenderer;
     if (DetailRdr) DetailRdr.renderDetail(key);
-    if (window.innerWidth < 768) {
+    if (window.innerWidth < C.MOBILE_BREAKPOINT) {
       const UI = window.GR.ui;
       if (UI) UI.openSidebar();
     }

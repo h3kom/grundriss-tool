@@ -11,6 +11,7 @@ window.GR = window.GR || {};
   'use strict';
 
   const S = window.GR.state;
+  const C = window.GR.constants;
   const U = window.GR.utils;
   const UI = window.GR.ui;
 
@@ -40,7 +41,7 @@ window.GR = window.GR || {};
         floors: floors.map(function(f) {
           return { id: f.id, name: f.name, sortOrder: f.sortOrder };
         }),
-        rooms: JSON.parse(JSON.stringify(rooms))
+        rooms: U.deepClone(rooms)
       }
     };
 
@@ -108,7 +109,7 @@ window.GR = window.GR || {};
     }
 
     // Floor-IDs in Räumen umschreiben
-    const mappedRooms = JSON.parse(JSON.stringify(importedRooms));
+    const mappedRooms = U.deepClone(importedRooms);
     const keys = Object.keys(mappedRooms);
     for (let k = 0; k < keys.length; k++) {
       const room = mappedRooms[keys[k]];
@@ -138,9 +139,6 @@ window.GR = window.GR || {};
     const Rdr = window.GR.renderer;
     if (Rdr && Rdr.render) Rdr.render();
 
-    const Sync = window.GR.sync;
-    if (Sync && Sync.updateTabBadges) Sync.updateTabBadges();
-
     toast('✅ Import erfolgreich! ' + roomCount + ' Raum/Räume importiert', 'success', 3000);
   };
 
@@ -165,8 +163,8 @@ window.GR = window.GR || {};
     if (roomKeys.length === 0) {
       return { valid: false, error: 'Keine Räume in der Datei enthalten' };
     }
-    if (roomKeys.length > 500) {
-      return { valid: false, error: 'Zu viele Räume (max. 500). Datei: ' + roomKeys.length };
+    if (roomKeys.length > C.MAX_IMPORT_ROOMS) {
+      return { valid: false, error: 'Zu viele Räume (max. ' + C.MAX_IMPORT_ROOMS + '). Datei: ' + roomKeys.length };
     }
     // Validate each room has required properties with correct types
     const requiredProps = ['title', 'left', 'top', 'width', 'height', 'floor'];

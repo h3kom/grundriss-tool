@@ -190,14 +190,14 @@
   <!-- ============================================================ -->
   <!-- RENAME MODAL                                                  -->
   <!-- ============================================================ -->
-  <div id="rm" class="modal">
+  <div id="rm" class="modal" role="dialog" aria-modal="true" aria-label="Raum umbenennen">
     <div class="modal-backdrop" data-action="close-rename"></div>
     <div class="modal-content">
       <div class="share-header">
         <h3>Raum umbenennen</h3>
         <button data-action="close-rename" class="sb-c" title="Schließen">✕</button>
       </div>
-      <input type="text" id="rn" class="rne" placeholder="Raumname" />
+      <input type="text" id="rn" class="rne" placeholder="Raumname" aria-label="Neuer Raumname" />
       <div class="ps-actions" style="margin-top:16px">
         <button data-action="close-rename" class="ps-btn ps-btn-secondary">Abbrechen</button>
         <button data-action="confirm-rename" class="ps-btn ps-btn-primary">Umbenennen</button>

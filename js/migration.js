@@ -12,6 +12,7 @@ window.GR = window.GR || {};
 
   const C = window.GR.constants;
   const S = window.GR.state;
+  const U = window.GR.utils;
 
   /** @const {string} Key für Migrations-Flag */
   const MIGRATION_KEY = 'gr_migrated_v2';
@@ -100,7 +101,7 @@ window.GR = window.GR || {};
       const floors = floorResult.data || [];
 
       // Alte Raumdaten: Floor-IDs von 'eg'/'og' auf neue Floor-IDs mappen
-      const migratedRooms = JSON.parse(JSON.stringify(localData));
+      const migratedRooms = U.deepClone(localData);
       const egFloor = floors.find(function(f) { return f.sort_order === 0; });
       const ogFloor = floors.find(function(f) { return f.sort_order === 1; });
 
