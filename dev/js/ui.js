@@ -191,7 +191,7 @@ window.GR = window.GR || {};
     if (selected && rooms[selected] && rooms[selected].floor !== floor) {
       S.set('selectedRoom', null);
       var sc = document.getElementById('sc');
-      if (sc) sc.innerHTML = '<p class="hint">\uD83D\uDC46 Raum antippen</p>';
+      if (sc) sc.innerHTML = C.HINT_TAP_ROOM;
     }
   };
 
@@ -211,7 +211,7 @@ window.GR = window.GR || {};
       btnEdit.setAttribute('aria-pressed', String(enabled));
     }
 
-    document.querySelectorAll('.ro').forEach(function(el) { el.classList.toggle('em', enabled); });
+    document.querySelectorAll('.' + C.CLASS_ROOM).forEach(function(el) { el.classList.toggle(C.CLASS_EDIT_MODE, enabled); });
 
     if (enabled) {
       UI.closeSidebar();
@@ -292,13 +292,13 @@ window.GR = window.GR || {};
     if (_confirmCallback) _confirmCallback();
     _confirmCallback = null;
     var sc = document.getElementById('sc');
-    if (sc) sc.innerHTML = '<p class="hint">\uD83D\uDC46 Raum antippen</p>';
+    if (sc) sc.innerHTML = C.HINT_TAP_ROOM;
   };
 
   UI.cancelConfirm = function() {
     _confirmCallback = null;
     var sc = document.getElementById('sc');
-    if (sc) sc.innerHTML = '<p class="hint">\uD83D\uDC46 Raum antippen</p>';
+    if (sc) sc.innerHTML = C.HINT_TAP_ROOM;
   };
 
   // ===================================================================
@@ -335,7 +335,7 @@ window.GR = window.GR || {};
     if (!key || !S.get('rooms')[key]) { UI.closeRenameModal(); return; }
     var title = input.value.trim();
     if (!title) { toast('Name darf nicht leer sein', 'error', 2000); return; }
-    if (title.length > 100) { toast('Name zu lang (max. 100 Zeichen)', 'error', 2000); return; }
+    if (title.length > C.MAX_ROOM_NAME_LENGTH) { toast('Name zu lang (max. ' + C.MAX_ROOM_NAME_LENGTH + ' Zeichen)', 'error', 2000); return; }
     var oldTitle = S.get('rooms')[key].title;
     S.get('rooms')[key].title = title;
     St.saveData();

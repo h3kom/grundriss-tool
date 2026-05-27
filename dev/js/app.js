@@ -208,7 +208,6 @@ window.GR = window.GR || {};
 
     var Rdr = window.GR.renderer;
     if (Rdr && Rdr.render) Rdr.render();
-    Sync.updateTabBadges();
   };
 
   // ===================================================================
@@ -305,9 +304,9 @@ window.GR = window.GR || {};
     if (!rooms || !rooms[key]) return;
     var room = rooms[key];
     var newKey = U.generateKey(rooms);
-    var offset = 30;
+    var offset = C.DUPLICATE_OFFSET;
 
-    rooms[newKey] = JSON.parse(JSON.stringify(room));
+    rooms[newKey] = U.deepClone(room);
     rooms[newKey].left = room.left + offset;
     rooms[newKey].top = room.top + offset;
     rooms[newKey].title = room.title + ' (Kopie)';
@@ -611,7 +610,7 @@ window.GR = window.GR || {};
           S.set('selectedRoom', null);
           UI.closeSidebar();
           var sc = document.getElementById('sc');
-          if (sc) sc.innerHTML = '<p class="hint">\uD83D\uDC46 Raum antippen</p>';
+          if (sc) sc.innerHTML = C.HINT_TAP_ROOM;
         }
       }
     });
@@ -719,7 +718,6 @@ window.GR = window.GR || {};
 
       var Rdr = window.GR.renderer;
       if (Rdr && Rdr.render) Rdr.render();
-      Sync.updateTabBadges();
       // Presence
       if (Pres && Pres.joinProject && proj) Pres.joinProject(proj.id);
     } else {
@@ -890,13 +888,9 @@ window.GR = window.GR || {};
     App.showView('editor');
     var Rdr = window.GR.renderer;
     if (Rdr && Rdr.render) Rdr.render();
-    Sync.updateTabBadges();
     var ExpPS = window.GR.exportMod;
     if (ExpPS && ExpPS.openProjectSettings) ExpPS.openProjectSettings();
   };
-
-  // Details-Toggle: Klick auf #sbToggle öffnet/schließt Sidebar
-  App._detailToggleInit = false;
 
   // ===================================================================
   // Auto-Init bei DOM Ready

@@ -77,12 +77,58 @@ window.GR = window.GR || {};
   /** @const {string} Standard-Raum-Typ */
   C.ROOM_TYPE_DEFAULT = 'sonstige';
 
+  /** @const {string} Standard-Hinweis im Sidebar-Content wenn kein Raum ausgewaehlt */
+  C.HINT_TAP_ROOM = '<p class="hint">👆 Raum antippen</p>';
+
+  // ===================================================================
+  // Limits & Thresholds
+  // ===================================================================
+
+  /** @const {number} Maximale Laenge fuer Raumnamen */
+  C.MAX_ROOM_NAME_LENGTH = 100;
+
+  /** @const {number} Maximale Laenge fuer Aufgaben-Text */
+  C.MAX_TASK_LENGTH = 200;
+
+  /** @const {number} Maximale Laenge fuer Kommentare */
+  C.MAX_COMMENT_LENGTH = 1000;
+
+  /** @const {number} Versatz beim Duplizieren von Raeumen in px */
+  C.DUPLICATE_OFFSET = 30;
+
+  /** @const {number} Viewport-Breite fuer Mobile-Layout in px */
+  C.MOBILE_BREAKPOINT = 768;
+
+  /** @const {number} Maximale Anzahl Raeume pro Import */
+  C.MAX_IMPORT_ROOMS = 500;
+
   // ===================================================================
   // Dark Mode
   // ===================================================================
 
   /** @const {string} localStorage Key für Dark Mode Preference */
   C.DARK_MODE_KEY = 'gr_dark';
+
+  // ===================================================================
+  // CSS Class Names
+  // ===================================================================
+
+  /** @const {string} Raum-Element CSS-Klasse */
+  C.CLASS_ROOM = 'ro';
+  /** @const {string} Selektierter Raum */
+  C.CLASS_SELECTED = 'sel';
+  /** @const {string} Edit-Modus aktiv */
+  C.CLASS_EDIT_MODE = 'em';
+  /** @const {string} Drag-Modus aktiv */
+  C.CLASS_DRAGGING = 'dg';
+  /** @const {string} Resize-Modus aktiv */
+  C.CLASS_RESIZING = 'rs';
+  /** @const {string} Raum-Label */
+  C.CLASS_ROOM_LABEL = 'rl';
+  /** @const {string} Selektions-Punkt */
+  C.CLASS_SELECT_DOT = 'sd';
+  /** @const {string} Resize-Handle CSS-Klasse */
+  C.CLASS_RESIZE_HANDLE = 'rh';
 
   // ===================================================================
   // Time Thresholds

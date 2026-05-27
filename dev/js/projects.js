@@ -16,39 +16,6 @@ window.GR = window.GR || {};
   const Auth = window.GR.auth;
 
   // ===================================================================
-  // API Helpers (via Supabase Client)
-  // ===================================================================
-
-  /**
-   * Führt eine Supabase REST-Abfrage durch.
-   * @param {string} table - Tabellenname
-   * @param {Object} options - Query-Optionen
-   * @returns {Promise<Array>}
-   */
-  async function query(table, options) {
-    const sb = Auth.getSupabase();
-    if (!sb) return [];
-    try {
-      let q = sb.from(table).select(options.select || '*');
-      if (options.filter) {
-        for (const key of Object.keys(options.filter)) {
-          q = q.eq(key, options.filter[key]);
-        }
-      }
-      if (options.order) q = q.order(options.order.column, { ascending: options.order.ascending !== false });
-      const result = await q;
-      if (result.error) {
-        console.warn('[projects] query error:', result.error.message);
-        return [];
-      }
-      return result.data || [];
-    } catch (e) {
-      console.warn('[projects] query exception:', e.message);
-      return [];
-    }
-  }
-
-  // ===================================================================
   // Projekt CRUD
   // ===================================================================
 
@@ -395,9 +362,7 @@ window.GR = window.GR || {};
       img.setAttribute('draggable', 'false');
       img.addEventListener('load', function() {
         const Rdr = window.GR.renderer;
-        const Sync = window.GR.sync;
         if (Rdr && Rdr.render) Rdr.render();
-        if (Sync && Sync.updateTabBadges) Sync.updateTabBadges();
       });
       pw.appendChild(img);
 

@@ -15,16 +15,12 @@ window.GR = window.GR || {};
   const St = window.GR.storage;
   const U = window.GR.utils;
 
-  // Shared options object for touch event listeners – must be same reference for add/remove
-  PR._touchOptions = { passive: false };
-
   /**
    * Aktiviert den Platzierungs-Modus.
    * @param {string} floor - Etagen-Kürzel ('eg' | 'og')
    */
   PR.enablePlaceNewRoom = function(floor, roomType) {
-    if (!S.get('editMode')) return;
-    if (window.GR.app && !window.GR.app.canEdit()) return;
+    if (!U.requireEdit()) return;
     S.set('isPlacing', true);
     S.set('placeFloor', floor);
     S.set('placeRoomType', roomType || null);
@@ -35,7 +31,7 @@ window.GR = window.GR || {};
     if (sc) {
       sc.innerHTML = '<p class="hint"><strong>Neuen Raum platzieren</strong><br/>' +
         '\uD83D\uDC46 Auf den Grundriss tippen & ziehen um die Gr\u00F6\u00DFe festzulegen.<br/>' +
-        '<button data-action="cancel-place" style="margin-top:8px;background:#ef4444;color:#fff;border:none;padding:8px 16px;border-radius:var(--rs);cursor:pointer;font-size:14px;">Abbrechen</button>' +
+        '<button data-action="cancel-place" class="btn-danger" style="margin-top:8px;">Abbrechen</button>' +
       '</p>';
     }
   };
@@ -51,7 +47,7 @@ window.GR = window.GR || {};
     S.set('placeState', null);
     document.querySelectorAll('.pw').forEach(w => { w.style.cursor = ''; });
     const sc = document.getElementById('sc');
-    if (sc) sc.innerHTML = '<p class="hint">\uD83D\uDC46 Raum antippen</p>';
+    if (sc) sc.innerHTML = C.HINT_TAP_ROOM;
   };
 
   /**
@@ -68,7 +64,7 @@ window.GR = window.GR || {};
    */
   PR.startPlaceDraw = function(e) {
     if (!S.get('isPlacing')) return;
-    if (e.target.closest('.ro') || e.target.closest('.rh')) return;
+    if (e.target.closest('.' + C.CLASS_ROOM) || e.target.closest('.' + C.CLASS_RESIZE_HANDLE)) return;
     e.preventDefault();
 
     const raw = U.getPointerPos(e);
@@ -76,6 +72,7 @@ window.GR = window.GR || {};
     if (!wrapper) return;
 
     const pi = wrapper.querySelector('.pi');
+    if (!pi) return;
     const rect = pi.getBoundingClientRect();
 
     S.set('placeState', {
@@ -92,81 +89,46 @@ window.GR = window.GR || {};
       relEndY: null
     });
 
-    // Create a visual preview rectangle
     PR.removePlacePreview();
     const preview = document.createElement('div');
     preview.id = 'place-preview';
-    preview.style.cssText = 'position:absolute;border:2px dashed var(--blue);background:rgba(59,130,246,0.12);z-index:100;pointer-events:none;border-radius:4px;';
+    preview.className = 'place-preview';
+    preview.style.cssText = 'position:absolute;z-index:100;';
     preview.style.left = `${S.get('placeState').relStartX}px`;
     preview.style.top = `${S.get('placeState').relStartY}px`;
     preview.style.width = '0px';
     preview.style.height = '0px';
     pi.appendChild(preview);
 
-    document.addEventListener('mousemove', PR.onPlaceDrawMove);
-    document.addEventListener('mouseup', PR.onPlaceDrawEnd);
-    document.addEventListener('touchmove', PR.onPlaceDrawMoveTouch, PR._touchOptions);
-    document.addEventListener('touchend', PR.onPlaceDrawEndTouch, PR._touchOptions);
+    U.trackPointer(function onMove(e) {
+      const ps = S.get('placeState');
+      if (!ps) return;
+      e.preventDefault();
+
+      const raw = U.getPointerPos(e);
+      const piRect = ps.pi.getBoundingClientRect();
+      const relX = raw.x - piRect.left;
+      const relY = raw.y - piRect.top;
+
+      ps.endX = raw.x;
+      ps.endY = raw.y;
+      ps.relEndX = relX;
+      ps.relEndY = relY;
+
+      const preview = document.getElementById('place-preview');
+      if (!preview) return;
+
+      const sx = ps.relStartX;
+      const sy = ps.relStartY;
+
+      preview.style.left = `${Math.min(sx, relX)}px`;
+      preview.style.top = `${Math.min(sy, relY)}px`;
+      preview.style.width = `${Math.abs(relX - sx)}px`;
+      preview.style.height = `${Math.abs(relY - sy)}px`;
+    }, function onEnd() {
+      PR.finishPlaceDraw();
+    });
   };
-
-  /**
-   * Bewegt die Zeichnung während des Draw-Vorgangs.
-   * @param {Event} e
-   */
-  PR.onPlaceDrawMove = function(e) {
-    const ps = S.get('placeState');
-    if (!ps) return;
-    e.preventDefault();
-
-    const raw = U.getPointerPos(e);
-    const piRect = ps.pi.getBoundingClientRect();
-    const relX = raw.x - piRect.left;
-    const relY = raw.y - piRect.top;
-
-    ps.endX = raw.x;
-    ps.endY = raw.y;
-    ps.relEndX = relX;
-    ps.relEndY = relY;
-
-    const preview = document.getElementById('place-preview');
-    if (!preview) return;
-
-    const sx = ps.relStartX;
-    const sy = ps.relStartY;
-
-    const left = Math.min(sx, relX);
-    const top = Math.min(sy, relY);
-    const width = Math.abs(relX - sx);
-    const height = Math.abs(relY - sy);
-
-    preview.style.left = `${left}px`;
-    preview.style.top = `${top}px`;
-    preview.style.width = `${width}px`;
-    preview.style.height = `${height}px`;
-  };
-
-  /**
-   * Touch-Variante von onPlaceDrawMove.
-   * @param {Event} e
-   */
-  PR.onPlaceDrawMoveTouch = function(e) {
-    PR.onPlaceDrawMove(e);
-  };
-
-  /**
-   * Räumt die Event-Listener nach dem Zeichnen auf.
-   */
-  function onPlaceDrawEndCleanup() {
-    const ps = S.get('placeState');
-    if (!ps) return;
-    document.removeEventListener('mousemove', PR.onPlaceDrawMove);
-    document.removeEventListener('mouseup', PR.onPlaceDrawEnd);
-    document.removeEventListener('touchmove', PR.onPlaceDrawMoveTouch, PR._touchOptions);
-    document.removeEventListener('touchend', PR.onPlaceDrawEndTouch, PR._touchOptions);
-  }
-
-  PR.onPlaceDrawEnd = function() { onPlaceDrawEndCleanup(); PR.finishPlaceDraw(); };
-  PR.onPlaceDrawEndTouch = function() { onPlaceDrawEndCleanup(); PR.finishPlaceDraw(); };
 
   /**
    * Schließt die Platzierung ab und erstellt den neuen Raum.

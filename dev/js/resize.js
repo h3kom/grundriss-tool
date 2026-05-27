@@ -8,9 +8,6 @@ window.GR = window.GR || {};
   const St = window.GR.storage;
   const U = window.GR.utils;
 
-  // Shared options object for touch event listeners – must be same reference for add/remove
-  RS._touchOptions = { passive: false };
-
   // rAF throttle for smooth resize rendering
   var _resizeRafPending = false;
 
@@ -21,8 +18,7 @@ window.GR = window.GR || {};
    * @param {string} handle - Handle-Name (nw, n, ne, e, se, s, sw, w)
    */
   RS.startResize = function(e, key, handle) {
-    if (!S.get('editMode')) return;
-    if (window.GR.app && !window.GR.app.canEdit()) return;
+    if (!U.requireEdit()) return;
     e.preventDefault();
     e.stopPropagation();
 
@@ -30,7 +26,7 @@ window.GR = window.GR || {};
     const wrapper = e.currentTarget.closest('.pw');
     const scale = U.getScale(wrapper);
     const room = S.get('rooms')[key];
-    const el = e.currentTarget.closest('.ro');
+    const el = e.currentTarget.closest('.' + C.CLASS_ROOM);
 
     S.set('resizeState', {
       key: key,
@@ -44,127 +40,88 @@ window.GR = window.GR || {};
       origHeight: room.height,
       scale: scale,
       saved: false,
-      element: el // Element referenzieren statt jedes Mal DOM-Query
+      element: el
     });
 
-    if (el) el.classList.add('rs');
+    if (el) el.classList.add(C.CLASS_RESIZING);
 
-    document.addEventListener('mousemove', RS.onResizeMove);
-    document.addEventListener('mouseup', RS.onResizeEnd);
-    document.addEventListener('touchmove', RS.onResizeMoveTouch, RS._touchOptions);
-    document.addEventListener('touchend', RS.onResizeEndTouch, RS._touchOptions);
-  };
+    U.trackPointer(function onMove(e) {
+      const rs = S.get('resizeState');
+      if (!rs) return;
+      e.preventDefault();
+      const raw = U.getPointerPos(e);
+      const dx = raw.x - rs.startX;
+      const dy = raw.y - rs.startY;
+      const dl = dx / rs.scale;
+      const dt = dy / rs.scale;
 
-  /**
-   * Bewegt die Resize-Grenzen während des Vorgangs.
-   * @param {Event} e
-   */
-  RS._doResizeUpdate = function() {
-    _resizeRafPending = false;
-    const rs = S.get('resizeState');
-    if (!rs || rs.currentLeft === undefined) return;
+      const handle = rs.handle;
+      let nl = rs.origLeft;
+      let nt = rs.origTop;
+      let nw = rs.origWidth;
+      let nh = rs.origHeight;
 
-    const el = rs.element;
-    const scale = rs.scale;
-    if (el) {
-      el.style.left = Math.round(rs.currentLeft * scale) + 'px';
-      el.style.top = Math.round(rs.currentTop * scale) + 'px';
-      el.style.width = Math.round(rs.currentWidth * scale) + 'px';
-      el.style.height = Math.round(rs.currentHeight * scale) + 'px';
-    }
-  };
+      if (handle.indexOf('e') >= 0) nw = Math.max(C.MIN_ROOM_SIZE, rs.origWidth + dl);
+      if (handle.indexOf('w') >= 0) {
+        nw = Math.max(C.MIN_ROOM_SIZE, rs.origWidth - dl);
+        nl = rs.origLeft + rs.origWidth - nw;
+      }
+      if (handle.indexOf('s') >= 0) nh = Math.max(C.MIN_ROOM_SIZE, rs.origHeight + dt);
+      if (handle.indexOf('n') >= 0) {
+        nh = Math.max(C.MIN_ROOM_SIZE, rs.origHeight - dt);
+        nt = rs.origTop + rs.origHeight - nh;
+      }
 
-  RS.onResizeMove = function(e) {
-    const rs = S.get('resizeState');
-    if (!rs) return;
-    e.preventDefault();
-    const raw = U.getPointerPos(e);
-    const dx = raw.x - rs.startX;
-    const dy = raw.y - rs.startY;
-    const dl = dx / rs.scale;
-    const dt = dy / rs.scale;
+      nl = Math.max(0, nl);
+      nt = Math.max(0, nt);
 
-    const handle = rs.handle;
-    let nl = rs.origLeft;
-    let nt = rs.origTop;
-    let nw = rs.origWidth;
-    let nh = rs.origHeight;
+      rs.currentLeft = nl;
+      rs.currentTop = nt;
+      rs.currentWidth = nw;
+      rs.currentHeight = nh;
 
-    if (handle.indexOf('e') >= 0) nw = Math.max(C.MIN_ROOM_SIZE, rs.origWidth + dl);
-    if (handle.indexOf('w') >= 0) {
-      nw = Math.max(C.MIN_ROOM_SIZE, rs.origWidth - dl);
-      nl = rs.origLeft + rs.origWidth - nw;
-    }
-    if (handle.indexOf('s') >= 0) nh = Math.max(C.MIN_ROOM_SIZE, rs.origHeight + dt);
-    if (handle.indexOf('n') >= 0) {
-      nh = Math.max(C.MIN_ROOM_SIZE, rs.origHeight - dt);
-      nt = rs.origTop + rs.origHeight - nh;
-    }
+      if (!_resizeRafPending) {
+        _resizeRafPending = true;
+        requestAnimationFrame(function() {
+          _resizeRafPending = false;
+          const rs2 = S.get('resizeState');
+          if (!rs2 || rs2.currentLeft === undefined) return;
+          const el2 = rs2.element;
+          const sc = rs2.scale;
+          if (el2) {
+            el2.style.left = Math.round(rs2.currentLeft * sc) + 'px';
+            el2.style.top = Math.round(rs2.currentTop * sc) + 'px';
+            el2.style.width = Math.round(rs2.currentWidth * sc) + 'px';
+            el2.style.height = Math.round(rs2.currentHeight * sc) + 'px';
+          }
+        });
+      }
+    }, function onEnd() {
+      _resizeRafPending = false;
 
-    // Grenzenprüfung: Positionen dürfen nicht negativ werden
-    nl = Math.max(0, nl);
-    nt = Math.max(0, nt);
+      const rs = S.get('resizeState');
+      if (!rs) return;
 
-    // Store raw values (cheap – runs every event)
-    rs.currentLeft = nl;
-    rs.currentTop = nt;
-    rs.currentWidth = nw;
-    rs.currentHeight = nh;
+      const el = rs.element;
+      if (el) el.classList.remove(C.CLASS_RESIZING);
 
-    // Throttle DOM writes to rAF (max once per frame)
-    if (!_resizeRafPending) {
-      _resizeRafPending = true;
-      requestAnimationFrame(RS._doResizeUpdate);
-    }
-  };
+      const room = S.get('rooms')[rs.key];
+      if (!el || !room || rs.saved) {
+        S.set('resizeState', null);
+        return;
+      }
 
-  /**
-   * Touch-Variante von onResizeMove.
-   * @param {Event} e
-   */
-  RS.onResizeMoveTouch = function(e) {
-    e.preventDefault();
-    RS.onResizeMove(e);
-  };
+      if (rs.currentLeft !== undefined) {
+        room.left = Math.max(0, Math.round(rs.currentLeft));
+        room.top = Math.max(0, Math.round(rs.currentTop));
+        room.width = Math.max(C.MIN_ROOM_SIZE, Math.round(rs.currentWidth));
+        room.height = Math.max(C.MIN_ROOM_SIZE, Math.round(rs.currentHeight));
+      }
 
-  /**
-   * Beendet den Resize-Vorgang und speichert die finale Position.
-   */
-  function onResizeEndCleanup() {
-    // Flush any pending rAF update
-    _resizeRafPending = false;
-
-    const rs = S.get('resizeState');
-    if (!rs) return;
-
-    document.removeEventListener('mousemove', RS.onResizeMove);
-    document.removeEventListener('mouseup', RS.onResizeEnd);
-    document.removeEventListener('touchmove', RS.onResizeMoveTouch, RS._touchOptions);
-    document.removeEventListener('touchend', RS.onResizeEndTouch, RS._touchOptions);
-
-    const el = rs.element;
-    if (el) el.classList.remove('rs');
-
-    const room = S.get('rooms')[rs.key];
-    if (!el || !room || rs.saved) {
+      rs.saved = true;
+      St.saveData();
       S.set('resizeState', null);
-      return;
-    }
-
-    // Use raw values from resizeState (not CSS-parsed) to avoid rounding drift
-    if (rs.currentLeft !== undefined) {
-      room.left = Math.max(0, Math.round(rs.currentLeft));
-      room.top = Math.max(0, Math.round(rs.currentTop));
-      room.width = Math.max(C.MIN_ROOM_SIZE, Math.round(rs.currentWidth));
-      room.height = Math.max(C.MIN_ROOM_SIZE, Math.round(rs.currentHeight));
-    }
-
-    rs.saved = true;
-    St.saveData();
-    S.set('resizeState', null);
-  }
-
-  RS.onResizeEnd = function() { onResizeEndCleanup(); };
-  RS.onResizeEndTouch = function() { onResizeEndCleanup(); };
+    });
+  };
 
 })(window.GR.resize = window.GR.resize || {});

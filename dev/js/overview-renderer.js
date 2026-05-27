@@ -38,7 +38,7 @@ window.GR = window.GR || {};
       searchInput.value = searchValue;
     }
 
-    var html = '<h3 style="margin:0 0 4px;font-size:16px;">\uD83D\uDCCA \u00DCbersicht</h3>';
+    var html = '<h3 class="overview-heading">\uD83D\uDCCA \u00DCbersicht</h3>';
     html += '<div class="osw"><span class="si">\uD83D\uDD0D</span>';
     html += '<input type="text" class="os" id="os" placeholder="R\u00E4ume suchen\u2026" value="' + U.escAttr(searchValue) + '">';
     html += '</div><div class="orl">';
@@ -53,7 +53,7 @@ window.GR = window.GR || {};
       : roomEntries;
 
     if (filtered.length === 0) {
-      html += '<p style="font-size:13px;color:var(--muted);text-align:center;padding:16px 0;">\uD83D\uDD0D Keine R\u00E4ume.</p>';
+      html += '<p class="overview-empty">\uD83D\uDD0D Keine R\u00E4ume.</p>';
     } else {
       for (var i = 0; i < filtered.length; i++) {
         var key = filtered[i][0];

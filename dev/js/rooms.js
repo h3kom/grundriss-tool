@@ -13,19 +13,10 @@ window.GR = window.GR || {};
   const S = window.GR.state;
   const St = window.GR.storage;
   const U = window.GR.utils;
+  const C = window.GR.constants;
 
-  // ===================================================================
-  // Task Actions
-  // ===================================================================
-
-  /**
-   * Schaltet eine Aufgabe um (erledigt/nicht erledigt).
-   * @param {string} key - Raumschlüssel
-   * @param {number} idx - Aufgaben-Index
-   * @param {boolean} checked - Erledigt?
-   */
   function _canEdit() {
-    return window.GR.app && window.GR.app.canEdit();
+    return S.get('editMode') && window.GR.app && window.GR.app.canEdit();
   }
 
   R.toggleTask = function(key, idx, checked) {
@@ -46,9 +37,9 @@ window.GR = window.GR || {};
     const input = document.getElementById(`nti-${key}`);
     const text = input?.value?.trim();
     if (!text) return;
-    if (text.length > 200) {
+    if (text.length > C.MAX_TASK_LENGTH) {
       var UI = window.GR.ui;
-      if (UI && UI.toast) UI.toast('Aufgabe zu lang (max. 200 Zeichen)', 'error', 2000);
+      if (UI && UI.toast) UI.toast('Aufgabe zu lang (max. ' + C.MAX_TASK_LENGTH + ' Zeichen)', 'error', 2000);
       return;
     }
     const rooms = S.get('rooms');
@@ -112,9 +103,9 @@ window.GR = window.GR || {};
     const input = document.getElementById(`nci-${key}`);
     const text = input?.value?.trim();
     if (!text) return;
-    if (text.length > 1000) {
+    if (text.length > C.MAX_COMMENT_LENGTH) {
       var UI = window.GR.ui;
-      if (UI && UI.toast) UI.toast('Kommentar zu lang (max. 1000 Zeichen)', 'error', 2000);
+      if (UI && UI.toast) UI.toast('Kommentar zu lang (max. ' + C.MAX_COMMENT_LENGTH + ' Zeichen)', 'error', 2000);
       return;
     }
     const rooms = S.get('rooms');
